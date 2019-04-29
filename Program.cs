@@ -11,7 +11,7 @@ namespace AtCoder
     {
         static void Main(string[] args)
         {
-            string TARGET = "ABC125";
+            string TARGET = "ABC";
 
             var ts = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var item in ts)
@@ -107,6 +107,19 @@ namespace AtCoder
                             }
                         }
                         Console.WriteLine(className + "." + kv.Key + (ok ? ": ok" : ": wrong"));
+                        if (!ok)
+                        {
+                            foreach (var item2 in expect)
+                            {
+                                if (item2 == "") continue;
+                                Console.WriteLine("    expected: " + item2);
+                            }
+                            foreach (var item2 in actual)
+                            {
+                                if (item2 == "") continue;
+                                Console.WriteLine("    actually: " + item2);
+                            }
+                        }
                     }
                 }
             }
