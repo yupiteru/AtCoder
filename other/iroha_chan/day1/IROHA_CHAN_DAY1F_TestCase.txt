@@ -1,0 +1,29 @@
+[case 1]
+30 3
+
+[output]
+2 3 5
+
+[case 2]
+30 4
+
+[output]
+-1
+
+[case 3]
+123456 7
+
+[output]
+2 2 2 2 2 2 1929
+
+[case 4]
+2 1
+
+[output]
+2
+
+[case 5]
+9999991 1
+
+[output]
+9999991

@@ -1,0 +1,11 @@
+[case 1]
+Iroha
+
+[output]
+I
+
+[case 2]
+AtCoder
+
+[output]
+A
