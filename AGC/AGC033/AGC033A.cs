@@ -23,103 +23,66 @@ namespace Program
         {
             var H = Console_.NextInt();
             var W = Console_.NextInt();
-            var fixW = (int)((W - 1) / 64) + 1;
 
-            var ary = new ulong[H][];
+            var blackTable = new bool[H, W];
+            var list = new List<Tuple<int, int>>();
             for (int i = 0; i < H; ++i)
             {
-                ary[i] = new ulong[fixW];
                 var ws = Console_.NextString().ToArray();
                 for (int j = 0; j < W; ++j)
                 {
-                    var bit = (ulong)(ws[j] == '#' ? 1 : 0);
-                    var shift = j % 64;
-                    var idx = j / 64;
-                    ary[i][idx] += bit << shift;
-                }
-            }
-
-            var allF = (ulong)0xffffffffffffffff;
-            var partialF = (ulong)0;
-            for (int i = 0; i < (W % 64 == 0 ? 64 : W % 64); ++i)
-            {
-                partialF <<= 1;
-                partialF += 1;
-            }
-
-            var checkList = new Queue<int>();
-            for (int i = 0; i < H; ++i)
-            {
-                for (int j = 0; j < fixW - 1; ++j)
-                {
-                    checkList.Enqueue(j * 1000 + i);
-                }
-                checkList.Enqueue((fixW - 1) * 1000 + i);
-            }
-
-            Func<bool> Check = () =>
-            {
-                while(checkList.Count != 0)
-                {
-                    var item = checkList.Dequeue();
-                    int i = item % 1000;
-                    int j = item / 1000;
-                    if (j == fixW - 1)
+                    if (ws[j] == '#')
                     {
-                        if ((partialF & ary[i][fixW - 1]) != partialF)
-                        {
-                            checkList.Enqueue(item);
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if (ary[i][j] != allF)
-                        {
-                            checkList.Enqueue(item);
-                            return false;
-                        }
+                        blackTable[i, j] = true;
+                        list.Add(Tuple.Create(i, j));
                     }
                 }
-                return true;
-            };
+            }
 
             var count = 0;
-            while (!Check())
+            while (list.Count != 0)
             {
                 ++count;
-
-                var newary = new ulong[H][];
-                for (int i = 0; i < H; ++i)
+                var nextList = new List<Tuple<int, int>>();
+                foreach (var item in list)
                 {
-                    newary[i] = new ulong[fixW];
-                    for (int j = 0; j < fixW; ++j)
+                    if (item.Item1 > 0)
                     {
-                        newary[i][j] = ary[i][j];
-                        if(ary[i][j] == allF) continue;
-                        if (i != 0)
+                        if (!blackTable[item.Item1 - 1, item.Item2])
                         {
-                            newary[i][j] |= ary[i - 1][j];
+                            blackTable[item.Item1 - 1, item.Item2] = true;
+                            nextList.Add(Tuple.Create(item.Item1 - 1, item.Item2));
                         }
-                        if (i != H - 1)
+                    }
+                    if (item.Item1 < H - 1)
+                    {
+                        if (!blackTable[item.Item1 + 1, item.Item2])
                         {
-                            newary[i][j] |= ary[i + 1][j];
+                            blackTable[item.Item1 + 1, item.Item2] = true;
+                            nextList.Add(Tuple.Create(item.Item1 + 1, item.Item2));
                         }
-                        newary[i][j] |= (ary[i][j] << 1);
-                        newary[i][j] |= (ary[i][j] >> 1);
-                        if (j != 0)
+                    }
+                    if (item.Item2 > 0)
+                    {
+                        if (!blackTable[item.Item1, item.Item2 - 1])
                         {
-                            newary[i][j] |= ((ulong)1 & (ary[i][j - 1] >> 63));
+                            blackTable[item.Item1, item.Item2 - 1] = true;
+                            nextList.Add(Tuple.Create(item.Item1, item.Item2 - 1));
                         }
-                        if (j != fixW - 1)
+                    }
+                    if (item.Item2 < W - 1)
+                    {
+                        if (!blackTable[item.Item1, item.Item2 + 1])
                         {
-                            newary[i][j] |= (((ulong)1 & (ary[i][j + 1])) << 63);
+                            blackTable[item.Item1, item.Item2 + 1] = true;
+                            nextList.Add(Tuple.Create(item.Item1, item.Item2 + 1));
                         }
                     }
                 }
-                ary = newary;
+                list = nextList;
             }
-            Console.WriteLine(count);
+
+            Console.WriteLine(count - 1);
         }
     }
 }

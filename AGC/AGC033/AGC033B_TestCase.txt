@@ -1,0 +1,26 @@
+[case 1]
+2 3 3
+2 2
+RRL
+LUD
+
+[output]
+YES
+
+[case 2]
+4 3 5
+2 2
+UDRRR
+LLDUD
+
+[output]
+NO
+
+[case 3]
+5 6 11
+2 1
+RLDRRUDDLRL
+URRDRLLDLRD
+
+[output]
+NO
