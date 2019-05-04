@@ -1,0 +1,17 @@
+[case 1]
+aba
+
+[output]
+Second
+
+[case 2]
+abc
+
+[output]
+First
+
+[case 3]
+abcab
+
+[output]
+First
