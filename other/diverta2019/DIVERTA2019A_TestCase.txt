@@ -1,0 +1,11 @@
+[case 1]
+3 2
+
+[output]
+2
+
+[case 2]
+13 3
+
+[output]
+11
