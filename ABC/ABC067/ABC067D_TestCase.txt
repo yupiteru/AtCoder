@@ -1,0 +1,22 @@
+
+[case 0]
+7
+3 6
+1 2
+3 1
+7 4
+5 7
+1 4
+
+[output]
+Fennec
+
+[case 1]
+4
+1 4
+4 2
+2 3
+
+[output]
+Snuke
+
