@@ -1,0 +1,15 @@
+
+[case 0]
+3 1
+ABC
+
+[output]
+aBC
+
+[case 1]
+4 3
+CABA
+
+[output]
+CAbA
+
