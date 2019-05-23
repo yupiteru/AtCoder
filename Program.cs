@@ -11,7 +11,7 @@ namespace AtCoder
     {
         static void Main(string[] args)
         {
-            string TARGET = "AGC019";
+            string TARGET = "ABC123";
 
             var ts = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var item in ts)
