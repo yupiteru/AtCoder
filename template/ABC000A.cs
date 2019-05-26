@@ -72,64 +72,110 @@ namespace Program
             while (tmpb > 0) { var tmp = tmpb; tmpb = tmpa % tmpb; tmpa = tmp; }
             return tmpa;
         }
-        class PriorityQueue<T> where T : IComparable
+        class PQ<T> where T : IComparable
         {
-            private List<T> heap;
-            private Comparison<T> comp;
-            public PriorityQueue(int cap, Comparison<T> comp, bool asc = true) { heap = new List<T>(cap); this.comp = asc ? comp : (x, y) => comp(y, x); }
-            public PriorityQueue(Comparison<T> comp, bool asc = true) { heap = new List<T>(); this.comp = asc ? comp : (x, y) => comp(y, x); }
-            public PriorityQueue(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
-            public PriorityQueue(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
-            public void Push(T val)
+            private List<T> h;
+            private Comparison<T> c;
+            public PQ(int cap, Comparison<T> c, bool asc = true) { h = new List<T>(cap); this.c = asc ? c : (x, y) => c(y, x); }
+            public PQ(Comparison<T> c, bool asc = true) { h = new List<T>(); this.c = asc ? c : (x, y) => c(y, x); }
+            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
+            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public void Push(T v)
             {
-                var idx = heap.Count;
-                heap.Add(val);
-                while (idx > 0)
+                var i = h.Count;
+                h.Add(v);
+                while (i > 0)
                 {
-                    var nidx = (idx - 1) / 2;
-                    if (comp(val, heap[nidx]) >= 0) break;
-                    heap[idx] = heap[nidx];
-                    idx = nidx;
+                    var ni = (i - 1) / 2;
+                    if (c(v, h[ni]) >= 0) break;
+                    h[i] = h[ni]; i = ni;
                 }
-                heap[idx] = val;
+                h[i] = v;
             }
-            public T Peek => heap[0];
-            public int Count => heap.Count;
+            public T Peek => h[0];
+            public int Count => h.Count;
             public T Pop
             {
                 get
                 {
-                    var ret = heap[0];
-                    var val = heap[heap.Count - 1];
-                    heap.RemoveAt(heap.Count - 1);
-                    if (heap.Count == 0) return ret;
-                    var idx = 0;
-                    while (idx * 2 + 1 < heap.Count)
+                    var r = h[0];
+                    var v = h[h.Count - 1];
+                    h.RemoveAt(h.Count - 1);
+                    if (h.Count == 0) return r;
+                    var i = 0;
+                    while (i * 2 + 1 < h.Count)
                     {
-                        var childIdx1 = idx * 2 + 1;
-                        var childIdx2 = idx * 2 + 2;
-                        if (childIdx2 < heap.Count && comp(heap[childIdx1], heap[childIdx2]) > 0) childIdx1 = childIdx2;
-                        if (comp(val, heap[childIdx1]) <= 0) break;
-                        heap[idx] = heap[childIdx1];
-                        idx = childIdx1;
+                        var i1 = i * 2 + 1;
+                        var i2 = i * 2 + 2;
+                        if (i2 < h.Count && c(h[i1], h[i2]) > 0) i1 = i2;
+                        if (c(v, h[i1]) <= 0) break;
+                        h[i] = h[i1]; i = i1;
                     }
-                    heap[idx] = val;
-                    return ret;
+                    h[i] = v;
+                    return r;
                 }
                 private set { }
             }
         }
-        class PriorityQueue<TKey, TValue> where TKey : IComparable
+        class PQ<TKey, TValue> where TKey : IComparable
         {
-            private PriorityQueue<Tuple<TKey, TValue>> queue;
-            public PriorityQueue(int cap, Comparison<TKey> comp, bool asc = true) { queue = new PriorityQueue<Tuple<TKey, TValue>>(cap, (x, y) => comp(x.Item1, y.Item1), asc); }
-            public PriorityQueue(Comparison<TKey> comp, bool asc = true) { queue = new PriorityQueue<Tuple<TKey, TValue>>((x, y) => comp(x.Item1, y.Item1), asc); }
-            public PriorityQueue(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
-            public PriorityQueue(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
-            public void Push(TKey key, TValue val) => queue.Push(Tuple.Create(key, val));
-            public Tuple<TKey, TValue> Peek => queue.Peek;
-            public int Count => queue.Count;
-            public Tuple<TKey, TValue> Pop => queue.Pop;
+            private PQ<Tuple<TKey, TValue>> q;
+            public PQ(int cap, Comparison<TKey> c, bool asc = true) { q = new PQ<Tuple<TKey, TValue>>(cap, (x, y) => c(x.Item1, y.Item1), asc); }
+            public PQ(Comparison<TKey> c, bool asc = true) { q = new PQ<Tuple<TKey, TValue>>((x, y) => c(x.Item1, y.Item1), asc); }
+            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
+            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public void Push(TKey k, TValue v) => q.Push(Tuple.Create(k, v));
+            public Tuple<TKey, TValue> Peek => q.Peek;
+            public int Count => q.Count;
+            public Tuple<TKey, TValue> Pop => q.Pop;
+        }
+        static class Mod
+        {
+            static public long _mod = 1000000007;
+            static public long Add(long x, long y) => (x + y) % _mod;
+            static public long Sub(long x, long y) => (x - y) % _mod;
+            static public long Multi(long x, long y) => (x * y) % _mod;
+            static public long Div(long x, long y) => (x * Inverse(y)) % _mod;
+            static public long Pow(long x, long y)
+            {
+                var a = 1L;
+                while (y != 0)
+                {
+                    if ((y & 1) == 1) a = Mod.Multi(a, x);
+                    x = Mod.Multi(x, x);
+                    y >>= 1;
+                }
+                return a;
+            }
+            static public long Inverse(long x)
+            {
+                var b = _mod;
+                var r = 1L;
+                var u = 0L;
+                while (b > 0L)
+                {
+                    var q = x / b;
+                    var t = u; u = r - q * u; r = t;
+                    t = b; b = x - q * b; x = t;
+                }
+                return r < 0 ? r + _mod : r;
+            }
+            static private List<long> _fact = new List<long>();
+            static private List<long> _ifact = new List<long>();
+            static private void Build(int n)
+            {
+                if (n >= _fact.Count)
+                    for (int i = _fact.Count; i <= n; ++i)
+                        if (i == 0L) { _fact.Add(1); _ifact.Add(1); }
+                        else { _fact.Add(Mod.Multi(_fact[i - 1], i)); _ifact.Add(Mod.Multi(_ifact[i - 1], Mod.Pow(i, _mod - 2))); }
+            }
+            static public long Comb(int n, int k)
+            {
+                Build(n);
+                if (n == 0 && k == 0) return 1;
+                if (n < k || n < 0) return 0;
+                return Mod.Multi(Mod.Multi(_ifact[n - k], _ifact[k]), _fact[n]);
+            }
         }
     }
 }
