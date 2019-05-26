@@ -1,0 +1,13 @@
+
+[case 0]
+A
+
+[output]
+T
+
+[case 1]
+G
+
+[output]
+C
+

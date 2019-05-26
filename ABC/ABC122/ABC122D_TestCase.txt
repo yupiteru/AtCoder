@@ -1,0 +1,19 @@
+
+[case 0]
+3
+
+[output]
+61
+
+[case 1]
+4
+
+[output]
+230
+
+[case 2]
+100
+
+[output]
+388130742
+
