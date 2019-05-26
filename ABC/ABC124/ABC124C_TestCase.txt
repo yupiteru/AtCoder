@@ -1,0 +1,19 @@
+
+[case 0]
+000
+
+[output]
+1
+
+[case 1]
+10010010
+
+[output]
+3
+
+[case 2]
+0
+
+[output]
+0
+
