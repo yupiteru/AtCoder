@@ -15,58 +15,6 @@ namespace Program
             var C = NextInt;
             var l = NextIntList(N);
 
-            var dic = new Dictionary<Tuple<int, int>, int>();
-
-            Func<int, int, int> func = (take, tgt) =>
-            {
-                var key = Tuple.Create(take, tgt);
-                if (dic.ContainsKey(key)) return dic[key];
-
-                var list = new List<int>();
-                var tgtCount = 1;
-                for (int i = 0; i < N; ++i)
-                {
-                    if ((take & 1) == 1)
-                    {
-                        list.Add(l[i]);
-                        tgtCount *= 2;
-                    }
-                    take >>= 1;
-                }
-                if (list.Count == 0) return 100000000;
-                var anstmp = int.MaxValue;
-                var diff = tgt;
-                for (int i = 1; i < tgtCount; ++i)
-                {
-                    var tmp = i;
-                    var lengthTmp = 0;
-                    var anstmptmp = 0;
-                    for (int j = 0; j < list.Count; ++j)
-                    {
-                        if ((tmp & 1) == 1)
-                        {
-                            if (list[j] > 10)
-                            {
-                                if (lengthTmp != 0)
-                                {
-                                    anstmptmp += 10;
-                                }
-                                lengthTmp += list[j];
-                            }
-                        }
-                        tmp >>= 1;
-                    }
-                    if (lengthTmp == 0)
-                    {
-                        lengthTmp = list.Max();
-                    }
-                    anstmptmp += Math.Abs(lengthTmp - tgt);
-                    anstmp = Math.Min(anstmptmp, anstmp);
-                }
-
-                return dic[key] = anstmp;
-            };
-
             var ans = int.MaxValue;
             for (var ai = 1; ai < 256; ++ai)
             {
@@ -76,8 +24,47 @@ namespace Program
                     {
                         if ((ai & bi) == 0 && (ai & ci) == 0 && ((bi & ci) == 0))
                         {
-                            var tmp = func(ai, A) + func(bi, B) + func(ci, C);
-                            ans = Math.Min(ans, tmp);
+                            var atmp = ai;
+                            var btmp = bi;
+                            var ctmp = ci;
+                            var count = 0;
+                            var cost = 0;
+                            var alength = 0;
+                            var blength = 0;
+                            var clength = 0;
+                            for (int i = 0; i < N; ++i)
+                            {
+                                if ((atmp & 1) == 1)
+                                {
+                                    if (count != 0) cost += 10;
+                                    alength += l[i];
+                                    ++count;
+                                }
+                                atmp >>= 1;
+                            }
+                            count = 0;
+                            for (int i = 0; i < N; ++i)
+                            {
+                                if ((btmp & 1) == 1)
+                                {
+                                    if (count != 0) cost += 10;
+                                    blength += l[i];
+                                    ++count;
+                                }
+                                btmp >>= 1;
+                            }
+                            count = 0;
+                            for (int i = 0; i < N; ++i)
+                            {
+                                if ((ctmp & 1) == 1)
+                                {
+                                    if (count != 0) cost += 10;
+                                    clength += l[i];
+                                    ++count;
+                                }
+                                ctmp >>= 1;
+                            }
+                            ans = Math.Min(ans, cost + Math.Abs(alength - A) + Math.Abs(blength - B) + Math.Abs(clength - C));
                         }
                     }
                 }
