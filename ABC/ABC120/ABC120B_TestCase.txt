@@ -1,0 +1,19 @@
+
+[case 0]
+8 12 2
+
+[output]
+2
+
+[case 1]
+100 50 4
+
+[output]
+5
+
+[case 2]
+1 1 1
+
+[output]
+1
+
