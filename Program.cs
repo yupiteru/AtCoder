@@ -11,7 +11,7 @@ namespace AtCoder
     {
         static void Main(string[] args)
         {
-            string TARGET = "ABC118";
+            string TARGET = "ABC128";
 
             var ts = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var item in ts)
@@ -72,7 +72,7 @@ namespace AtCoder
                         var oldOut = Console.Out;
                         Console.SetIn(new StringReader(kv.Value.Item1.ToString()));
                         Console.SetOut(result);
-                        item.GetMethod("Main").Invoke(null, new object[] { new string[0] });
+                        item.GetMethod("Main").Invoke(null, new object[] { new string[] { "debug" } });
                         Console.SetIn(oldIn);
                         Console.SetOut(oldOut);
 

@@ -1,18 +1,29 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Program
 {
     public class ABC000A
     {
-        static public void Main(string[] args)
+        static public void Solve()
         {
 
             Console.WriteLine();
         }
 
+        static public void Main(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false };
+                Console.SetOut(sw);
+            }
+            Solve();
+            Console.Out.Flush();
+        }
         static class Console_
         {
             private static Queue<string> param = new Queue<string>();
