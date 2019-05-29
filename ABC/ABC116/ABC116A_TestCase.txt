@@ -1,0 +1,19 @@
+
+[case 0]
+3 4 5
+
+[output]
+6
+
+[case 1]
+5 12 13
+
+[output]
+30
+
+[case 2]
+45 28 53
+
+[output]
+630
+
