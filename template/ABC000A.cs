@@ -36,10 +36,11 @@ namespace Program
         static int NextInt => int.Parse(Console_.NextString());
         static long NextLong => long.Parse(Console_.NextString());
         static double NextDouble => double.Parse(Console_.NextString());
+        static string NextString => Console_.NextString();
         static List<int> NextIntList(int N) => Enumerable.Repeat(0, N).Select(_ => NextInt).ToList();
         static List<long> NextLongList(int N) => Enumerable.Repeat(0, N).Select(_ => NextLong).ToList();
         static List<double> NextDoubleList(int N) => Enumerable.Repeat(0, N).Select(_ => NextDouble).ToList();
-        static string NextString => Console_.NextString();
+        static List<string> NextStringList(int N) => Enumerable.Repeat(0, N).Select(_ => NextString).ToList();
         static void Sort<T>(List<T> l) where T : IComparable => l.Sort();
         static void RevSort<T>(List<T> l) where T : IComparable => l.Sort((x, y) => y.CompareTo(x));
         static IEnumerable<long> Prime(long x)
