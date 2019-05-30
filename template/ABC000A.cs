@@ -34,19 +34,11 @@ namespace Program
             }
         }
         static int NextInt => int.Parse(Console_.NextString());
-        static List<int> NextIntList(int N)
-        {
-            var ret = new List<int>(N);
-            for (int i = 0; i < N; ++i) ret.Add(NextInt);
-            return ret;
-        }
         static long NextLong => long.Parse(Console_.NextString());
-        static List<long> NextLongList(int N)
-        {
-            var ret = new List<long>(N);
-            for (int i = 0; i < N; ++i) ret.Add(NextLong);
-            return ret;
-        }
+        static double NextDouble => double.Parse(Console_.NextString());
+        static List<int> NextIntList(int N) => Enumerable.Repeat(0, N).Select(_ => NextInt).ToList();
+        static List<long> NextLongList(int N) => Enumerable.Repeat(0, N).Select(_ => NextLong).ToList();
+        static List<double> NextDoubleList(int N) => Enumerable.Repeat(0, N).Select(_ => NextDouble).ToList();
         static string NextString => Console_.NextString();
         static void Sort<T>(List<T> l) where T : IComparable => l.Sort();
         static void RevSort<T>(List<T> l) where T : IComparable => l.Sort((x, y) => y.CompareTo(x));
@@ -79,9 +71,8 @@ namespace Program
         }
         static long GCD(long a, long b)
         {
-            long tmpa = a, tmpb = b;
-            while (tmpb > 0) { var tmp = tmpb; tmpb = tmpa % tmpb; tmpa = tmp; }
-            return tmpa;
+            while (b > 0) { var tmp = b; b = a % b; a = tmp; }
+            return a;
         }
         class PQ<T> where T : IComparable
         {
@@ -105,27 +96,23 @@ namespace Program
             }
             public T Peek => h[0];
             public int Count => h.Count;
-            public T Pop
+            public T Pop()
             {
-                get
+                var r = h[0];
+                var v = h[h.Count - 1];
+                h.RemoveAt(h.Count - 1);
+                if (h.Count == 0) return r;
+                var i = 0;
+                while (i * 2 + 1 < h.Count)
                 {
-                    var r = h[0];
-                    var v = h[h.Count - 1];
-                    h.RemoveAt(h.Count - 1);
-                    if (h.Count == 0) return r;
-                    var i = 0;
-                    while (i * 2 + 1 < h.Count)
-                    {
-                        var i1 = i * 2 + 1;
-                        var i2 = i * 2 + 2;
-                        if (i2 < h.Count && c(h[i1], h[i2]) > 0) i1 = i2;
-                        if (c(v, h[i1]) <= 0) break;
-                        h[i] = h[i1]; i = i1;
-                    }
-                    h[i] = v;
-                    return r;
+                    var i1 = i * 2 + 1;
+                    var i2 = i * 2 + 2;
+                    if (i2 < h.Count && c(h[i1], h[i2]) > 0) i1 = i2;
+                    if (c(v, h[i1]) <= 0) break;
+                    h[i] = h[i1]; i = i1;
                 }
-                private set { }
+                h[i] = v;
+                return r;
             }
         }
         class PQ<TKey, TValue> where TKey : IComparable
@@ -138,55 +125,86 @@ namespace Program
             public void Push(TKey k, TValue v) => q.Push(Tuple.Create(k, v));
             public Tuple<TKey, TValue> Peek => q.Peek;
             public int Count => q.Count;
-            public Tuple<TKey, TValue> Pop => q.Pop;
+            public Tuple<TKey, TValue> Pop() => q.Pop();
         }
-        static class Mod
+        class Mod
         {
             static public long _mod = 1000000007;
-            static public long Add(long x, long y) => (x + y) % _mod;
-            static public long Sub(long x, long y) => (x - y) % _mod;
-            static public long Multi(long x, long y) => (x * y) % _mod;
-            static public long Div(long x, long y) => (x * Inverse(y)) % _mod;
-            static public long Pow(long x, long y)
+            private long _val = 0;
+            public Mod(long x) { _val = x; }
+            static public implicit operator Mod(long x) => new Mod(x);
+            static public explicit operator long(Mod x) => x._val;
+            static public Mod operator +(Mod x) => x._val;
+            static public Mod operator -(Mod x) => -x._val;
+            static public Mod operator ++(Mod x) => ++x._val;
+            static public Mod operator --(Mod x) => --x._val;
+            static public Mod operator +(Mod x, Mod y) => (x._val + y._val) % _mod;
+            static public Mod operator -(Mod x, Mod y) => (x._val - y._val) % _mod;
+            static public Mod operator *(Mod x, Mod y) => (x._val * y._val) % _mod;
+            static public Mod operator /(Mod x, Mod y) => (x._val * Inverse(y._val)) % _mod;
+            static public bool operator ==(Mod x, Mod y) => x._val == y._val;
+            static public bool operator !=(Mod x, Mod y) => x._val != y._val;
+            static public bool operator <(Mod x, Mod y) => x._val < y._val;
+            static public bool operator >(Mod x, Mod y) => x._val > y._val;
+            static public bool operator <=(Mod x, Mod y) => x._val <= y._val;
+            static public bool operator >=(Mod x, Mod y) => x._val >= y._val;
+            static public Mod Pow(Mod x, long y)
             {
-                var a = 1L;
+                Mod a = 1;
                 while (y != 0)
                 {
-                    if ((y & 1) == 1) a = Mod.Multi(a, x);
-                    x = Mod.Multi(x, x);
+                    if ((y & 1) == 1) a *= x;
+                    x *= x;
                     y >>= 1;
                 }
                 return a;
             }
             static public long Inverse(long x)
             {
-                var b = _mod;
-                var r = 1L;
-                var u = 0L;
-                while (b > 0L)
+                long b = _mod, r = 1, u = 0, t = 0;
+                while (b > 0)
                 {
                     var q = x / b;
-                    var t = u; u = r - q * u; r = t;
+                    t = u; u = r - q * u; r = t;
                     t = b; b = x - q * b; x = t;
                 }
                 return r < 0 ? r + _mod : r;
             }
-            static private List<long> _fact = new List<long>();
-            static private List<long> _ifact = new List<long>();
+            override public bool Equals(object obj) => obj == null ? false : _val == ((Mod)obj)._val;
+            public bool Equals(Mod obj) => obj == null ? false : _val == obj._val;
+            public override int GetHashCode() => _val.GetHashCode();
+            public override string ToString() => _val.ToString();
+            static private List<Mod> _fact = new List<Mod>();
+            static private List<Mod> _ifact = new List<Mod>();
             static private void Build(int n)
             {
                 if (n >= _fact.Count)
                     for (int i = _fact.Count; i <= n; ++i)
                         if (i == 0L) { _fact.Add(1); _ifact.Add(1); }
-                        else { _fact.Add(Mod.Multi(_fact[i - 1], i)); _ifact.Add(Mod.Multi(_ifact[i - 1], Mod.Pow(i, _mod - 2))); }
+                        else { _fact.Add(_fact[i - 1] * i); _ifact.Add(_ifact[i - 1] * Mod.Pow(i, _mod - 2)); }
             }
-            static public long Comb(int n, int k)
+            static public Mod Comb(int n, int k)
             {
                 Build(n);
                 if (n == 0 && k == 0) return 1;
                 if (n < k || n < 0) return 0;
-                return Mod.Multi(Mod.Multi(_ifact[n - k], _ifact[k]), _fact[n]);
+                return _ifact[n - k] * _ifact[k] * _fact[n];
             }
+        }
+        static private List<long> _fact = new List<long>();
+        static private void Build(int n)
+        {
+            if (n >= _fact.Count)
+                for (int i = _fact.Count; i <= n; ++i)
+                    if (i == 0L) _fact.Add(1);
+                    else _fact.Add(_fact[i - 1] * i);
+        }
+        static public long Comb(int n, int k)
+        {
+            Build(n);
+            if (n == 0 && k == 0) return 1;
+            if (n < k || n < 0) return 0;
+            return _fact[n] / _fact[k] / _fact[n - k];
         }
     }
 }
