@@ -140,7 +140,7 @@ namespace Program
             static public Mod operator ++(Mod x) => x._val + 1;
             static public Mod operator --(Mod x) => x._val - 1;
             static public Mod operator +(Mod x, Mod y) => (x._val + y._val) % _mod;
-            static public Mod operator -(Mod x, Mod y) => (x._val - y._val) % _mod;
+            static public Mod operator -(Mod x, Mod y) => ((((x._val - y._val) % _mod) + _mod) % _mod);
             static public Mod operator *(Mod x, Mod y) => (x._val * y._val) % _mod;
             static public Mod operator /(Mod x, Mod y) => (x._val * Inverse(y._val)) % _mod;
             static public bool operator ==(Mod x, Mod y) => x._val == y._val;
