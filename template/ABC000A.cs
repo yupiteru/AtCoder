@@ -24,6 +24,7 @@ namespace Program
             Solve();
             Console.Out.Flush();
         }
+        static Random rand = new Random();
         static class Console_
         {
             private static Queue<string> param = new Queue<string>();
@@ -41,8 +42,22 @@ namespace Program
         static List<long> NextLongList(int N) => Enumerable.Repeat(0, N).Select(_ => NextLong).ToList();
         static List<double> NextDoubleList(int N) => Enumerable.Repeat(0, N).Select(_ => NextDouble).ToList();
         static List<string> NextStringList(int N) => Enumerable.Repeat(0, N).Select(_ => NextString).ToList();
-        static void Sort<T>(List<T> l) where T : IComparable => l.Sort();
-        static void RevSort<T>(List<T> l) where T : IComparable => l.Sort((x, y) => y.CompareTo(x));
+        static List<T> Sort<T>(List<T> l) where T : IComparable
+        {
+            var tmp = l.ToArray(); Array.Sort(tmp); return tmp.ToList();
+        }
+        static List<T> Sort<T>(List<T> l, Comparison<T> comp) where T : IComparable
+        {
+            var tmp = l.ToArray(); Array.Sort(tmp, comp); return tmp.ToList();
+        }
+        static List<T> RevSort<T>(List<T> l) where T : IComparable
+        {
+            var tmp = l.ToArray(); Array.Sort(tmp, (x, y) => y.CompareTo(x)); return tmp.ToList();
+        }
+        static List<T> RevSort<T>(List<T> l, Comparison<T> comp) where T : IComparable
+        {
+            var tmp = l.ToArray(); Array.Sort(tmp, (x, y) => comp(y, x)); return tmp.ToList();
+        }
         static IEnumerable<long> Prime(long x)
         {
             if (x < 2) yield break;
