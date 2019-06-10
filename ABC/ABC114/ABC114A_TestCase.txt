@@ -1,0 +1,13 @@
+
+[case 0]
+5
+
+[output]
+YES
+
+[case 1]
+6
+
+[output]
+NO
+
