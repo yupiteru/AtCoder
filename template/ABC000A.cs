@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using static System.Math;
 using System.Text;
 
 namespace Program
 {
-    public class ABC000A
+    public static class ABC000A
     {
         static public void Solve()
         {
@@ -42,6 +43,8 @@ namespace Program
         static List<long> NextLongList(int N) => Enumerable.Repeat(0, N).Select(_ => NextLong).ToList();
         static List<double> NextDoubleList(int N) => Enumerable.Repeat(0, N).Select(_ => NextDouble).ToList();
         static List<string> NextStringList(int N) => Enumerable.Repeat(0, N).Select(_ => NextString).ToList();
+        static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
+        static IEnumerable<T> Repeat<T>(T v, int n) => Enumerable.Repeat<T>(v, n);
         static List<T> Sort<T>(List<T> l) where T : IComparable
         {
             var tmp = l.ToArray(); Array.Sort(tmp); return tmp.ToList();
@@ -72,13 +75,13 @@ namespace Program
                 yield return add;
                 for (long j = 2 * i * (i + 1); j <= halfx; j += add) table[j] = true;
             }
-            for (long i = max + 1; i <= halfx; ++i) if (!table[i]) yield return 2 * i + 1;
+            for (long i = max + 1; i <= halfx; ++i) if (!table[i] && 2 * i + 1 <= x) yield return 2 * i + 1;
         }
         static IEnumerable<long> Divisor(long x)
         {
             if (x < 1) yield break;
             var max = (long)Math.Sqrt(x);
-            for (long i = 1; i < max; ++i)
+            for (long i = 1; i <= max; ++i)
             {
                 if (x % i != 0) continue;
                 yield return i;
