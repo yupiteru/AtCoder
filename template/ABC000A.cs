@@ -150,7 +150,7 @@ namespace Program
         {
             static public long _mod = 1000000007;
             private long _val = 0;
-            public Mod(long x) { _val = x; }
+            public Mod(long x) { _val = x % _mod; }
             static public implicit operator Mod(long x) => new Mod(x);
             static public explicit operator long(Mod x) => x._val;
             static public Mod operator +(Mod x) => x._val;
@@ -210,17 +210,89 @@ namespace Program
                 return _ifact[n - k] * _ifact[k] * _fact[n];
             }
         }
-        static private List<long> _fact = new List<long>();
-        static private void Build(int n)
+        class Mat<T>
+        {
+            private T[,] m;
+            public Mat(T[,] v) { m = (T[,])v.Clone(); }
+            static public implicit operator Mat<T>(T[,] v) => new Mat<T>(v);
+            public T this[int r, int c] { get { return m[r, c]; } set { m[r, c] = value; } }
+            static public Mat<T> operator +(Mat<T> a, T x)
+            {
+                var tm = (T[,])a.m.Clone();
+                for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)x;
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> operator +(Mat<T> a, Mat<T> b)
+            {
+                var tm = (T[,])a.m.Clone();
+                for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)b[r, c];
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> operator -(Mat<T> a, T x)
+            {
+                var tm = (T[,])a.m.Clone();
+                for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)x;
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> operator -(Mat<T> a, Mat<T> b)
+            {
+                var tm = (T[,])a.m.Clone();
+                for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)b[r, c];
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> operator *(Mat<T> a, T x)
+            {
+                var tm = (T[,])a.m.Clone();
+                for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] *= (dynamic)x;
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> operator *(Mat<T> a, Mat<T> b)
+            {
+                var nr = a.m.GetLength(0);
+                var nc = b.m.GetLength(1);
+                var tm = new T[nr, nc];
+                for (int i = 0; i < nr; ++i) for (int j = 0; j < nc; ++j) tm[i, j] = (dynamic)0;
+                for (int r = 0; r < nr; ++r) for (int c = 0; c < nc; ++c) for (int i = 0; i < a.m.GetLength(1); ++i) tm[r, c] += a[r, i] * (dynamic)b[i, c];
+                return new Mat<T>(tm);
+            }
+            static public Mat<T> Pow(Mat<T> x, long y)
+            {
+                var n = x.m.GetLength(0);
+                var t = (Mat<T>)new T[n, n];
+                for (int i = 0; i < n; ++i) for (int j = 0; j < n; ++j) t[i, j] = (dynamic)(i == j ? 1 : 0);
+                while (y != 0)
+                {
+                    if ((y & 1) == 1) t *= x;
+                    x *= x;
+                    y >>= 1;
+                }
+                return t;
+            }
+        }
+        static Mat<T> Pow<T>(Mat<T> x, long y) => Mat<T>.Pow(x, y);
+        static Mod Pow(Mod x, long y) => Mod.Pow(x, y);
+        static long Pow(long x, long y)
+        {
+            long a = 1;
+            while (y != 0)
+            {
+                if ((y & 1) == 1) a *= x;
+                x *= x;
+                y >>= 1;
+            }
+            return a;
+        }
+        static List<long> _fact = new List<long>();
+        static void _Build(int n)
         {
             if (n >= _fact.Count)
                 for (int i = _fact.Count; i <= n; ++i)
                     if (i == 0L) _fact.Add(1);
                     else _fact.Add(_fact[i - 1] * i);
         }
-        static public long Comb(int n, int k)
+        static long Comb(int n, int k)
         {
-            Build(n);
+            _Build(n);
             if (n == 0 && k == 0) return 1;
             if (n < k || n < 0) return 0;
             return _fact[n] / _fact[k] / _fact[n - k];

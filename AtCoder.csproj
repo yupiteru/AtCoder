@@ -5,5 +5,9 @@
     <TargetFramework>net461</TargetFramework>
     <StartupObject>AtCoder.Program</StartupObject>
   </PropertyGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp">
+      <Version>4.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
 </Project>
