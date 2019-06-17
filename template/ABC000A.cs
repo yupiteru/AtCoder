@@ -52,7 +52,7 @@ namespace Program
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<T> Repeat<T>(T v, int n) => Enumerable.Repeat<T>(v, n);
+        static IEnumerable<T> Repeat<T>(T v, long n) => Enumerable.Repeat<T>(v, (int)n);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static List<T> Sort<T>(List<T> l) where T : IComparable
         {
