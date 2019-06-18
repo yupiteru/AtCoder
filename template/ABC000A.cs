@@ -13,7 +13,6 @@ namespace Program
         static public void Solve()
         {
 
-            Console.WriteLine();
         }
 
         static public void Main(string[] args)
