@@ -41,13 +41,13 @@ namespace Program
         static double NextDouble => double.Parse(Console_.NextString());
         static string NextString => Console_.NextString();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<int> NextIntList(int N) => Enumerable.Repeat(0, N).Select(_ => NextInt).ToList();
+        static List<int> NextIntList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextInt).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<long> NextLongList(int N) => Enumerable.Repeat(0, N).Select(_ => NextLong).ToList();
+        static List<long> NextLongList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextLong).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<double> NextDoubleList(int N) => Enumerable.Repeat(0, N).Select(_ => NextDouble).ToList();
+        static List<double> NextDoubleList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextDouble).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<string> NextStringList(int N) => Enumerable.Repeat(0, N).Select(_ => NextString).ToList();
+        static List<string> NextStringList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextString).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
