@@ -189,15 +189,7 @@ namespace Program
             public Mod(long x) { if (x < _mod && x >= 0) _val = x; else if ((_val = x % _mod) < 0) _val += _mod; }
             static public implicit operator Mod(long x) => new Mod(x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public explicit operator long(Mod x) => x._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator +(Mod x) => x._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator -(Mod x) => -x._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator ++(Mod x) => x._val + 1;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator --(Mod x) => x._val - 1;
+            static public implicit operator long(Mod x) => x._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator +(Mod x, Mod y) => x._val + y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -210,12 +202,6 @@ namespace Program
             static public Mod operator -(Mod x, long y) => x._val - y;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator -(long x, Mod y) => x - y._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator *(Mod x, Mod y) => x._val * y._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator *(Mod x, long y) => x._val * y;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator *(long x, Mod y) => x * y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator /(Mod x, Mod y) => x._val * Inverse(y._val);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -265,14 +251,11 @@ namespace Program
             public override int GetHashCode() => _val.GetHashCode();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override string ToString() => _val.ToString();
-            static private List<Mod> _fact = new List<Mod>();
-            static private List<Mod> _ifact = new List<Mod>();
+            static private List<Mod> _fact = new List<Mod>() { 1 };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static private void Build(int n)
             {
-                if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i)
-                        if (i == 0L) { _fact.Add(1); _ifact.Add(1); }
-                        else { _fact.Add(_fact[i - 1] * i); _ifact.Add(_ifact[i - 1] * Mod.Pow(i, _mod - 2)); }
+                if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod Comb(int n, int k)
@@ -280,7 +263,7 @@ namespace Program
                 Build(n);
                 if (n == 0 && k == 0) return 1;
                 if (n < k || n < 0) return 0;
-                return _ifact[n - k] * _ifact[k] * _fact[n];
+                return _fact[n] / _fact[n - k] / _fact[k];
             }
         }
         class Mat<T>
@@ -364,13 +347,11 @@ namespace Program
             }
             return a;
         }
-        static List<long> _fact = new List<long>();
+        static List<long> _fact = new List<long>() { 1 };
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void _Build(int n)
         {
-            if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i)
-                    if (i == 0L) _fact.Add(1);
-                    else _fact.Add(_fact[i - 1] * i);
+            if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long Comb(int n, int k)
