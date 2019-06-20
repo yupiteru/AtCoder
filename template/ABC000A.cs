@@ -12,7 +12,7 @@ namespace Program
     {
         static public void Solve()
         {
-
+            
         }
 
         static public void Main(string[] args)
@@ -73,7 +73,7 @@ namespace Program
             var tmp = l.ToArray(); Array.Sort(tmp, (x, y) => comp(y, x)); return tmp.ToList();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<long> Prime(long x)
+        static IEnumerable<long> Primes(long x)
         {
             if (x < 2) yield break;
             yield return 2;
@@ -88,6 +88,15 @@ namespace Program
                 for (long j = 2 * i * (i + 1); j <= halfx; j += add) table[j] = true;
             }
             for (long i = max + 1; i <= halfx; ++i) if (!table[i] && 2 * i + 1 <= x) yield return 2 * i + 1;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static IEnumerable<long> Factors(long x)
+        {
+            if (x < 2) yield break;
+            while (x % 2 == 0) { x /= 2; yield return 2; }
+            var max = (long)Math.Sqrt(x);
+            for (long i = 3; i <= max; i += 2) while (x % i == 0) { x /= i; yield return i; }
+            if (x != 1) yield return x;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<long> Divisor(long x)
@@ -177,27 +186,42 @@ namespace Program
             static public long _mod = 1000000007;
             private long _val = 0;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Mod() { }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Mod(long x) { if (x < _mod && x >= 0) _val = x; else if ((_val = x % _mod) < 0) _val += _mod; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public implicit operator Mod(long x) => new Mod(x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public implicit operator long(Mod x) => x._val;
+            static public explicit operator long(Mod x) => x._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator +(Mod x, Mod y) { var t = x._val + y._val; return new Mod() { _val = t < _mod ? t : t - _mod }; }
+            static public Mod operator +(Mod x) => x._val;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator -(Mod x) => -x._val;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator ++(Mod x) => x._val + 1;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator --(Mod x) => x._val - 1;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator +(Mod x, Mod y) => x._val + y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator +(Mod x, long y) => x._val + y;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator +(long x, Mod y) => x + y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator -(Mod x, Mod y) { var t = x._val - y._val; return new Mod() { _val = t < _mod ? t : t - _mod }; }
+            static public Mod operator -(Mod x, Mod y) => x._val - y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator -(Mod x, long y) => x._val - y;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator -(long x, Mod y) => x - y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator *(Mod x, Mod y) => x._val * y._val;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator *(Mod x, long y) => x._val * y;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator *(long x, Mod y) => x * y._val;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator /(Mod x, Mod y) => x._val * Inverse(y._val);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator /(Mod x, long y) => x._val * Inverse(y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public Mod operator /(long x, Mod y) => x * Inverse(y._val);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public bool operator ==(Mod x, Mod y) => x._val == y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
