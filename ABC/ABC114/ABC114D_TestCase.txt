@@ -1,0 +1,19 @@
+
+[case 0]
+9
+
+[output]
+0
+
+[case 1]
+10
+
+[output]
+1
+
+[case 2]
+100
+
+[output]
+543
+
