@@ -1,0 +1,25 @@
+
+[case 0]
+3 2
+
+[output]
+9
+
+[case 1]
+5 3
+
+[output]
+1
+
+[case 2]
+31415 9265
+
+[output]
+27
+
+[case 3]
+35897 932
+
+[output]
+114191
+
