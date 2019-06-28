@@ -28,22 +28,21 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static string NextString() { if (param.Count == 0) foreach (var item in Console.ReadLine().Split(' ')) param.Enqueue(item); return param.Dequeue(); }
         }
-        static int NextInt => int.Parse(Console_.NextString());
-        static long NextLong => long.Parse(Console_.NextString());
-        static double NextDouble => double.Parse(Console_.NextString());
-        static string NextString => Console_.NextString();
+        static long NN => long.Parse(Console_.NextString());
+        static double ND => double.Parse(Console_.NextString());
+        static string NS => Console_.NextString();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<int> NextIntList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextInt).ToList();
+        static List<long> NNList(long N) => Repeat(0, N).Select(_ => NN).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<long> NextLongList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextLong).ToList();
+        static List<double> NDList(long N) => Repeat(0, N).Select(_ => ND).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<double> NextDoubleList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextDouble).ToList();
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<string> NextStringList(long N) => Enumerable.Repeat(0, (int)N).Select(_ => NextString).ToList();
+        static List<string> NSList(long N) => Repeat(0, N).Select(_ => NS).ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> Repeat<T>(T v, long n) => Enumerable.Repeat<T>(v, (int)n);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static IEnumerable<int> Range(long s, long c) => Enumerable.Range((int)s, (int)c);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static List<T> Sort<T>(List<T> l) where T : IComparable { var tmp = l.ToArray(); Array.Sort(tmp); return tmp.ToList(); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,6 +59,7 @@ namespace Program
         static IEnumerable<long> Divisor(long x) { if (x < 1) yield break; var max = (long)Math.Sqrt(x); for (long i = 1; i <= max; ++i) { if (x % i != 0) continue; yield return i; if (i != x / i) yield return x / i; } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long GCD(long a, long b) { while (b > 0) { var tmp = b; b = a % b; a = tmp; } return a; }
+        static long LCM(long a, long b) => a * b / GCD(a, b);
         class PQ<T> where T : IComparable
         {
             private List<T> h;
@@ -97,10 +97,10 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tuple<TKey, TValue> Pop() => q.Pop();
         }
-        class Mod
+        struct Mod : IEquatable<object>
         {
             static public long _mod = 1000000007;
-            private long _val = 0;
+            private long _val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Mod(long x) { if (x < _mod && x >= 0) _val = x; else if ((_val = x % _mod) < 0) _val += _mod; }
             static public implicit operator Mod(long x) => new Mod(x);
@@ -109,39 +109,21 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator +(Mod x, Mod y) => x._val + y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator +(Mod x, long y) => x._val + y;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator +(long x, Mod y) => x + y._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator -(Mod x, Mod y) => x._val - y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator -(Mod x, long y) => x._val - y;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator -(long x, Mod y) => x - y._val;
+            static public Mod operator *(Mod x, Mod y) => x._val * y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator /(Mod x, Mod y) => x._val * Inverse(y._val);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator /(Mod x, long y) => x._val * Inverse(y);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator /(long x, Mod y) => x * Inverse(y._val);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public bool operator ==(Mod x, Mod y) => x._val == y._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public bool operator ==(Mod x, long y) => x._val == y;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public bool operator ==(long x, Mod y) => x == y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public bool operator !=(Mod x, Mod y) => x._val != y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public bool operator !=(Mod x, long y) => x._val != y;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public bool operator !=(long x, Mod y) => x != y._val;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod Pow(Mod x, long y) { Mod a = 1; while (y != 0) { if ((y & 1) == 1) a *= x; x *= x; y >>= 1; } return a; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public long Inverse(long x) { long b = _mod, r = 1, u = 0, t = 0; while (b > 0) { var q = x / b; t = u; u = r - q * u; r = t; t = b; b = x - q * b; x = t; } return r < 0 ? r + _mod : r; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            override public bool Equals(object obj) => obj == null ? false : _val == ((Mod)obj)._val;
+            bool IEquatable<object>.Equals(object obj) => obj == null ? false : Equals((Mod)obj);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override bool Equals(object obj) => obj == null ? false : Equals((Mod)obj);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(Mod obj) => obj == null ? false : _val == obj._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -150,11 +132,11 @@ namespace Program
             public override string ToString() => _val.ToString();
             static private List<Mod> _fact = new List<Mod>() { 1 };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static private void Build(int n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
+            static private void Build(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod Comb(int n, int k) { Build(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[n] / _fact[n - k] / _fact[k]; }
+            static public Mod Comb(long n, long k) { Build(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
         }
-        class Mat<T>
+        struct Mat<T>
         {
             private T[,] m;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -163,30 +145,28 @@ namespace Program
             static public implicit operator Mat<T>(T[,] v) => new Mat<T>(v);
             public T this[int r, int c] { get { return m[r, c]; } set { m[r, c] = value; } }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator +(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)x; return new Mat<T>(tm); }
+            static public Mat<T> operator +(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)x; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator +(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)b[r, c]; return new Mat<T>(tm); }
+            static public Mat<T> operator +(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)b[r, c]; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator -(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)x; return new Mat<T>(tm); }
+            static public Mat<T> operator -(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)x; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator -(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)b[r, c]; return new Mat<T>(tm); }
+            static public Mat<T> operator -(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)b[r, c]; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator *(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] *= (dynamic)x; return new Mat<T>(tm); }
+            static public Mat<T> operator *(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] *= (dynamic)x; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mat<T> operator *(Mat<T> a, Mat<T> b) { var nr = a.m.GetLength(0); var nc = b.m.GetLength(1); var tm = new T[nr, nc]; for (int i = 0; i < nr; ++i) for (int j = 0; j < nc; ++j) tm[i, j] = (dynamic)0; for (int r = 0; r < nr; ++r) for (int c = 0; c < nc; ++c) for (int i = 0; i < a.m.GetLength(1); ++i) tm[r, c] += a[r, i] * (dynamic)b[i, c]; return new Mat<T>(tm); }
+            static public Mat<T> operator *(Mat<T> a, Mat<T> b) { var nr = a.m.GetLength(0); var nc = b.m.GetLength(1); var tm = new T[nr, nc]; for (int i = 0; i < nr; ++i) for (int j = 0; j < nc; ++j) tm[i, j] = (dynamic)0; for (int r = 0; r < nr; ++r) for (int c = 0; c < nc; ++c) for (int i = 0; i < a.m.GetLength(1); ++i) tm[r, c] += a[r, i] * (dynamic)b[i, c]; return tm; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mat<T> Pow(Mat<T> x, long y) { var n = x.m.GetLength(0); var t = (Mat<T>)new T[n, n]; for (int i = 0; i < n; ++i) for (int j = 0; j < n; ++j) t[i, j] = (dynamic)(i == j ? 1 : 0); while (y != 0) { if ((y & 1) == 1) t *= x; x *= x; y >>= 1; } return t; }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Mat<T> Pow<T>(Mat<T> x, long y) => Mat<T>.Pow(x, y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Mod Pow(Mod x, long y) => Mod.Pow(x, y);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long Pow(long x, long y) { long a = 1; while (y != 0) { if ((y & 1) == 1) a *= x; x *= x; y >>= 1; } return a; }
+        static T Pow<T>(T x, long y) { T a = (dynamic)1; while (y != 0) { if ((y & 1) == 1) a *= (dynamic)x; x *= (dynamic)x; y >>= 1; } return a; }
         static List<long> _fact = new List<long>() { 1 };
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void _Build(int n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
+        static void _Build(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long Comb(int n, int k) { _Build(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[n] / _fact[k] / _fact[n - k]; }
+        static long Comb(long n, long k) { _Build(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
     }
 }
