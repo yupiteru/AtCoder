@@ -1,0 +1,19 @@
+
+[case 0]
+11
+
+[output]
+Yes
+
+[case 1]
+40
+
+[output]
+Yes
+
+[case 2]
+3
+
+[output]
+No
+
