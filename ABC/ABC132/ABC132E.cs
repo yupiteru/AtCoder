@@ -14,82 +14,40 @@ namespace Program
         {
             var N = NN;
             var M = NN;
-            var uv = Repeat(0, M).Select(_ => new { u = NN, v = NN }).ToList();
+            var uv = Repeat(0, M).Select(_ => new { u = NN - 1, v = NN - 1 }).ToList();
             var S = NN - 1;
             var T = NN - 1;
 
-            var done = new bool[N];
-            var path = Repeat(0, N).Select(_ => new List<int>()).ToList();
+            var path = Repeat(0, N * 3).Select(_ => new List<long>()).ToArray();
             foreach (var item in uv)
             {
-                path[(int)item.u - 1].Add((int)item.v - 1);
+                path[item.u].Add(item.v + N);
+                path[item.u + N].Add(item.v + N + N);
+                path[item.u + N + N].Add(item.v);
             }
-            var revpath = Repeat(0, N).Select(_ => new List<int>()).ToList();
-            foreach (var item in uv)
-            {
-                revpath[(int)item.v - 1].Add((int)item.u - 1);
-            }
-            var kariq = new Queue<int>();
-            kariq.Enqueue((int)T);
-            var toT = new bool[N];
-            toT[T] = true;
-            while (kariq.Count > 0)
-            {
-                var x = kariq.Dequeue();
-                foreach (var item in revpath[x])
-                {
-                    if (toT[item]) continue;
-                    toT[item] = true;
-                    kariq.Enqueue(item);
-                }
-            }
-            if (!toT[S])
-            {
-                Console.WriteLine(-1);
-                return;
-            }
-
-            var q = new HashSet<int>();
-            q.Add((int)S);
+            var done = new bool[3 * N];
             done[S] = true;
-            var kenpaCnt = 0;
+            var dist = new int[3 * N];
+            var q = new Queue<long>();
+            q.Enqueue(S);
             while (q.Count > 0)
             {
-                for (var i = 0; i < 3; i++)
-                {
-                    var nq = new HashSet<int>();
-                    foreach (var item in q)
-                    {
-                        foreach (var item2 in path[item])
-                        {
-                            if (!toT[item2]) continue;
-                            nq.Add(item2);
-                        }
-                    }
-                    q = nq;
-                }
-                kenpaCnt++;
-                var nextq = new HashSet<int>();
-                foreach (var item in q)
+                var v = q.Dequeue();
+                foreach (var item in path[v])
                 {
                     if (done[item]) continue;
                     done[item] = true;
-                    nextq.Add(item);
-                }
-                q = nextq;
-                if (done[T])
-                {
-                    break;
+                    dist[item] = dist[v] + 1;
+                    q.Enqueue(item);
                 }
             }
             if (done[T])
             {
-                Console.WriteLine(kenpaCnt);
+                Console.WriteLine(dist[T] / 3);
             }
             else
             {
                 Console.WriteLine(-1);
-
             }
         }
 
