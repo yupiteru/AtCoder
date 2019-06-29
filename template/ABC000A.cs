@@ -32,11 +32,11 @@ namespace Program
         static double ND => double.Parse(Console_.NextString());
         static string NS => Console_.NextString();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<long> NNList(long N) => Repeat(0, N).Select(_ => NN).ToList();
+        static long[] NNList(long N) => Repeat(0, N).Select(_ => NN).ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<double> NDList(long N) => Repeat(0, N).Select(_ => ND).ToList();
+        static double[] NDList(long N) => Repeat(0, N).Select(_ => ND).ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<string> NSList(long N) => Repeat(0, N).Select(_ => NS).ToList();
+        static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,13 +44,9 @@ namespace Program
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<int> Range(long s, long c) => Enumerable.Range((int)s, (int)c);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<T> Sort<T>(List<T> l) where T : IComparable { var tmp = l.ToArray(); Array.Sort(tmp); return tmp.ToList(); }
+        static void RevSort<T>(T[] l) where T : IComparable { Array.Sort(l, (x, y) => y.CompareTo(x)); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<T> Sort<T>(List<T> l, Comparison<T> comp) where T : IComparable { var tmp = l.ToArray(); Array.Sort(tmp, comp); return tmp.ToList(); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<T> RevSort<T>(List<T> l) where T : IComparable { var tmp = l.ToArray(); Array.Sort(tmp, (x, y) => y.CompareTo(x)); return tmp.ToList(); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<T> RevSort<T>(List<T> l, Comparison<T> comp) where T : IComparable { var tmp = l.ToArray(); Array.Sort(tmp, (x, y) => comp(y, x)); return tmp.ToList(); }
+        static void RevSort<T>(T[] l, Comparison<T> comp) where T : IComparable { Array.Sort(l, (x, y) => comp(y, x)); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<long> Primes(long x) { if (x < 2) yield break; yield return 2; var halfx = x / 2; var table = new bool[halfx + 1]; var max = (long)(Math.Sqrt(x) / 2); for (long i = 1; i <= max; ++i) { if (table[i]) continue; var add = 2 * i + 1; yield return add; for (long j = 2 * i * (i + 1); j <= halfx; j += add) table[j] = true; } for (long i = max + 1; i <= halfx; ++i) if (!table[i] && 2 * i + 1 <= x) yield return 2 * i + 1; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
