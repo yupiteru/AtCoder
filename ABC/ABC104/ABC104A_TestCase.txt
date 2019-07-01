@@ -1,0 +1,19 @@
+
+[case 0]
+1199
+
+[output]
+ABC
+
+[case 1]
+1200
+
+[output]
+ARC
+
+[case 2]
+4208
+
+[output]
+AGC
+
