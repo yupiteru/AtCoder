@@ -15,6 +15,294 @@ namespace Program
 
         }
 
+        //_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        //                    TEST                    _/
+        //_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        class BT<T> where T : IComparable
+        {
+            private class Node
+            {
+                public Node left;
+                public Node right;
+                public T val;
+                public bool isBlack;
+            }
+            private Comparison<T> c;
+            private Node root;
+            private bool change;
+            public BT(Comparison<T> _c) { c = _c; }
+            public BT() : this((x, y) => x.CompareTo(y)) { }
+            private bool Red(Node n) => n != null && !n.isBlack;
+            private bool Black(Node n) => n != null && n.isBlack;
+            private Node RotateL(Node n)
+            {
+                Node m = n.right, t = m.left;
+                m.left = n; n.right = t;
+                return m;
+            }
+            private Node RotateR(Node n)
+            {
+                Node m = n.left, t = m.right;
+                m.right = n; n.left = t;
+                return m;
+            }
+            private Node RotateLR(Node n)
+            {
+                n.left = RotateL(n.left);
+                return RotateR(n);
+            }
+            private Node RotateRL(Node n)
+            {
+                n.right = RotateR(n.right);
+                return RotateL(n);
+            }
+            public void Add(T x)
+            {
+                root = Add(root, x);
+                root.isBlack = true;
+            }
+            private Node Add(Node n, T x)
+            {
+                if (n == null)
+                {
+                    change = true;
+                    return new Node() { val = x };
+                }
+                var r = c(x, n.val);
+                if (r < 0)
+                {
+                    n.left = Add(n.left, x);
+                    return Balance(n);
+                }
+                if (r > 0)
+                {
+                    n.right = Add(n.right, x);
+                    return Balance(n);
+                }
+                change = false;
+                return n;
+            }
+
+            private Node Balance(Node n)
+            {
+                if (!change) return n;
+                if (!Black(n)) return n;
+                if (Red(n.left) && Red(n.left.left))
+                {
+                    n = RotateR(n);
+                    n.left.isBlack = true;
+                }
+                else if (Red(n.left) && Red(n.left.right))
+                {
+                    n = RotateLR(n);
+                    n.left.isBlack = true;
+                }
+                else if (Red(n.right) && Red(n.right.left))
+                {
+                    n = RotateRL(n);
+                    n.right.isBlack = true;
+                }
+                else if (Red(n.right) && Red(n.right.right))
+                {
+                    n = RotateL(n);
+                    n.right.isBlack = true;
+                }
+                else
+                {
+                    change = false;
+                }
+                return n;
+            }
+
+            public void Remove(T x)
+            {
+                root = Remove(root, x);
+                if (root != null) root.isBlack = true;
+            }
+            private Node Remove(Node n, T x)
+            {
+                if (n == null)
+                {
+                    change = false;
+                    return n;
+                }
+                var r = c(x, n.val);
+                if (r < 0)
+                {
+                    n.left = Remove(n.left, x);
+                    return BalanceL(n);
+                }
+                if (r > 0)
+                {
+                    n.right = Remove(n.right, x);
+                    return BalanceR(n);
+                }
+                if (n.left == null)
+                {
+                    change = n.isBlack;
+                    return n.right;
+                }
+                n.left = RemoveMax(n.left);
+                n.val = lmax;
+                return BalanceL(n);
+            }
+            private T lmax;
+            private Node RemoveMax(Node n)
+            {
+                if (n.right != null)
+                {
+                    n.right = RemoveMax(n.right);
+                    return BalanceR(n);
+                }
+                lmax = n.val;
+                change = n.isBlack;
+                return n.left;
+            }
+            private Node BalanceL(Node n)
+            {
+                if (!change) return n;
+                if (Black(n.right) && Red(n.right.left))
+                {
+                    var b = n.isBlack;
+                    n = RotateRL(n);
+                    n.isBlack = b;
+                    n.left.isBlack = true;
+                    change = false;
+                }
+                else if (Black(n.right) && Red(n.right.right))
+                {
+                    var b = n.isBlack;
+                    n = RotateL(n);
+                    n.isBlack = b;
+                    n.right.isBlack = true;
+                    n.left.isBlack = true;
+                    change = false;
+                }
+                else if (Black(n.right))
+                {
+                    change = n.isBlack;
+                    n.isBlack = true;
+                    n.right.isBlack = false;
+                }
+                else
+                {
+                    n = RotateL(n);
+                    n.isBlack = true;
+                    n.left.isBlack = false;
+                    n.left = BalanceL(n.left);
+                    change = false;
+                }
+                return n;
+            }
+            private Node BalanceR(Node n)
+            {
+                if (!change) return n;
+                if (Black(n.left) && Red(n.left.right))
+                {
+                    var b = n.isBlack;
+                    n = RotateLR(n);
+                    n.isBlack = b;
+                    n.right.isBlack = true;
+                    change = false;
+                }
+                else if (Black(n.left) && Red(n.left.left))
+                {
+                    var b = n.isBlack;
+                    n = RotateR(n);
+                    n.isBlack = b;
+                    n.left.isBlack = true;
+                    n.right.isBlack = true;
+                    change = false;
+                }
+                else if (Black(n.left))
+                {
+                    change = n.isBlack;
+                    n.isBlack = true;
+                    n.left.isBlack = false;
+                }
+                else
+                {
+                    n = RotateR(n);
+                    n.isBlack = true;
+                    n.right.isBlack = false;
+                    n.right = BalanceR(n.right);
+                    change = false;
+                }
+                return n;
+            }
+            public Tuple<bool, T> FindUpper(T x)
+            {
+                var v = FindUpper(root, x);
+                if (v == null) return Tuple.Create(false, default(T));
+                return v;
+            }
+            private Tuple<bool, T> FindUpper(Node n, T x)
+            {
+                if (n == null) return null;
+                var r = c(x, n.val);
+                if (r < 0)
+                {
+                    var v = FindUpper(n.left, x);
+                    if (v == null) return Tuple.Create(true, n.val);
+                    return v;
+                }
+                else if (r > 0) return FindUpper(n.right, x);
+                else return Tuple.Create(true, x);
+            }
+            public Tuple<bool, T> FindLower(T x)
+            {
+                var v = FindLower(root, x);
+                if (v == null) return Tuple.Create(false, default(T));
+                return v;
+            }
+            private Tuple<bool, T> FindLower(Node n, T x)
+            {
+                if (n == null) return null;
+                var r = c(x, n.val);
+                if (r < 0) return FindLower(n.left, x);
+                else if (r > 0)
+                {
+                    var v = FindLower(n.right, x);
+                    if (v == null) return Tuple.Create(true, n.val);
+                    return v;
+                }
+                else return Tuple.Create(true, x);
+            }
+            public T Min()
+            {
+                Node n = root, p = null;
+                while (n != null)
+                {
+                    p = n;
+                    n = n.left;
+                }
+                return p == null ? default(T) : p.val;
+            }
+            public T Max()
+            {
+                Node n = root, p = null;
+                while (n != null)
+                {
+                    p = n;
+                    n = n.right;
+                }
+                return p == null ? default(T) : p.val;
+            }
+            public bool Any() => root != null;
+            public int CountSlow() => List(root).Count();
+            public IEnumerable<T> List() => List(root);
+            private IEnumerable<T> List(Node n)
+            {
+                if (n == null) yield break;
+                foreach (var i in List(n.left)) yield return i;
+                yield return n.val;
+                foreach (var i in List(n.right)) yield return i;
+            }
+        }
+        //_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        //                  TEST END                  _/
+        //_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
         static public void Main(string[] args)
         {
             if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); }
