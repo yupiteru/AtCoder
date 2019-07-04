@@ -1,0 +1,19 @@
+
+[case 0]
++-++
+
+[output]
+2
+
+[case 1]
+-+--
+
+[output]
+-2
+
+[case 2]
+----
+
+[output]
+-4
+
