@@ -1,0 +1,19 @@
+
+[case 0]
+5 4
+
+[output]
+Yay!
+
+[case 1]
+8 8
+
+[output]
+Yay!
+
+[case 2]
+11 4
+
+[output]
+:(
+
