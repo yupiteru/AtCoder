@@ -381,6 +381,20 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tuple<TKey, TValue> Pop() => q.Pop();
         }
+        public class UF
+        {
+            private long[] d;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public UF(long s) { d = Repeat(-1L, s).ToArray(); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Unite(long x, long y) { x = Root(x); y = Root(y); if (x != y) { if (d[y] < d[x]) { var t = y; y = x; x = t; } d[x] += d[y]; d[y] = x; } return x != y; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool IsSame(long x, long y) => Root(x) == Root(y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Root(long x) => d[x] < 0 ? x : d[x] = Root(d[x]);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Count(long x) => -d[Root(d[x])];
+        }
         struct Mod : IEquatable<object>
         {
             static public long _mod = 1000000007;

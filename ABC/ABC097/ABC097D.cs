@@ -10,67 +10,28 @@ namespace Program
 {
     public static class ABC097D
     {
-        public class UnionFind
-        {
-            private int[] data;
-
-            public UnionFind(int size)
-            {
-                data = new int[size];
-                for (int i = 0; i < size; i++) data[i] = -1;
-            }
-
-            public bool Unite(int x, int y)
-            {
-                x = Root(x);
-                y = Root(y);
-
-                if (x != y)
-                {
-                    if (data[y] < data[x])
-                    {
-                        var tmp = y;
-                        y = x;
-                        x = tmp;
-                    }
-                    data[x] += data[y];
-                    data[y] = x;
-                }
-                return x != y;
-            }
-
-            public bool IsSameGroup(int x, int y)
-            {
-                return Root(x) == Root(y);
-            }
-
-            private int Root(int x)
-            {
-                return data[x] < 0 ? x : data[x] = Root(data[x]);
-            }
-        }
         static public void Solve()
         {
+
             var N = NN;
             var M = NN;
             var pList = NNList(N);
             var xy = Repeat(0, M).Select(_ => new { x = NN, y = NN }).ToArray();
 
-            var uf = new UnionFind((int)N + 1);
+            var uf = new UF(N + 1);
             foreach (var item in xy)
             {
-                uf.Unite((int)item.x, (int)item.y);
+                uf.Unite(item.x, item.y);
             }
             var ans = 0;
             for (var i = 1; i <= N; i++)
             {
-                if (uf.IsSameGroup((int)pList[i - 1], i))
+                if (uf.IsSame(pList[i - 1], i))
                 {
                     ++ans;
                 }
             }
             Console.WriteLine(ans);
-            
         }
 
         //_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -438,6 +399,20 @@ namespace Program
             public int Count => q.Count;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tuple<TKey, TValue> Pop() => q.Pop();
+        }
+        public class UF
+        {
+            private long[] d;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public UF(long s) { d = Repeat(-1L, s).ToArray(); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Unite(long x, long y) { x = Root(x); y = Root(y); if (x != y) { if (d[y] < d[x]) { var t = y; y = x; x = t; } d[x] += d[y]; d[y] = x; } return x != y; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool IsSame(long x, long y) => Root(x) == Root(y);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Root(long x) => d[x] < 0 ? x : d[x] = Root(d[x]);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Count(long x) => -d[Root(d[x])];
         }
         struct Mod : IEquatable<object>
         {
