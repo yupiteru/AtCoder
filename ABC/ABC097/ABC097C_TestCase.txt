@@ -1,0 +1,22 @@
+
+[case 0]
+aba
+4
+
+[output]
+b
+
+[case 1]
+atcoderandatcodeer
+5
+
+[output]
+andat
+
+[case 2]
+z
+1
+
+[output]
+z
+
