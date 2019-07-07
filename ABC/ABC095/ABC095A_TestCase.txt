@@ -1,0 +1,19 @@
+
+[case 0]
+oxo
+
+[output]
+900
+
+[case 1]
+ooo
+
+[output]
+1000
+
+[case 2]
+xxx
+
+[output]
+700
+
