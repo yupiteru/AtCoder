@@ -52,7 +52,7 @@ namespace Program
 
             foreach (var item in xyuv)
             {
-                var z = tree.Query(item.u, item.v);
+                var z = tree.LCA(item.u, item.v);
 
                 Func<long?, long> get = x => x.HasValue ? x.Value : 0;
 
@@ -74,7 +74,7 @@ namespace Program
         static Random rand = new Random();
         static class Console_
         {
-            private static Queue<string> param = new Queue<string>();
+            static Queue<string> param = new Queue<string>();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static string NextString() { if (param.Count == 0) foreach (var item in Console.ReadLine().Split(' ')) param.Enqueue(item); return param.Dequeue(); }
         }
@@ -119,7 +119,7 @@ namespace Program
         static long Perm(long n, long k) { _B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)]; }
         class PQ<T> where T : IComparable
         {
-            private List<T> h; private Comparison<T> c; public T Peek => h[0]; public int Count => h.Count;
+            List<T> h; Comparison<T> c; public T Peek => h[0]; public int Count => h.Count;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public PQ(int cap, Comparison<T> c, bool asc = true) { h = new List<T>(cap); this.c = asc ? c : (x, y) => c(y, x); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -135,7 +135,7 @@ namespace Program
         }
         class PQ<TK, TV> where TK : IComparable
         {
-            private PQ<Tuple<TK, TV>> q; public Tuple<TK, TV> Peek => q.Peek; public int Count => q.Count;
+            PQ<Tuple<TK, TV>> q; public Tuple<TK, TV> Peek => q.Peek; public int Count => q.Count;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public PQ(int cap, Comparison<TK> c, bool asc = true) { q = new PQ<Tuple<TK, TV>>(cap, (x, y) => c(x.Item1, y.Item1), asc); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,7 +151,7 @@ namespace Program
         }
         public class UF
         {
-            private long[] d;
+            long[] d;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public UF(long s) { d = Repeat(-1L, s).ToArray(); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,7 +165,7 @@ namespace Program
         }
         struct Mod : IEquatable<object>
         {
-            static public long _mod = 1000000007; private long _val;
+            static public long _mod = 1000000007; long _val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Mod(long x) { if (x < _mod && x >= 0) _val = x; else if ((_val = x % _mod) < 0) _val += _mod; }
             static public implicit operator Mod(long x) => new Mod(x);
@@ -195,9 +195,9 @@ namespace Program
             public override int GetHashCode() => _val.GetHashCode();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override string ToString() => _val.ToString();
-            static private List<Mod> _fact = new List<Mod>() { 1 };
+            static List<Mod> _fact = new List<Mod>() { 1 };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static private void B(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
+            static void B(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod Comb(long n, long k) { B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -205,7 +205,7 @@ namespace Program
         }
         struct Mat<T>
         {
-            private T[,] m;
+            T[,] m;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Mat(T[,] v) { m = (T[,])v.Clone(); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -228,7 +228,7 @@ namespace Program
         }
         class Tree
         {
-            private long N; private int l; private List<long>[] p; private int[] d; private long[][] pr; private long r; private Tuple<long, long, int>[] e; private Tuple<long, long>[] b; private bool lca; private bool euler; private bool bfs;
+            long N; int l; List<long>[] p; int[] d; long[][] pr; long r; Tuple<long, long, int>[] e; Tuple<long, long>[] b; bool lca; bool euler; bool bfs;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tree(List<long>[] p_, long r_) { N = p_.Length; p = p_; r = r_; lca = false; euler = false; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,285 +238,66 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tuple<long, long, int>[] Euler() { if (!euler) { var ne = new List<Tuple<long, long, int>>(); var s = new Stack<Tuple<long, long>>(); var d = new bool[N]; d[r] = true; s.Push(Tuple.Create(r, -1L)); while (s.Count > 0) { var w = s.Peek(); var ad = true; foreach (var i in p[w.Item1]) { if (d[i]) continue; d[i] = true; ad = false; s.Push(Tuple.Create(i, w.Item1)); } if (!ad || p[w.Item1].Count == 1) ne.Add(Tuple.Create(w.Item1, w.Item2, 1)); if (ad) { s.Pop(); ne.Add(Tuple.Create(w.Item1, w.Item2, -1)); } } e = ne.ToArray(); euler = true; } return e; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public long Query(long u, long v) { if (!lca) { l = 0; while (N > (1 << l)) l++; d = new int[N]; pr = Repeat(0, l).Select(_ => new long[N]).ToArray(); d[r] = 0; pr[0][r] = -1; var q = new Stack<long>(); q.Push(r); while (q.Count > 0) { var w = q.Pop(); foreach (var i in p[w]) { if (i == pr[0][w]) continue; q.Push(i); d[i] = d[w] + 1; pr[0][i] = w; } } for (var k = 0; k + 1 < l; k++) for (var w = 0; w < N; w++) if (pr[k][w] < 0) pr[k + 1][w] = -1; else pr[k + 1][w] = pr[k][pr[k][w]]; lca = true; } if (d[u] > d[v]) { var t = u; u = v; v = t; } for (var k = 0; k < l; k++) if ((((d[v] - d[u]) >> k) & 1) != 0) v = pr[k][v]; if (u == v) return u; for (var k = l - 1; k >= 0; k--) if (pr[k][u] != pr[k][v]) { u = pr[k][u]; v = pr[k][v]; } return pr[0][u]; }
+            public long LCA(long u, long v) { if (!lca) { l = 0; while (N > (1 << l)) l++; d = new int[N]; pr = Repeat(0, l).Select(_ => new long[N]).ToArray(); d[r] = 0; pr[0][r] = -1; var q = new Stack<long>(); q.Push(r); while (q.Count > 0) { var w = q.Pop(); foreach (var i in p[w]) { if (i == pr[0][w]) continue; q.Push(i); d[i] = d[w] + 1; pr[0][i] = w; } } for (var k = 0; k + 1 < l; k++) for (var w = 0; w < N; w++) if (pr[k][w] < 0) pr[k + 1][w] = -1; else pr[k + 1][w] = pr[k][pr[k][w]]; lca = true; } if (d[u] > d[v]) { var t = u; u = v; v = t; } for (var k = 0; k < l; k++) if ((((d[v] - d[u]) >> k) & 1) != 0) v = pr[k][v]; if (u == v) return u; for (var k = l - 1; k >= 0; k--) if (pr[k][u] != pr[k][v]) { u = pr[k][u]; v = pr[k][v]; } return pr[0][u]; }
         }
         class BT<T> where T : IComparable
         {
-            private class Node
-            {
-                public Node left;
-                public Node right;
-                public T val;
-                public bool isBlack;
-            }
-            private Comparison<T> c;
-            private Node root;
-            private bool change;
+            class Node { public Node l; public Node r; public T v; public bool b; }
+            Comparison<T> c; Node r; bool ch; T lm;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public BT(Comparison<T> _c) { c = _c; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public BT() : this((x, y) => x.CompareTo(y)) { }
-            private bool Red(Node n) => n != null && !n.isBlack;
-            private bool Black(Node n) => n != null && n.isBlack;
-            private Node RotateL(Node n)
-            {
-                Node m = n.right, t = m.left;
-                m.left = n; n.right = t;
-                return m;
-            }
-            private Node RotateR(Node n)
-            {
-                Node m = n.left, t = m.right;
-                m.right = n; n.left = t;
-                return m;
-            }
-            private Node RotateLR(Node n)
-            {
-                n.left = RotateL(n.left);
-                return RotateR(n);
-            }
-            private Node RotateRL(Node n)
-            {
-                n.right = RotateR(n.right);
-                return RotateL(n);
-            }
-            public void Add(T x)
-            {
-                root = Add(root, x);
-                root.isBlack = true;
-            }
-            private Node Add(Node n, T x)
-            {
-                if (n == null)
-                {
-                    change = true;
-                    return new Node() { val = x };
-                }
-                var r = c(x, n.val);
-                if (r < 0)
-                {
-                    n.left = Add(n.left, x);
-                    return Balance(n);
-                }
-                if (r > 0)
-                {
-                    n.right = Add(n.right, x);
-                    return Balance(n);
-                }
-                change = false;
-                return n;
-            }
-
-            private Node Balance(Node n)
-            {
-                if (!change) return n;
-                if (!Black(n)) return n;
-                if (Red(n.left) && Red(n.left.left))
-                {
-                    n = RotateR(n);
-                    n.left.isBlack = true;
-                }
-                else if (Red(n.left) && Red(n.left.right))
-                {
-                    n = RotateLR(n);
-                    n.left.isBlack = true;
-                }
-                else if (Red(n.right) && Red(n.right.left))
-                {
-                    n = RotateRL(n);
-                    n.right.isBlack = true;
-                }
-                else if (Red(n.right) && Red(n.right.right))
-                {
-                    n = RotateL(n);
-                    n.right.isBlack = true;
-                }
-                else
-                {
-                    change = false;
-                }
-                return n;
-            }
-
-            public void Remove(T x)
-            {
-                root = Remove(root, x);
-                if (root != null) root.isBlack = true;
-            }
-            private Node Remove(Node n, T x)
-            {
-                if (n == null)
-                {
-                    change = false;
-                    return n;
-                }
-                var r = c(x, n.val);
-                if (r < 0)
-                {
-                    n.left = Remove(n.left, x);
-                    return BalanceL(n);
-                }
-                if (r > 0)
-                {
-                    n.right = Remove(n.right, x);
-                    return BalanceR(n);
-                }
-                if (n.left == null)
-                {
-                    change = n.isBlack;
-                    return n.right;
-                }
-                n.left = RemoveMax(n.left);
-                n.val = lmax;
-                return BalanceL(n);
-            }
-            private T lmax;
-            private Node RemoveMax(Node n)
-            {
-                if (n.right != null)
-                {
-                    n.right = RemoveMax(n.right);
-                    return BalanceR(n);
-                }
-                lmax = n.val;
-                change = n.isBlack;
-                return n.left;
-            }
-            private Node BalanceL(Node n)
-            {
-                if (!change) return n;
-                if (Black(n.right) && Red(n.right.left))
-                {
-                    var b = n.isBlack;
-                    n = RotateRL(n);
-                    n.isBlack = b;
-                    n.left.isBlack = true;
-                    change = false;
-                }
-                else if (Black(n.right) && Red(n.right.right))
-                {
-                    var b = n.isBlack;
-                    n = RotateL(n);
-                    n.isBlack = b;
-                    n.right.isBlack = true;
-                    n.left.isBlack = true;
-                    change = false;
-                }
-                else if (Black(n.right))
-                {
-                    change = n.isBlack;
-                    n.isBlack = true;
-                    n.right.isBlack = false;
-                }
-                else
-                {
-                    n = RotateL(n);
-                    n.isBlack = true;
-                    n.left.isBlack = false;
-                    n.left = BalanceL(n.left);
-                    change = false;
-                }
-                return n;
-            }
-            private Node BalanceR(Node n)
-            {
-                if (!change) return n;
-                if (Black(n.left) && Red(n.left.right))
-                {
-                    var b = n.isBlack;
-                    n = RotateLR(n);
-                    n.isBlack = b;
-                    n.right.isBlack = true;
-                    change = false;
-                }
-                else if (Black(n.left) && Red(n.left.left))
-                {
-                    var b = n.isBlack;
-                    n = RotateR(n);
-                    n.isBlack = b;
-                    n.left.isBlack = true;
-                    n.right.isBlack = true;
-                    change = false;
-                }
-                else if (Black(n.left))
-                {
-                    change = n.isBlack;
-                    n.isBlack = true;
-                    n.left.isBlack = false;
-                }
-                else
-                {
-                    n = RotateR(n);
-                    n.isBlack = true;
-                    n.right.isBlack = false;
-                    n.right = BalanceR(n.right);
-                    change = false;
-                }
-                return n;
-            }
-            public bool Have(T x)
-            {
-                var t = FindUpper(x);
-                return t.Item1 && t.Item2.CompareTo(x) == 0;
-            }
-            public Tuple<bool, T> FindUpper(T x)
-            {
-                var v = FindUpper(root, x);
-                if (v == null) return Tuple.Create(false, default(T));
-                return v;
-            }
-            private Tuple<bool, T> FindUpper(Node n, T x)
-            {
-                if (n == null) return null;
-                var r = c(x, n.val);
-                if (r < 0)
-                {
-                    var v = FindUpper(n.left, x);
-                    if (v == null) return Tuple.Create(true, n.val);
-                    return v;
-                }
-                else if (r > 0) return FindUpper(n.right, x);
-                else return Tuple.Create(true, n.val);
-            }
-            public Tuple<bool, T> FindLower(T x)
-            {
-                var v = FindLower(root, x);
-                if (v == null) return Tuple.Create(false, default(T));
-                return v;
-            }
-            private Tuple<bool, T> FindLower(Node n, T x)
-            {
-                if (n == null) return null;
-                var r = c(x, n.val);
-                if (r < 0) return FindLower(n.left, x);
-                else if (r > 0)
-                {
-                    var v = FindLower(n.right, x);
-                    if (v == null) return Tuple.Create(true, n.val);
-                    return v;
-                }
-                else return Tuple.Create(true, n.val);
-            }
-            public T Min()
-            {
-                Node n = root, p = null;
-                while (n != null) { p = n; n = n.left; }
-                return p == null ? default(T) : p.val;
-            }
-            public T Max()
-            {
-                Node n = root, p = null;
-                while (n != null) { p = n; n = n.right; }
-                return p == null ? default(T) : p.val;
-            }
-            public bool Any() => root != null;
-            public int CountSlow() => List(root).Count();
-            public IEnumerable<T> List() => List(root);
-            private IEnumerable<T> List(Node n)
-            {
-                if (n == null) yield break;
-                foreach (var i in List(n.left)) yield return i;
-                yield return n.val;
-                foreach (var i in List(n.right)) yield return i;
-            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            bool R(Node n) => n != null && !n.b;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            bool B(Node n) => n != null && n.b;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node RtL(Node n) { Node m = n.r, t = m.l; m.l = n; n.r = t; return m; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node RtR(Node n) { Node m = n.l, t = m.r; m.r = n; n.l = t; return m; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node RtLR(Node n) { n.l = RtL(n.l); return RtR(n); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node RtRL(Node n) { n.r = RtR(n.r); return RtL(n); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Add(T x) { r = A(r, x); r.b = true; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node A(Node n, T x) { if (n == null) { ch = true; return new Node() { v = x }; } var r = c(x, n.v); if (r < 0) { n.l = A(n.l, x); return Bl(n); } if (r > 0) { n.r = A(n.r, x); return Bl(n); } ch = false; return n; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node Bl(Node n) { if (!ch) return n; if (!B(n)) return n; if (R(n.l) && R(n.l.l)) { n = RtR(n); n.l.b = true; } else if (R(n.l) && R(n.l.r)) { n = RtLR(n); n.l.b = true; } else if (R(n.r) && R(n.r.l)) { n = RtRL(n); n.r.b = true; } else if (R(n.r) && R(n.r.r)) { n = RtL(n); n.r.b = true; } else ch = false; return n; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Remove(T x) { r = Rm(r, x); if (r != null) r.b = true; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node Rm(Node n, T x) { if (n == null) { ch = false; return n; } var r = c(x, n.v); if (r < 0) { n.l = Rm(n.l, x); return BlL(n); } if (r > 0) { n.r = Rm(n.r, x); return BlR(n); } if (n.l == null) { ch = n.b; return n.r; } n.l = RmM(n.l); n.v = lm; return BlL(n); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node RmM(Node n) { if (n.r != null) { n.r = RmM(n.r); return BlR(n); } lm = n.v; ch = n.b; return n.l; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node BlL(Node n) { if (!ch) return n; if (B(n.r) && R(n.r.l)) { var b = n.b; n = RtRL(n); n.b = b; n.l.b = true; ch = false; } else if (B(n.r) && R(n.r.r)) { var b = n.b; n = RtL(n); n.b = b; n.r.b = true; n.l.b = true; ch = false; } else if (B(n.r)) { ch = n.b; n.b = true; n.r.b = false; } else { n = RtL(n); n.b = true; n.l.b = false; n.l = BlL(n.l); ch = false; } return n; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node BlR(Node n) { if (!ch) return n; if (B(n.l) && R(n.l.r)) { var b = n.b; n = RtLR(n); n.b = b; n.r.b = true; ch = false; } else if (B(n.l) && R(n.l.l)) { var b = n.b; n = RtR(n); n.b = b; n.l.b = true; n.r.b = true; ch = false; } else if (B(n.l)) { ch = n.b; n.b = true; n.l.b = false; } else { n = RtR(n); n.b = true; n.r.b = false; n.r = BlR(n.r); ch = false; } return n; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Have(T x) { var t = FindUpper(x); return t.Item1 && t.Item2.CompareTo(x) == 0; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Tuple<bool, T> FindUpper(T x) { var v = FU(r, x); return v == null ? Tuple.Create(false, default(T)) : v; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Tuple<bool, T> FU(Node n, T x) { if (n == null) return null; var r = c(x, n.v); if (r < 0) { var v = FU(n.l, x); return v == null ? Tuple.Create(true, n.v) : v; } if (r > 0) return FU(n.r, x); return Tuple.Create(true, n.v); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Tuple<bool, T> FindLower(T x) { var v = FL(r, x); return v == null ? Tuple.Create(false, default(T)) : v; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Tuple<bool, T> FL(Node n, T x) { if (n == null) return null; var r = c(x, n.v); if (r < 0) return FL(n.l, x); if (r > 0) { var v = FL(n.r, x); return v == null ? Tuple.Create(true, n.v) : v; } return Tuple.Create(true, n.v); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Min() { Node n = r, p = null; while (n != null) { p = n; n = n.l; } return p == null ? default(T) : p.v; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Max() { Node n = r, p = null; while (n != null) { p = n; n = n.r; } return p == null ? default(T) : p.v; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Any() => r != null;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int CountSlow() => L(r).Count();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public IEnumerable<T> List() => L(r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            IEnumerable<T> L(Node n) { if (n == null) yield break; foreach (var i in L(n.l)) yield return i; yield return n.v; foreach (var i in L(n.r)) yield return i; }
         }
     }
 }
