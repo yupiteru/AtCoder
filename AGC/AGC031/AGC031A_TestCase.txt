@@ -1,0 +1,22 @@
+
+[case 0]
+4
+abcd
+
+[output]
+15
+
+[case 1]
+3
+baa
+
+[output]
+5
+
+[case 2]
+5
+abcab
+
+[output]
+17
+
