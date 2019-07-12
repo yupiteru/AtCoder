@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -11,114 +12,111 @@ namespace AtCoder
     {
         static void Main(string[] args)
         {
-            string TARGET = "AGC031";
-
             var ts = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var item in ts)
             {
-                var className = item.Name;
-                if (className.StartsWith(TARGET))
-                {
-                    var testCaseFile = Directory.GetFiles(".", className + "_TestCase.txt", System.IO.SearchOption.AllDirectories);
-                    if (testCaseFile.Length == 0)
-                    {
-                        Console.WriteLine(className + ": testcase file is not found");
-                        continue;
-                    }
-                    else if (testCaseFile.Length != 1)
-                    {
-                        Console.WriteLine(className + ": testcase files are found two or more. use only first testcase file");
-                    }
+                if (!item.IsClass || item.Namespace != "Program" || item.GetMethods().All(e => e.Name != "Main")) continue;
 
-                    var testCases = new Dictionary<string, Tuple<StringBuilder, StringBuilder>>();
-                    var casename = "";
-                    var nowInput = false;
-                    var nowOutput = false;
-                    foreach (var line in File.ReadAllLines(testCaseFile[0]))
+                var className = item.Name;
+                var testCaseFile = Directory.GetFiles(".", className + "_TestCase.txt", System.IO.SearchOption.AllDirectories);
+                if (testCaseFile.Length == 0)
+                {
+                    Console.WriteLine(className + ": testcase file is not found");
+                    continue;
+                }
+                else if (testCaseFile.Length != 1)
+                {
+                    Console.WriteLine(className + ": testcase files are found two or more. use only first testcase file");
+                }
+
+                var testCases = new Dictionary<string, Tuple<StringBuilder, StringBuilder>>();
+                var casename = "";
+                var nowInput = false;
+                var nowOutput = false;
+                foreach (var line in File.ReadAllLines(testCaseFile[0]))
+                {
+                    if (line.StartsWith("[input]"))
                     {
-                        if (line.StartsWith("[input]"))
+                        nowInput = true;
+                        nowOutput = false;
+                    }
+                    else if (line.StartsWith("[output]"))
+                    {
+                        nowInput = false;
+                        nowOutput = true;
+                    }
+                    else if (line.StartsWith("["))
+                    {
+                        casename = line.Substring(1, line.Length - 2);
+                        testCases[casename] = Tuple.Create(new StringBuilder(), new StringBuilder());
+                        nowInput = true;
+                        nowOutput = false;
+                    }
+                    else
+                    {
+                        if (nowInput)
                         {
-                            nowInput = true;
-                            nowOutput = false;
+                            testCases[casename].Item1.AppendLine(line);
                         }
-                        else if (line.StartsWith("[output]"))
+                        else if (nowOutput)
                         {
-                            nowInput = false;
-                            nowOutput = true;
+                            testCases[casename].Item2.AppendLine(line);
                         }
-                        else if (line.StartsWith("["))
+                    }
+                }
+                foreach (var kv in testCases)
+                {
+                    var result = new StringWriter();
+                    var oldIn = Console.In;
+                    var oldOut = Console.Out;
+                    Console.SetIn(new StringReader(kv.Value.Item1.ToString()));
+                    Console.SetOut(result);
+                    item.GetMethod("Main").Invoke(null, new object[] { new string[] { "debug" } });
+                    Console.SetIn(oldIn);
+                    Console.SetOut(oldOut);
+
+                    var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
+                    var expect = kv.Value.Item2.ToString().Split("\r\n".ToCharArray());
+                    var ok = true;
+                    for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
+                    {
+                        if (i >= actual.Length)
                         {
-                            casename = line.Substring(1, line.Length - 2);
-                            testCases[casename] = Tuple.Create(new StringBuilder(), new StringBuilder());
-                            nowInput = true;
-                            nowOutput = false;
+                            if (expect[i].Trim() != "")
+                            {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        else if (i >= expect.Length)
+                        {
+                            if (actual[i].Trim() != "")
+                            {
+                                ok = false;
+                                break;
+                            }
                         }
                         else
                         {
-                            if (nowInput)
+                            if (actual[i] != expect[i])
                             {
-                                testCases[casename].Item1.AppendLine(line);
-                            }
-                            else if (nowOutput)
-                            {
-                                testCases[casename].Item2.AppendLine(line);
+                                ok = false;
+                                break;
                             }
                         }
                     }
-                    foreach (var kv in testCases)
+                    Console.WriteLine(className + "." + kv.Key + (ok ? ": ok" : ": wrong"));
+                    if (!ok)
                     {
-                        var result = new StringWriter();
-                        var oldIn = Console.In;
-                        var oldOut = Console.Out;
-                        Console.SetIn(new StringReader(kv.Value.Item1.ToString()));
-                        Console.SetOut(result);
-                        item.GetMethod("Main").Invoke(null, new object[] { new string[] { "debug" } });
-                        Console.SetIn(oldIn);
-                        Console.SetOut(oldOut);
-
-                        var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
-                        var expect = kv.Value.Item2.ToString().Split("\r\n".ToCharArray());
-                        var ok = true;
-                        for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
+                        foreach (var item2 in expect)
                         {
-                            if (i >= actual.Length)
-                            {
-                                if (expect[i].Trim() != "")
-                                {
-                                    ok = false;
-                                    break;
-                                }
-                            }
-                            else if (i >= expect.Length)
-                            {
-                                if (actual[i].Trim() != "")
-                                {
-                                    ok = false;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (actual[i] != expect[i])
-                                {
-                                    ok = false;
-                                    break;
-                                }
-                            }
+                            if (item2 == "") continue;
+                            Console.WriteLine("    expected: " + item2);
                         }
-                        Console.WriteLine(className + "." + kv.Key + (ok ? ": ok" : ": wrong"));
-                        if (!ok)
+                        foreach (var item2 in actual)
                         {
-                            foreach (var item2 in expect)
-                            {
-                                if (item2 == "") continue;
-                                Console.WriteLine("    expected: " + item2);
-                            }
-                            foreach (var item2 in actual)
-                            {
-                                if (item2 == "") continue;
-                                Console.WriteLine("    actually: " + item2);
-                            }
+                            if (item2 == "") continue;
+                            Console.WriteLine("    actually: " + item2);
                         }
                     }
                 }
