@@ -18,29 +18,68 @@ namespace Program
 
             var leftTree = new List<long>();
             var rightTree = new List<long>();
-            leftTree.Add(0);
             foreach (var item in XList)
             {
                 leftTree.Add(item);
                 rightTree.Add(L - item);
             }
-            rightTree.Add(0);
             rightTree.Reverse();
 
-            var dp = new long[N + 1, N + 1, 2];
-            for (var i = 0; i < N; i++) //left
+            var leftRuiseki = new long[N + 1];
+            for (var i = 1; i <= N; i++)
             {
-                for (var j = 0; j < N; j++) //right
-                {
-                    dp[i + 1, j, 0] = Max(dp[i + 1, j, 0], Max(dp[i, j, 0] + leftTree[i + 1] - leftTree[i], dp[i, j, 1] + leftTree[i + 1] + rightTree[j]));
-                    dp[i, j + 1, 1] = Max(dp[i, j + 1, 1], Max(dp[i, j, 0] + rightTree[j + 1] + leftTree[i], dp[i, j, 1] + rightTree[j + 1] - rightTree[j]));
-                }
+                leftRuiseki[i] = leftRuiseki[i - 1] + leftTree[i - 1];
             }
-            var ans = 0L;
-            for (var i = 0; i <= N; i++)
+            var rightRuiseki = new long[N + 1];
+            for (var i = 1; i <= N; i++)
             {
-                ans = Max(ans, dp[i, N - i, 0]);
-                ans = Max(ans, dp[i, N - i, 1]);
+                rightRuiseki[i] = rightRuiseki[i - 1] + rightTree[i - 1];
+            }
+
+            var ans = 0L;
+            for (var left = 1; left <= N; left++)
+            {
+                var dist = leftTree[left - 1];
+                if (left < N)
+                {
+                    dist *= 2;
+                    var zan = N - left;
+                    if (zan % 2 == 0)
+                    {
+                        dist += rightRuiseki[zan / 2] * 2;
+                        dist += (leftRuiseki[zan / 2 + left - 1] - leftRuiseki[left]) * 2;
+                        dist += leftTree[(int)zan / 2 + left - 1];
+                    }
+                    else
+                    {
+                        dist += rightRuiseki[zan / 2] * 2;
+                        dist += (leftRuiseki[zan / 2 + left] - leftRuiseki[left]) * 2;
+                        dist += rightTree[(int)zan / 2];
+                    }
+                }
+                ans = Max(ans, dist);
+            }
+            for (var right = 1; right <= N; right++)
+            {
+                var dist = rightTree[right - 1];
+                if (right < N)
+                {
+                    dist *= 2;
+                    var zan = N - right;
+                    if (zan % 2 == 0)
+                    {
+                        dist += leftRuiseki[zan / 2] * 2;
+                        dist += (rightRuiseki[zan / 2 + right - 1] - rightRuiseki[right]) * 2;
+                        dist += rightTree[(int)zan / 2 + right - 1];
+                    }
+                    else
+                    {
+                        dist += leftRuiseki[zan / 2] * 2;
+                        dist += (rightRuiseki[zan / 2 + right] - rightRuiseki[right]) * 2;
+                        dist += leftTree[(int)zan / 2];
+                    }
+                }
+                ans = Max(ans, dist);
             }
             Console.WriteLine(ans);
 
