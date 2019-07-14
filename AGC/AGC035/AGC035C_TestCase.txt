@@ -1,0 +1,24 @@
+
+[case 0]
+3
+
+[output]
+Yes
+1 2
+2 3
+3 4
+4 5
+5 6
+
+[case 1]
+1
+
+[output]
+No
+
+[case 2]
+12
+
+[output]
+Yes
+
