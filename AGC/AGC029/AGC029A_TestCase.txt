@@ -1,0 +1,13 @@
+
+[case 0]
+BBW
+
+[output]
+2
+
+[case 1]
+BWBWBW
+
+[output]
+6
+
