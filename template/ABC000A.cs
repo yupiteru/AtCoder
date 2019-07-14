@@ -208,7 +208,7 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Add(T x) { r = A(r, x); r.b = true; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node A(Node n, T x) { if (n == null) { ch = true; return new Node() { v = x }; } var r = c(x, n.v); if (r < 0) { n.l = A(n.l, x); return Bl(n); } if (r > 0) { n.r = A(n.r, x); return Bl(n); } ch = false; return n; }
+            Node A(Node n, T x) { if (n == null) { ch = true; return new Node() { v = x }; } if (c(x, n.v) < 0) n.l = A(n.l, x); else n.r = A(n.r, x); return Bl(n); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             Node Bl(Node n) { if (!ch) return n; if (!B(n)) return n; if (R(n.l) && R(n.l.l)) { n = RtR(n); n.l.b = true; } else if (R(n.l) && R(n.l.r)) { n = RtLR(n); n.l.b = true; } else if (R(n.r) && R(n.r.l)) { n = RtRL(n); n.r.b = true; } else if (R(n.r) && R(n.r.r)) { n = RtL(n); n.r.b = true; } else ch = false; return n; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
