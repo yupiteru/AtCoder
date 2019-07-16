@@ -35,13 +35,12 @@ namespace Program
             var t = 2 * (int)N + 1;
 
             var cap = Repeat(0, 2 * N + 2).Select(_ => new Dictionary<long, long>()).ToArray();
-            var rev = Repeat(0, 2 * N + 2).Select(_ => new Dictionary<long, long>()).ToArray();
             for (var i = 0; i < path.Length; i++)
             {
                 foreach (var item in path[i])
                 {
                     cap[i][item] = 1;
-                    rev[item][i] = 0;
+                    cap[item][i] = 0;
                 }
             }
 
@@ -50,27 +49,16 @@ namespace Program
             Func<long, long, long, long> dfs = (x, y, z) => default(long);
             dfs = (from, to, flow) =>
             {
-                if (flow == 0) return 0;
                 if (from == to) return flow;
-                if (done[from]) return 0;
                 done[from] = true;
                 foreach (var item in cap[from])
                 {
+                    if (done[item.Key] || item.Value == 0) continue;
                     var f = dfs(item.Key, to, Min(flow, item.Value));
                     if (f != 0)
                     {
                         cap[from][item.Key] -= f;
-                        rev[item.Key][from] += f;
-                        return f;
-                    }
-                }
-                foreach (var item in rev[from])
-                {
-                    var f = dfs(item.Key, to, Min(flow, item.Value));
-                    if (f != 0)
-                    {
                         cap[item.Key][from] += f;
-                        rev[from][item.Key] -= f;
                         return f;
                     }
                 }
