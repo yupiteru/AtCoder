@@ -1,0 +1,25 @@
+
+[case 0]
+50 100 120
+
+[output]
+Yes
+
+[case 1]
+500 100 1000
+
+[output]
+No
+
+[case 2]
+19 123 143
+
+[output]
+No
+
+[case 3]
+19 123 142
+
+[output]
+Yes
+
