@@ -16,7 +16,7 @@ namespace Program
 
         }
 
-        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); Solve(); } else { new Thread(Solve, 134217728).Start(); } Console.Out.Flush(); }
+        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); Solve(); } else { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } Console.Out.Flush(); }
         static Random rand = new Random();
         static class Console_
         {
@@ -63,6 +63,16 @@ namespace Program
         static long Comb(long n, long k) { _B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long Perm(long n, long k) { _B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)]; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Func<TR> Lambda<TR>(Func<Func<TR>, TR> f) { Func<TR> t = () => default(TR); return t = () => f(t); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Func<T1, TR> Lambda<T1, TR>(Func<T1, Func<T1, TR>, TR> f) { Func<T1, TR> t = x1 => default(TR); return t = x1 => f(x1, t); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Func<T1, T2, TR> Lambda<T1, T2, TR>(Func<T1, T2, Func<T1, T2, TR>, TR> f) { Func<T1, T2, TR> t = (x1, x2) => default(TR); return t = (x1, x2) => f(x1, x2, t); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Func<T1, T2, T3, TR> Lambda<T1, T2, T3, TR>(Func<T1, T2, T3, Func<T1, T2, T3, TR>, TR> f) { Func<T1, T2, T3, TR> t = (x1, x2, x3) => default(TR); return t = (x1, x2, x3) => f(x1, x2, x3, t); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Func<T1, T2, T3, T4, TR> Lambda<T1, T2, T3, T4, TR>(Func<T1, T2, T3, T4, Func<T1, T2, T3, T4, TR>, TR> f) { Func<T1, T2, T3, T4, TR> t = (x1, x2, x3, x4) => default(TR); return t = (x1, x2, x3, x4) => f(x1, x2, x3, x4, t); }
         class PQ<T> where T : IComparable
         {
             List<T> h; Comparison<T> c; public T Peek => h[0]; public int Count => h.Count;
