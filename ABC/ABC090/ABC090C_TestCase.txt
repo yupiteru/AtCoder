@@ -1,0 +1,19 @@
+
+[case 0]
+2 2
+
+[output]
+0
+
+[case 1]
+1 7
+
+[output]
+5
+
+[case 2]
+314 1592
+
+[output]
+496080
+

@@ -1,0 +1,17 @@
+
+[case 0]
+ant
+obe
+rec
+
+[output]
+abc
+
+[case 1]
+edu
+cat
+ion
+
+[output]
+ean
+
