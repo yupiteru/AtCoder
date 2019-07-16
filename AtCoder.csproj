@@ -5,6 +5,7 @@
     <TargetFramework>net461</TargetFramework>
     <StartupObject>AtCoder.Program</StartupObject>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

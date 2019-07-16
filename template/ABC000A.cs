@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using static System.Math;
 using System.Text;
+using System.Threading;
 
 namespace Program
 {
@@ -15,7 +16,7 @@ namespace Program
 
         }
 
-        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } Solve(); Console.Out.Flush(); }
+        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); Solve(); } else { new Thread(Solve, 134217728).Start(); } Console.Out.Flush(); }
         static Random rand = new Random();
         static class Console_
         {
