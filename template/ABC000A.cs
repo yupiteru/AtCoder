@@ -16,7 +16,7 @@ namespace Program
 
         }
 
-        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); Solve(); } else { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } Console.Out.Flush(); }
+        static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
         static Random rand = new Random();
         static class Console_
         {
@@ -128,9 +128,9 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public implicit operator long(Mod x) => x._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator +(Mod x, Mod y) => x._val + y._val;
+            static public Mod operator +(Mod x, Mod y) { var t = x._val + y._val; return t >= _mod ? new Mod { _val = t - _mod } : new Mod { _val = t }; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Mod operator -(Mod x, Mod y) => x._val - y._val;
+            static public Mod operator -(Mod x, Mod y) { var t = x._val - y._val; return t < 0 ? new Mod { _val = t + _mod } : new Mod { _val = t }; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Mod operator *(Mod x, Mod y) => x._val * y._val;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
