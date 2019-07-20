@@ -1,0 +1,19 @@
+
+[case 0]
+4
+
+[output]
+48
+
+[case 1]
+15
+
+[output]
+675
+
+[case 2]
+80
+
+[output]
+19200
+
