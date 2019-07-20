@@ -280,6 +280,10 @@ namespace Program
             public T Back => b[gi(Count - 1)];
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void e() { T[] nb = new T[c << 1]; if (o > c - Count) { var l = b.Length - o; Array.Copy(b, o, nb, 0, l); Array.Copy(b, 0, nb, l, Count - l); } else Array.Copy(b, o, nb, 0, Count); b = nb; o = 0; c <<= 1; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Insert(int i, T x) { if (i > Count) throw new Exception(); this.PushFront(x); for (int j = 0; j < i; j++) this[j] = this[j + 1]; this[i] = x; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T RemoveAt(int i) { if (i < 0 || i >= Count) throw new Exception(); var r = this[i]; for (int j = i; j > 0; j--) this[j] = this[j - 1]; this.PopFront(); return r; }
         }
     }
 }
