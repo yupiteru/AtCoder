@@ -188,9 +188,9 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tree(List<long>[] p_, long r_) { N = p_.Length; p = p_; r = r_; lca = false; euler = false; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Tuple<long, long>[] FromRoot() { if (!bfs) { var nb = new List<Tuple<long, long>>(); var q = new Queue<long>(); var d = new bool[N]; nb.Add(Tuple.Create(r, -1L)); d[r] = true; q.Enqueue(r); while (q.Count > 0) { var w = q.Dequeue(); foreach (var i in p[w]) { if (d[i]) continue; d[i] = true; q.Enqueue(i); nb.Add(Tuple.Create(i, w)); } } b = nb.ToArray(); bfs = true; } return b; }
+            public Tuple<long, long>[] BFSRoot() { if (!bfs) { var nb = new List<Tuple<long, long>>(); var q = new Queue<long>(); var d = new bool[N]; nb.Add(Tuple.Create(r, -1L)); d[r] = true; q.Enqueue(r); while (q.Count > 0) { var w = q.Dequeue(); foreach (var i in p[w]) { if (d[i]) continue; d[i] = true; q.Enqueue(i); nb.Add(Tuple.Create(i, w)); } } b = nb.ToArray(); bfs = true; } return b; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Tuple<long, long>[] FromLeaf() => FromRoot().Reverse().ToArray();
+            public Tuple<long, long>[] BFSLeaf() => BFSRoot().Reverse().ToArray();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Tuple<long, long, int>[] Euler() { if (!euler) { var ne = new List<Tuple<long, long, int>>(); var s = new Stack<Tuple<long, long>>(); var d = new bool[N]; d[r] = true; s.Push(Tuple.Create(r, -1L)); while (s.Count > 0) { var w = s.Peek(); var ad = true; foreach (var i in p[w.Item1]) { if (d[i]) continue; d[i] = true; ad = false; s.Push(Tuple.Create(i, w.Item1)); } if (!ad || p[w.Item1].Count == 1) ne.Add(Tuple.Create(w.Item1, w.Item2, 1)); if (ad) { s.Pop(); ne.Add(Tuple.Create(w.Item1, w.Item2, -1)); } } e = ne.ToArray(); euler = true; } return e; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,13 +235,13 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Have(T x) { var t = FindUpper(x); return t.Item1 && t.Item2.CompareTo(x) == 0; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Tuple<bool, T> FindUpper(T x) { var v = FU(r, x); return v == null ? Tuple.Create(false, default(T)) : v; }
+            public Tuple<bool, T> FindUpper(T x, bool findSame = true) { var v = FU(r, x, findSame); return v == null ? Tuple.Create(false, default(T)) : v; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Tuple<bool, T> FU(Node n, T x) { if (n == null) return null; var r = c(x, n.v); if (r < 0) { var v = FU(n.l, x); return v == null ? Tuple.Create(true, n.v) : v; } if (r > 0) return FU(n.r, x); return Tuple.Create(true, n.v); }
+            Tuple<bool, T> FU(Node n, T x, bool s) { if (n == null) return null; var r = c(x, n.v); if (r < 0) { var v = FU(n.l, x, s); return v == null ? Tuple.Create(true, n.v) : v; } if (r > 0 || !s && r == 0) return FU(n.r, x, s); return Tuple.Create(true, n.v); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Tuple<bool, T> FindLower(T x) { var v = FL(r, x); return v == null ? Tuple.Create(false, default(T)) : v; }
+            public Tuple<bool, T> FindLower(T x, bool findSame = true) { var v = FL(r, x, findSame); return v == null ? Tuple.Create(false, default(T)) : v; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Tuple<bool, T> FL(Node n, T x) { if (n == null) return null; var r = c(x, n.v); if (r < 0) return FL(n.l, x); if (r > 0) { var v = FL(n.r, x); return v == null ? Tuple.Create(true, n.v) : v; } return Tuple.Create(true, n.v); }
+            Tuple<bool, T> FL(Node n, T x, bool s) { if (n == null) return null; var r = c(x, n.v); if (r < 0 || !s && r == 0) return FL(n.l, x, s); if (r > 0) { var v = FL(n.r, x, s); return v == null ? Tuple.Create(true, n.v) : v; } return Tuple.Create(true, n.v); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T Min() { Node n = r, p = null; while (n != null) { p = n; n = n.l; } return p == null ? default(T) : p.v; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -254,6 +254,32 @@ namespace Program
             public IEnumerable<T> List() => L(r);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             IEnumerable<T> L(Node n) { if (n == null) yield break; foreach (var i in L(n.l)) yield return i; yield return n.v; foreach (var i in L(n.r)) yield return i; }
+        }
+        class Dict<K, V> : Dictionary<K, V>
+        {
+            new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = default(V); } set { base[i] = value; } }
+        }
+        class Deque<T>
+        {
+            T[] b; int o, c;
+            public int Count;
+            public T this[int i] { get { return b[gi(i)]; } set { b[gi(i)] = value; } }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Deque(int cap = 16) { b = new T[c = cap]; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int gi(int i) { if (i >= c) throw new Exception(); var r = o + i; return r >= c ? r - c : r; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void PushFront(T x) { if (Count == c) e(); if (--o < 0) o += b.Length; b[o] = x; ++Count; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T PopFront() { if (Count-- == 0) throw new Exception(); var r = b[o++]; if (o >= c) o -= c; return r; }
+            public T Front => b[o];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void PushBack(T x) { if (Count == c) e(); var i = o + Count++; b[i >= c ? i - c : i] = x; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T PopBack() { if (Count == 0) throw new Exception(); return b[gi(--Count)]; }
+            public T Back => b[gi(Count - 1)];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void e() { T[] nb = new T[c << 1]; if (o > c - Count) { var l = b.Length - o; Array.Copy(b, o, nb, 0, l); Array.Copy(b, 0, nb, l, Count - l); } else Array.Copy(b, o, nb, 0, Count); b = nb; o = 0; c <<= 1; }
         }
     }
 }
