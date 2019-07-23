@@ -257,7 +257,12 @@ namespace Program
         }
         class Dict<K, V> : Dictionary<K, V>
         {
-            new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = default(V); } set { base[i] = value; } }
+            Func<K, V> d;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Dict(Func<K, V> _d) { d = _d; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Dict() : this(_ => default(V)) { }
+            new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = d(i); } set { base[i] = value; } }
         }
         class Deque<T>
         {
