@@ -9,32 +9,14 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC085D
+    public static class ABC085B
     {
         static public void Solve()
         {
             var N = NN;
-            var H = NN;
-            var ab = Repeat(0, N).Select(_ => new { a = NN, b = NN }).ToArray();
-            var q = new PQ<long, bool>(false);
-            foreach (var item in ab)
-            {
-                q.Push(item.a, true);
-                q.Push(item.b, false);
-            }
-            var ans = 0L;
-            while (H > 0)
-            {
-                var p = q.Pop();
-                if (p.Item2)
-                {
-                    ans += (H - 1) / p.Item1 + 1;
-                    break;
-                }
-                H -= p.Item1;
-                ++ans;
-            }
-            Console.WriteLine(ans);
+            var dList = NNList(N);
+            dList = dList.OrderByDescending(e => e).ToArray();
+            Console.WriteLine(dList.Distinct().Count());
         }
 
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }

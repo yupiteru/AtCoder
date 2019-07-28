@@ -9,32 +9,33 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC085D
+    public static class ABC085C
     {
         static public void Solve()
         {
             var N = NN;
-            var H = NN;
-            var ab = Repeat(0, N).Select(_ => new { a = NN, b = NN }).ToArray();
-            var q = new PQ<long, bool>(false);
-            foreach (var item in ab)
+            var Y = NN;
+            var ans1man = -1L;
+            var ans5sen = -1L;
+            var anssen = -1L;
+            for (var i = 0; i <= Y / 10000; i++)
             {
-                q.Push(item.a, true);
-                q.Push(item.b, false);
-            }
-            var ans = 0L;
-            while (H > 0)
-            {
-                var p = q.Pop();
-                if (p.Item2)
+                for (var j = 0; j <= Y / 5000; j++)
                 {
-                    ans += (H - 1) / p.Item1 + 1;
-                    break;
+                    var nowYen = i * 10000L + j * 5000;
+                    var nowMai = i + j;
+                    if (nowMai > N) break;
+                    if (Y - nowYen == (N - nowMai) * 1000L)
+                    {
+                        ans1man = i;
+                        ans5sen = j;
+                        anssen = N - i - j;
+                        Console.WriteLine($"{ans1man} {ans5sen} {anssen}");
+                        return;
+                    }
                 }
-                H -= p.Item1;
-                ++ans;
             }
-            Console.WriteLine(ans);
+            Console.WriteLine($"{ans1man} {ans5sen} {anssen}");
         }
 
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
