@@ -1,0 +1,13 @@
+
+[case 0]
+3 4
+
+[output]
+Even
+
+[case 1]
+1 21
+
+[output]
+Odd
+
