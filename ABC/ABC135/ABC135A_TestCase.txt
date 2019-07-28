@@ -1,0 +1,19 @@
+
+[case 0]
+2 16
+
+[output]
+9
+
+[case 1]
+0 3
+
+[output]
+IMPOSSIBLE
+
+[case 2]
+998244353 99824435
+
+[output]
+549034394
+
