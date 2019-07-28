@@ -9,31 +9,12 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC084D
+    public static class ABC084A
     {
         static public void Solve()
         {
-            var Q = NN;
-            var lr = Repeat(0, Q).Select(_ => new { l = NN, r = NN }).ToArray();
-
-            var likeNumberCounter = new long[100001];
-            var tbl = new bool[100001];
-            foreach (var prime in Primes(100000))
-            {
-                tbl[prime] = true;
-                if (tbl[(prime + 1) / 2])
-                {
-                    likeNumberCounter[prime]++;
-                }
-            }
-            for (var i = 1; i <= 100000; i++)
-            {
-                likeNumberCounter[i] += likeNumberCounter[i - 1];
-            }
-            foreach (var q in lr)
-            {
-                Console.WriteLine(likeNumberCounter[q.r] - likeNumberCounter[q.l - 1]);
-            }
+            var M = NN;
+            Console.WriteLine(24 + 24 - M);
         }
 
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }

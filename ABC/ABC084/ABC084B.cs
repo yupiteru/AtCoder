@@ -9,31 +9,45 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC084D
+    public static class ABC084B
     {
         static public void Solve()
         {
-            var Q = NN;
-            var lr = Repeat(0, Q).Select(_ => new { l = NN, r = NN }).ToArray();
-
-            var likeNumberCounter = new long[100001];
-            var tbl = new bool[100001];
-            foreach (var prime in Primes(100000))
+            var A = NN;
+            var B = NN;
+            var S = NS;
+            var idx = 0;
+            for (var i = 0; i < A; i++)
             {
-                tbl[prime] = true;
-                if (tbl[(prime + 1) / 2])
+                if ('0' <= S[idx] && S[idx] <= '9')
                 {
-                    likeNumberCounter[prime]++;
+                    ++idx;
+                }
+                else
+                {
+                    Console.WriteLine("No");
+                    return;
                 }
             }
-            for (var i = 1; i <= 100000; i++)
+            if (S[idx] != '-')
             {
-                likeNumberCounter[i] += likeNumberCounter[i - 1];
+                Console.WriteLine("No");
+                return;
             }
-            foreach (var q in lr)
+            ++idx;
+            for (var i = 0; i < B; i++)
             {
-                Console.WriteLine(likeNumberCounter[q.r] - likeNumberCounter[q.l - 1]);
+                if ('0' <= S[idx] && S[idx] <= '9')
+                {
+                    ++idx;
+                }
+                else
+                {
+                    Console.WriteLine("No");
+                    return;
+                }
             }
+            Console.WriteLine("Yes");
         }
 
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }

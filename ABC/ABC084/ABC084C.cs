@@ -9,30 +9,37 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC084D
+    public static class ABC084C
     {
         static public void Solve()
         {
-            var Q = NN;
-            var lr = Repeat(0, Q).Select(_ => new { l = NN, r = NN }).ToArray();
-
-            var likeNumberCounter = new long[100001];
-            var tbl = new bool[100001];
-            foreach (var prime in Primes(100000))
+            var N = NN;
+            var CSF = Repeat(0, N - 1).Select(_ => new { C = NN, S = NN, F = NN }).ToArray();
+            var time = new long[N];
+            for (var i = 0; i < N - 1; i++)
             {
-                tbl[prime] = true;
-                if (tbl[(prime + 1) / 2])
+                for (var j = 0; j <= i; j++)
                 {
-                    likeNumberCounter[prime]++;
+                    if (time[j] < CSF[i].S)
+                    {
+                        time[j] = CSF[i].S + CSF[i].C;
+                    }
+                    else
+                    {
+                        if ((time[j] % CSF[i].F) == 0)
+                        {
+                            time[j] += CSF[i].C;
+                        }
+                        else
+                        {
+                            time[j] += CSF[i].F - (time[j] % CSF[i].F) + CSF[i].C;
+                        }
+                    }
                 }
             }
-            for (var i = 1; i <= 100000; i++)
+            for (var i = 0; i < N; i++)
             {
-                likeNumberCounter[i] += likeNumberCounter[i - 1];
-            }
-            foreach (var q in lr)
-            {
-                Console.WriteLine(likeNumberCounter[q.r] - likeNumberCounter[q.l - 1]);
+                Console.WriteLine(time[i]);
             }
         }
 
