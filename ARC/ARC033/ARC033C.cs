@@ -9,11 +9,27 @@ using System.Threading;
 
 namespace Program
 {
-    public static class ABC000A
+    public static class ARC033C
     {
         static public void Solve()
         {
-
+            var Q = NN;
+            var tx = Repeat(0, Q).Select(_ => new { t = NN, x = NN }).ToArray();
+            var tree = new BT<long>();
+            foreach (var item in tx)
+            {
+                var t = item.t;
+                var x = item.x;
+                if (t == 1)
+                {
+                    tree.Add(x);
+                }
+                else
+                {
+                    Console.WriteLine(tree[x - 1]);
+                    tree.Remove(tree[x - 1]);
+                }
+            }
         }
 
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }

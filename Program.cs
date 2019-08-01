@@ -56,11 +56,11 @@ namespace AtCoder
                     {
                         if (nowInput)
                         {
-                            testCases[casename].Item1.AppendLine(line);
+                            testCases[casename].Item1.AppendLine(line.Trim());
                         }
                         else if (nowOutput)
                         {
-                            testCases[casename].Item2.AppendLine(line);
+                            testCases[casename].Item2.AppendLine(line.Trim());
                         }
                     }
                 }
