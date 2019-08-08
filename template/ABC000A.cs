@@ -255,7 +255,7 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Any() => r != null;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CountSlow() => L(r).Count();
+            public int Count() => r?.c ?? 0;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public IEnumerable<T> List() => L(r);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -295,6 +295,299 @@ namespace Program
             public void Insert(int i, T x) { if (i > Count) throw new Exception(); this.PushFront(x); for (int j = 0; j < i; j++) this[j] = this[j + 1]; this[i] = x; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T RemoveAt(int i) { if (i < 0 || i >= Count) throw new Exception(); var r = this[i]; for (int j = i; j > 0; j--) this[j] = this[j - 1]; this.PopFront(); return r; }
+        }
+        class ImplicitTreep<T, E> where T : IEquatable<T> where E : IEquatable<E>
+        {
+            class Node
+            {
+                public E value;
+                public T acc;
+                public E lazy;
+                public uint priority;
+                public int cnt;
+                public bool rev;
+                public Node l;
+                public Node r;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public Node(E val, E ei, T ti)
+                {
+                    priority = xorshift;
+                    value = val;
+                    acc = ti;
+                    lazy = ei;
+                    cnt = 1;
+                    rev = false;
+                    l = null;
+                    r = null;
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node CreateNode(E val) => new Node(val, ei, ti);
+
+            T ti;
+            E ei;
+            Func<T, T, T> f;
+            Func<T, E, T> g;
+            Func<E, E, E> h;
+            Node root = null;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ImplicitTreep(T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h)
+            {
+                ti = _ti;
+                ei = _ei;
+                f = _f;
+                g = _g;
+                h = _h;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int Count(Node n) => n?.cnt ?? 0;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T Acc(Node n) => n == null ? ti : n.acc;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void UpdateCount(Node n)
+            {
+                if (n != null) n.cnt = 1 + Count(n.l) + Count(n.r);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void UpdateAcc(Node n)
+            {
+                if (n != null) n.acc = f(Acc(n.l), f(g(ti, n.value), Acc(n.r)));
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Pushup(Node n)
+            {
+                UpdateCount(n);
+                UpdateAcc(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Pushdown(Node n)
+            {
+                if (n?.rev ?? false)
+                {
+                    n.rev = false;
+                    var t = n.l; n.l = n.r; n.r = t;
+                    if (n.l != null) n.l.rev ^= true;
+                    if (n.r != null) n.r.rev ^= true;
+                }
+                if (n != null && !n.lazy.Equals(ei))
+                {
+                    Action<Node> apply = t =>
+                    {
+                        if (t == null) return;
+                        t.lazy = h(t.lazy, n.lazy);
+                        t.acc = g(t.acc, n.lazy);
+                    };
+                    apply(n.l);
+                    apply(n.r);
+                    n.value = h(n.value, n.lazy);
+                    n.lazy = ei;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Split(Node n, long key, out Node l, out Node r)
+            {
+                if (n == null)
+                {
+                    l = r = null;
+                    return;
+                }
+                Pushdown(n);
+                var implicitKey = Count(n.l) + 1;
+                if (key < implicitKey)
+                {
+                    Split(n.l, key, out l, out n.l);
+                    r = n;
+                }
+                else
+                {
+                    Split(n.r, key - implicitKey, out n.r, out r);
+                    l = n;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Insert(ref Node n, long key, Node x)
+            {
+                if (n == null)
+                {
+                    n = x;
+                    return;
+                }
+                Pushdown(n);
+                if (Count(n.l) == key || x.priority > n.priority)
+                {
+                    Split(n, key, out x.l, out x.r);
+                    n = x;
+                }
+                else
+                {
+                    if (Count(n.l) > key)
+                    {
+                        Insert(ref n.l, key, x);
+                    }
+                    else
+                    {
+                        Insert(ref n.r, key - Count(n.l) - 1, x);
+                    }
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Merge(out Node n, Node l, Node r)
+            {
+                Pushdown(l);
+                Pushdown(r);
+                if (l == null || r == null)
+                {
+                    n = l != null ? l : r;
+                }
+                else if (l.priority > r.priority)
+                {
+                    Merge(out l.r, l.r, r);
+                    n = l;
+                }
+                else
+                {
+                    Merge(out r.l, l, r.l);
+                    n = r;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Erase(ref Node n, long key)
+            {
+                Pushdown(n);
+                if (Count(n.l) == key)
+                {
+                    Merge(out n, n.l, n.r);
+                }
+                else
+                {
+                    if (Count(n.l) > key)
+                    {
+                        Erase(ref n.l, key);
+                    }
+                    else
+                    {
+                        Erase(ref n.r, key - Count(n.l) - 1);
+                    }
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Update(Node n, long l, long r, E x)
+            {
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                n2.lazy = h(n2.lazy, x);
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T Query(Node n, long l, long r)
+            {
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                var ret = Acc(n2);
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+                return ret;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            long Find(Node n, T x, long offset, bool left = true)
+            {
+                if (f(Acc(n), x).Equals(x))
+                {
+                    return -1;
+                }
+                else
+                {
+                    if (left)
+                    {
+                        if (n.l != null && !f(n.l.acc, x).Equals(x))
+                        {
+                            return Find(n.l, x, offset, left);
+                        }
+                        else
+                        {
+                            return (!f(g(ti, n.value), x).Equals(x)) ? offset + Count(n.l) : Find(n.r, x, offset + Count(n.l) + 1, left);
+                        }
+                    }
+                    else
+                    {
+                        if (n.r != null && !f(n.r.acc, x).Equals(x))
+                        {
+                            return Find(n.r, x, offset + Count(n.l) + 1, left);
+                        }
+                        else
+                        {
+                            return (!f(g(ti, n.value), x).Equals(x)) ? offset + Count(n.l) : Find(n.l, x, offset, left);
+                        }
+                    }
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Reverse(Node n, long l, long r)
+            {
+                if (l >= r) return;
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                n2.rev ^= true;
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Rotate(Node n, long l, long m, long r)
+            {
+                Reverse(n, l, r);
+                Reverse(n, l, l + r - m);
+                Reverse(n, l + r - m, r);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Insert(long idx, E x) => Insert(ref root, idx, CreateNode(x));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Add(E x) => Insert(Count(), x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Update(long l, long r, E x) => Update(root, l, r, x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Query(long l, long r) => Query(root, l, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Find(long l, long r, T x, bool left = true)
+            {
+                Node n1, n2, n3;
+                Split(root, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                var ret = Find(n2, x, l, left);
+                Merge(out n2, n2, n3);
+                Merge(out root, n1, n2);
+                return ret < 0 ? r : ret;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Erase(long idx) => Erase(ref root, idx);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Reverse(long l, long r) => Reverse(root, l, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Rotate(long l, long m, long r) => Rotate(root, l, m, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Count() => Count(root);
+            public E this[long idx]
+            {
+                get
+                {
+                    Node n1, n2, n3;
+                    Split(root, idx + 1, out n1, out n2);
+                    Split(n1, idx, out n1, out n3);
+                    var ret = n3.value;
+                    Merge(out n1, n1, n3);
+                    Merge(out root, n1, n2);
+                    return ret;
+                }
+                private set { }
+            }
         }
     }
 }
