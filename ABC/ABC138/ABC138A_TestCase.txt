@@ -1,0 +1,22 @@
+
+[case 0]
+3200
+pink
+
+[output]
+pink
+
+[case 1]
+3199
+pink
+
+[output]
+red
+
+[case 2]
+4049
+red
+
+[output]
+red
+
