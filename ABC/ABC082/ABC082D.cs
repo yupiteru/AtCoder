@@ -37,8 +37,8 @@ namespace Program
                 newInstList.AddRange(instList);
                 instList = newInstList;
             }
-            var posx = new BT<long>();
-            var posy = new BT<long>();
+            var posx = new HashSet<long>();
+            var posy = new HashSet<long>();
             posx.Add(instList.First().Item2);
             posy.Add(0);
             var tate = false;
@@ -48,8 +48,8 @@ namespace Program
                 if (instList[i].Item2 % 2 != 0) tate = !tate;
                 if (tate)
                 {
-                    var newPos = new BT<long>();
-                    foreach (var item in posy.List())
+                    var newPos = new HashSet<long>();
+                    foreach (var item in posy)
                     {
                         newPos.Add(item + dif);
                         newPos.Add(item - dif);
@@ -58,8 +58,8 @@ namespace Program
                 }
                 else
                 {
-                    var newPos = new BT<long>();
-                    foreach (var item in posx.List())
+                    var newPos = new HashSet<long>();
+                    foreach (var item in posx)
                     {
                         newPos.Add(item + dif);
                         newPos.Add(item - dif);
@@ -67,7 +67,7 @@ namespace Program
                     posx = newPos;
                 }
             }
-            if (posx.Have(x) && posy.Have(y))
+            if (posx.Contains(x) && posy.Contains(y))
             {
                 Console.WriteLine("Yes");
             }
