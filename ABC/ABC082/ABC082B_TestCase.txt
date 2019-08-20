@@ -1,0 +1,36 @@
+
+[case 0]
+yx
+axy
+
+[output]
+Yes
+
+[case 1]
+ratcode
+atlas
+
+[output]
+Yes
+
+[case 2]
+cd
+abc
+
+[output]
+No
+
+[case 3]
+w
+ww
+
+[output]
+Yes
+
+[case 4]
+zzz
+zzz
+
+[output]
+No
+
