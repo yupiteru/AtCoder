@@ -11,6 +11,12 @@ namespace Program
 {
     public static class ABC000A
     {
+        static public int numberOfRandomCases = 0;
+        static public void MakeTestCase(List<string> _input, List<string> _output)
+        {
+
+        }
+
         static public void Solve()
         {
 
@@ -50,7 +56,7 @@ namespace Program
         static uint xorshift { get { _xsi.MoveNext(); return _xsi.Current; } }
         static IEnumerator<uint> _xsi = _xsc();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = 0; while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
+        static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = (uint)(DateTime.Now.Ticks & 0xffffffff); while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long GCD(long a, long b) { while (b > 0) { var tmp = b; b = a % b; a = tmp; } return a; }
         static long LCM(long a, long b) => a * b / GCD(a, b);

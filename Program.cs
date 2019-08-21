@@ -120,6 +120,77 @@ namespace AtCoder
                         }
                     }
                 }
+                if (item.GetField("numberOfRandomCases") != null && item.GetMethod("MakeTestCase") != null)
+                {
+                    var numberOfRandomCases = (int)item.GetField("numberOfRandomCases").GetValue(null);
+                    if (numberOfRandomCases > 0)
+                    {
+                        Console.WriteLine($"{className} Random Case");
+                        var doneCount = 0;
+                        while (--numberOfRandomCases >= 0)
+                        {
+                            var input = new List<string>();
+                            var output = new List<string>();
+                            item.GetMethod("MakeTestCase").Invoke(null, new object[] { input, output });
+
+                            var result = new StringWriter();
+                            var oldIn = Console.In;
+                            var oldOut = Console.Out;
+                            Console.SetIn(new StringReader(string.Join("\r\n", input)));
+                            Console.SetOut(result);
+                            item.GetMethod("Main").Invoke(null, new object[] { new string[] { "debug" } });
+                            Console.SetIn(oldIn);
+                            Console.SetOut(oldOut);
+
+                            var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
+                            var expect = output.ToArray();
+                            var ok = true;
+                            for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
+                            {
+                                if (i >= actual.Length)
+                                {
+                                    if (expect[i].Trim() != "")
+                                    {
+                                        ok = false;
+                                        break;
+                                    }
+                                }
+                                else if (i >= expect.Length)
+                                {
+                                    if (actual[i].Trim() != "")
+                                    {
+                                        ok = false;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (actual[i] != expect[i])
+                                    {
+                                        ok = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            Console.Write($"\r{++doneCount} cases done.");
+                            if (!ok)
+                            {
+                                Console.WriteLine("");
+                                foreach (var item2 in expect)
+                                {
+                                    if (item2 == "") continue;
+                                    Console.WriteLine("    expected: " + item2);
+                                }
+                                foreach (var item2 in actual)
+                                {
+                                    if (item2 == "") continue;
+                                    Console.WriteLine("    actually: " + item2);
+                                }
+                            }
+                        }
+                        Console.WriteLine("");
+                    }
+                }
             }
             Console.ReadLine();
         }

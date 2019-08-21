@@ -11,6 +11,37 @@ namespace Program
 {
     public static class ABC134E
     {
+        static public int numberOfRandomCases = 3000;
+        static public void MakeTestCase(List<string> _input, List<string> _output)
+        {
+            var N = (xorshift % 1000) + 1;
+            var AList = Repeat(0, N).Select(_ => xorshift % 1000000).ToArray();
+            _input.Add(N.ToString());
+            _input.AddRange(AList.Select(e => e.ToString()));
+            var bt = new BT<long>();
+            var color = 0L;
+            foreach (var item in AList)
+            {
+                var mimanNoSaidai = bt.FindLower(item, false);
+                if (mimanNoSaidai.Item1)
+                {
+                    bt.Remove(mimanNoSaidai.Item2);
+                    bt.Add(item);
+                }
+                else
+                {
+                    bt.Add(item);
+                    color++;
+                }
+            }
+            if (xorshift % 1000 == 0)
+            {
+                _output.Add((xorshift % 100).ToString());
+                return;
+            }
+            _output.Add(color.ToString());
+        }
+
         static public void Solve()
         {
             var N = NN;
@@ -32,11 +63,8 @@ namespace Program
                 }
             }
             Console.WriteLine(color);
-
         }
-
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
-        static Random rand = new Random();
         static class Console_
         {
             static Queue<string> param = new Queue<string>();
@@ -53,7 +81,7 @@ namespace Program
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => rand.Next());
+        static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => xorshift);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<T> Repeat<T>(T v, long n) => Enumerable.Repeat<T>(v, (int)n);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,6 +96,10 @@ namespace Program
         static IEnumerable<long> Factors(long x) { if (x < 2) yield break; while (x % 2 == 0) { x /= 2; yield return 2; } var max = (long)Math.Sqrt(x); for (long i = 3; i <= max; i += 2) while (x % i == 0) { x /= i; yield return i; } if (x != 1) yield return x; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static IEnumerable<long> Divisor(long x) { if (x < 1) yield break; var max = (long)Math.Sqrt(x); for (long i = 1; i <= max; ++i) { if (x % i != 0) continue; yield return i; if (i != x / i) yield return x / i; } }
+        static uint xorshift { get { _xsi.MoveNext(); return _xsi.Current; } }
+        static IEnumerator<uint> _xsi = _xsc();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = (uint)(DateTime.Now.Ticks & 0xffffffff); while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long GCD(long a, long b) { while (b > 0) { var tmp = b; b = a % b; a = tmp; } return a; }
         static long LCM(long a, long b) => a * b / GCD(a, b);
@@ -217,7 +249,7 @@ namespace Program
         }
         class BT<T> where T : IComparable
         {
-            class Node { public Node l; public Node r; public T v; public bool b; }
+            class Node { public Node l; public Node r; public T v; public bool b; public int c; }
             Comparison<T> c; Node r; bool ch; T lm;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public BT(Comparison<T> _c) { c = _c; }
@@ -228,9 +260,9 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             bool B(Node n) => n != null && n.b;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node RtL(Node n) { Node m = n.r, t = m.l; m.l = n; n.r = t; return m; }
+            Node RtL(Node n) { Node m = n.r, t = m.l; m.l = n; n.r = t; n.c -= m.c - (t?.c ?? 0); m.c += n.c - (t?.c ?? 0); return m; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node RtR(Node n) { Node m = n.l, t = m.r; m.r = n; n.l = t; return m; }
+            Node RtR(Node n) { Node m = n.l, t = m.r; m.r = n; n.l = t; n.c -= m.c - (t?.c ?? 0); m.c += n.c - (t?.c ?? 0); return m; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             Node RtLR(Node n) { n.l = RtL(n.l); return RtR(n); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,19 +270,22 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Add(T x) { r = A(r, x); r.b = true; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node A(Node n, T x) { if (n == null) { ch = true; return new Node() { v = x }; } if (c(x, n.v) < 0) n.l = A(n.l, x); else n.r = A(n.r, x); return Bl(n); }
+            Node A(Node n, T x) { if (n == null) { ch = true; return new Node() { v = x, c = 1 }; } if (c(x, n.v) < 0) n.l = A(n.l, x); else n.r = A(n.r, x); n.c++; return Bl(n); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             Node Bl(Node n) { if (!ch) return n; if (!B(n)) return n; if (R(n.l) && R(n.l.l)) { n = RtR(n); n.l.b = true; } else if (R(n.l) && R(n.l.r)) { n = RtLR(n); n.l.b = true; } else if (R(n.r) && R(n.r.l)) { n = RtRL(n); n.r.b = true; } else if (R(n.r) && R(n.r.r)) { n = RtL(n); n.r.b = true; } else ch = false; return n; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Remove(T x) { r = Rm(r, x); if (r != null) r.b = true; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node Rm(Node n, T x) { if (n == null) { ch = false; return n; } var r = c(x, n.v); if (r < 0) { n.l = Rm(n.l, x); return BlL(n); } if (r > 0) { n.r = Rm(n.r, x); return BlR(n); } if (n.l == null) { ch = n.b; return n.r; } n.l = RmM(n.l); n.v = lm; return BlL(n); }
+            Node Rm(Node n, T x) { if (n == null) { ch = false; return n; } n.c--; var r = c(x, n.v); if (r < 0) { n.l = Rm(n.l, x); return BlL(n); } if (r > 0) { n.r = Rm(n.r, x); return BlR(n); } if (n.l == null) { ch = n.b; return n.r; } n.l = RmM(n.l); n.v = lm; return BlL(n); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            Node RmM(Node n) { if (n.r != null) { n.r = RmM(n.r); return BlR(n); } lm = n.v; ch = n.b; return n.l; }
+            Node RmM(Node n) { n.c--; if (n.r != null) { n.r = RmM(n.r); return BlR(n); } lm = n.v; ch = n.b; return n.l; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             Node BlL(Node n) { if (!ch) return n; if (B(n.r) && R(n.r.l)) { var b = n.b; n = RtRL(n); n.b = b; n.l.b = true; ch = false; } else if (B(n.r) && R(n.r.r)) { var b = n.b; n = RtL(n); n.b = b; n.r.b = true; n.l.b = true; ch = false; } else if (B(n.r)) { ch = n.b; n.b = true; n.r.b = false; } else { n = RtL(n); n.b = true; n.l.b = false; n.l = BlL(n.l); ch = false; } return n; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             Node BlR(Node n) { if (!ch) return n; if (B(n.l) && R(n.l.r)) { var b = n.b; n = RtLR(n); n.b = b; n.r.b = true; ch = false; } else if (B(n.l) && R(n.l.l)) { var b = n.b; n = RtR(n); n.b = b; n.l.b = true; n.r.b = true; ch = false; } else if (B(n.l)) { ch = n.b; n.b = true; n.l.b = false; } else { n = RtR(n); n.b = true; n.r.b = false; n.r = BlR(n.r); ch = false; } return n; }
+            public T this[long i] { get { return At(r, i); } }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T At(Node n, long i) { if (n == null) return default(T); if (n.l == null) if (i == 0) return n.v; else return At(n.r, i - 1); if (n.l.c == i) return n.v; if (n.l.c > i) return At(n.l, i); return At(n.r, i - n.l.c - 1); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Have(T x) { var t = FindUpper(x); return t.Item1 && t.Item2.CompareTo(x) == 0; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -268,7 +303,7 @@ namespace Program
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Any() => r != null;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CountSlow() => L(r).Count();
+            public int Count() => r?.c ?? 0;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public IEnumerable<T> List() => L(r);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -276,7 +311,12 @@ namespace Program
         }
         class Dict<K, V> : Dictionary<K, V>
         {
-            new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = default(V); } set { base[i] = value; } }
+            Func<K, V> d;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Dict(Func<K, V> _d) { d = _d; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Dict() : this(_ => default(V)) { }
+            new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = d(i); } set { base[i] = value; } }
         }
         class Deque<T>
         {
@@ -299,6 +339,410 @@ namespace Program
             public T Back => b[gi(Count - 1)];
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void e() { T[] nb = new T[c << 1]; if (o > c - Count) { var l = b.Length - o; Array.Copy(b, o, nb, 0, l); Array.Copy(b, 0, nb, l, Count - l); } else Array.Copy(b, o, nb, 0, Count); b = nb; o = 0; c <<= 1; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Insert(int i, T x) { if (i > Count) throw new Exception(); this.PushFront(x); for (int j = 0; j < i; j++) this[j] = this[j + 1]; this[i] = x; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T RemoveAt(int i) { if (i < 0 || i >= Count) throw new Exception(); var r = this[i]; for (int j = i; j > 0; j--) this[j] = this[j - 1]; this.PopFront(); return r; }
+        }
+        class ImplicitTreep<T, E> where T : IEquatable<T> where E : IEquatable<E>
+        {
+            class Node
+            {
+                public E value;
+                public T acc;
+                public E lazy;
+                public uint priority;
+                public int cnt;
+                public bool rev;
+                public Node l;
+                public Node r;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public Node(E val, E ei, T ti)
+                {
+                    priority = xorshift;
+                    value = val;
+                    acc = ti;
+                    lazy = ei;
+                    cnt = 1;
+                    rev = false;
+                    l = null;
+                    r = null;
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            Node CreateNode(E val) => new Node(val, ei, ti);
+
+            T ti;
+            E ei;
+            Func<T, T, T> f;
+            Func<T, E, T> g;
+            Func<E, E, E> h;
+            Node root = null;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ImplicitTreep(T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h)
+            {
+                ti = _ti;
+                ei = _ei;
+                f = _f;
+                g = _g;
+                h = _h;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int Count(Node n) => n?.cnt ?? 0;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T Acc(Node n) => n == null ? ti : n.acc;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void UpdateCount(Node n)
+            {
+                if (n != null) n.cnt = 1 + Count(n.l) + Count(n.r);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void UpdateAcc(Node n)
+            {
+                if (n != null) n.acc = f(Acc(n.l), f(g(ti, n.value), Acc(n.r)));
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Pushup(Node n)
+            {
+                UpdateCount(n);
+                UpdateAcc(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Pushdown(Node n)
+            {
+                if (n?.rev ?? false)
+                {
+                    n.rev = false;
+                    var t = n.l; n.l = n.r; n.r = t;
+                    if (n.l != null) n.l.rev ^= true;
+                    if (n.r != null) n.r.rev ^= true;
+                }
+                if (n != null && !n.lazy.Equals(ei))
+                {
+                    Action<Node> apply = t =>
+                    {
+                        if (t == null) return;
+                        t.lazy = h(t.lazy, n.lazy);
+                        t.acc = g(t.acc, n.lazy);
+                    };
+                    apply(n.l);
+                    apply(n.r);
+                    n.value = h(n.value, n.lazy);
+                    n.lazy = ei;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Split(Node n, long key, out Node l, out Node r)
+            {
+                if (n == null)
+                {
+                    l = r = null;
+                    return;
+                }
+                Pushdown(n);
+                var implicitKey = Count(n.l) + 1;
+                if (key < implicitKey)
+                {
+                    Split(n.l, key, out l, out n.l);
+                    r = n;
+                }
+                else
+                {
+                    Split(n.r, key - implicitKey, out n.r, out r);
+                    l = n;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Insert(ref Node n, long key, Node x)
+            {
+                if (n == null)
+                {
+                    n = x;
+                    return;
+                }
+                Pushdown(n);
+                if (Count(n.l) == key || x.priority > n.priority)
+                {
+                    Split(n, key, out x.l, out x.r);
+                    n = x;
+                }
+                else
+                {
+                    if (Count(n.l) > key)
+                    {
+                        Insert(ref n.l, key, x);
+                    }
+                    else
+                    {
+                        Insert(ref n.r, key - Count(n.l) - 1, x);
+                    }
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Merge(out Node n, Node l, Node r)
+            {
+                Pushdown(l);
+                Pushdown(r);
+                if (l == null || r == null)
+                {
+                    n = l != null ? l : r;
+                }
+                else if (l.priority > r.priority)
+                {
+                    Merge(out l.r, l.r, r);
+                    n = l;
+                }
+                else
+                {
+                    Merge(out r.l, l, r.l);
+                    n = r;
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Erase(ref Node n, long key)
+            {
+                Pushdown(n);
+                if (Count(n.l) == key)
+                {
+                    Merge(out n, n.l, n.r);
+                }
+                else
+                {
+                    if (Count(n.l) > key)
+                    {
+                        Erase(ref n.l, key);
+                    }
+                    else
+                    {
+                        Erase(ref n.r, key - Count(n.l) - 1);
+                    }
+                }
+                Pushup(n);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Update(Node n, long l, long r, E x)
+            {
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                n2.lazy = h(n2.lazy, x);
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T Query(Node n, long l, long r)
+            {
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                var ret = Acc(n2);
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+                return ret;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            long Find(Node n, T x, long offset, bool left = true)
+            {
+                if (f(Acc(n), x).Equals(x))
+                {
+                    return -1;
+                }
+                else
+                {
+                    if (left)
+                    {
+                        if (n.l != null && !f(n.l.acc, x).Equals(x))
+                        {
+                            return Find(n.l, x, offset, left);
+                        }
+                        else
+                        {
+                            return (!f(g(ti, n.value), x).Equals(x)) ? offset + Count(n.l) : Find(n.r, x, offset + Count(n.l) + 1, left);
+                        }
+                    }
+                    else
+                    {
+                        if (n.r != null && !f(n.r.acc, x).Equals(x))
+                        {
+                            return Find(n.r, x, offset + Count(n.l) + 1, left);
+                        }
+                        else
+                        {
+                            return (!f(g(ti, n.value), x).Equals(x)) ? offset + Count(n.l) : Find(n.l, x, offset, left);
+                        }
+                    }
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Reverse(Node n, long l, long r)
+            {
+                if (l >= r) return;
+                Node n1, n2, n3;
+                Split(n, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                n2.rev ^= true;
+                Merge(out n2, n2, n3);
+                Merge(out n, n1, n2);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Rotate(Node n, long l, long m, long r)
+            {
+                Reverse(n, l, r);
+                Reverse(n, l, l + r - m);
+                Reverse(n, l + r - m, r);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Insert(long idx, E x) => Insert(ref root, idx, CreateNode(x));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Add(E x) => Insert(Count(), x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Update(long l, long r, E x) => Update(root, l, r, x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Query(long l, long r) => Query(root, l, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public long Find(long l, long r, T x, bool left = true)
+            {
+                Node n1, n2, n3;
+                Split(root, l, out n1, out n2);
+                Split(n2, r - l, out n2, out n3);
+                var ret = Find(n2, x, l, left);
+                Merge(out n2, n2, n3);
+                Merge(out root, n1, n2);
+                return ret < 0 ? r : ret;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Erase(long idx) => Erase(ref root, idx);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Reverse(long l, long r) => Reverse(root, l, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Rotate(long l, long m, long r) => Rotate(root, l, m, r);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Count() => Count(root);
+            public E this[long idx]
+            {
+                get
+                {
+                    Node n1, n2, n3;
+                    Split(root, idx + 1, out n1, out n2);
+                    Split(n1, idx, out n1, out n3);
+                    var ret = n3.value;
+                    Merge(out n1, n1, n3);
+                    Merge(out root, n1, n2);
+                    return ret;
+                }
+                private set { }
+            }
+        }
+
+        class SegTree<T>
+        {
+            int n; T ti; Func<T, T, T> f; T[] dat;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public SegTree(long _n, T _ti, Func<T, T, T> _f)
+            {
+                n = 1;
+                while (n < _n) n <<= 1;
+                ti = _ti; f = _f;
+                dat = Repeat(ti, n << 1).ToArray();
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public SegTree(List<T> l, T _ti, Func<T, T, T> _f) : this(l.Count, _ti, _f)
+            {
+                for (var i = 0; i < l.Count; i++) dat[n + i] = l[i];
+                for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Update(long i, T v)
+            {
+                dat[i += n] = v;
+                while ((i >>= 1) > 0) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Query(long l, long r)
+            {
+                var vl = ti; var vr = ti;
+                for (long li = n + l, ri = n + r; li < ri; li >>= 1, ri >>= 1)
+                {
+                    if ((li & 1) == 1) vl = f(vl, dat[li++]);
+                    if ((ri & 1) == 1) vr = f(dat[--ri], vr);
+                }
+                return f(vl, vr);
+            }
+            public T this[long idx]
+            {
+                get { return dat[idx + n]; }
+                set { Update(idx, value); }
+            }
+        }
+        class LazySegTree<T, E> where T : IEquatable<T> where E : IEquatable<E>
+        {
+            int n, height; T ti; E ei; Func<T, T, T> f; Func<T, E, T> g; Func<E, E, E> h; T[] dat; E[] laz;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h)
+            {
+                n = 1; height = 0;
+                while (n < _n)
+                {
+                    n <<= 1;
+                    ++height;
+                }
+                ti = _ti; ei = _ei; f = _f; g = _g; h = _h;
+                dat = Repeat(ti, n << 1).ToArray();
+                laz = Repeat(ei, n << 1).ToArray();
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public LazySegTree(List<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) : this(l.Count, _ti, _ei, _f, _g, _h)
+            {
+                for (var i = 0; i < l.Count; i++) dat[n + i] = l[i];
+                for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            T Reflect(long i) => laz[i].Equals(ei) ? dat[i] : g(dat[i], laz[i]);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Eval(long i)
+            {
+                if (laz[i].Equals(ei)) return;
+                laz[(i << 1) | 0] = h(laz[(i << 1) | 0], laz[i]);
+                laz[(i << 1) | 1] = h(laz[(i << 1) | 1], laz[i]);
+                dat[i] = Reflect(i);
+                laz[i] = ei;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Thrust(long i) { for (var j = height; j > 0; j--) Eval(i >> j); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Recalc(long i) { while ((i >>= 1) > 0) dat[i] = f(Reflect((i << 1) | 0), Reflect((i << 1) | 1)); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Update(long l, long r, E v)
+            {
+                Thrust(l += n); Thrust(r += n - 1);
+                for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
+                {
+                    if ((li & 1) == 1) { laz[li] = h(laz[li], v); ++li; }
+                    if ((ri & 1) == 1) { --ri; laz[ri] = h(laz[ri], v); }
+                }
+                Recalc(l); Recalc(r);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Query(long l, long r)
+            {
+                Thrust(l += n); Thrust(r += n - 1);
+                var vl = ti; var vr = ti;
+                for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
+                {
+                    if ((li & 1) == 1) vl = f(vl, Reflect(li++));
+                    if ((ri & 1) == 1) vr = f(Reflect(--ri), vr);
+                }
+                return f(vl, vr);
+            }
+            public T this[long idx]
+            {
+                get { Thrust(idx += n); return dat[idx] = Reflect(idx); }
+                set { Thrust(idx += n); dat[idx] = value; laz[idx] = ei; Recalc(idx); }
+            }
         }
     }
 }
