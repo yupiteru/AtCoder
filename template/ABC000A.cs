@@ -130,6 +130,79 @@ namespace Program
             public Tuple<long, long, int>[] Euler() { if (!euler) { var ne = new List<Tuple<long, long, int>>(); var s = new Stack<Tuple<long, long>>(); var d = new bool[N]; d[r] = true; s.Push(Tuple.Create(r, -1L)); while (s.Count > 0) { var w = s.Peek(); var ad = true; foreach (var i in p[w.Item1]) { if (d[i]) continue; d[i] = true; ad = false; s.Push(Tuple.Create(i, w.Item1)); } if (!ad || p[w.Item1].Count == 1) ne.Add(Tuple.Create(w.Item1, w.Item2, 1)); if (ad) { s.Pop(); ne.Add(Tuple.Create(w.Item1, w.Item2, -1)); } } e = ne.ToArray(); euler = true; } return e; }
             public long LCA(long u, long v) { if (!lca) { l = 0; while (N > (1 << l)) l++; d = new int[N]; pr = Repeat(0, l).Select(_ => new long[N]).ToArray(); d[r] = 0; pr[0][r] = -1; var q = new Stack<long>(); q.Push(r); while (q.Count > 0) { var w = q.Pop(); foreach (var i in p[w]) { if (i == pr[0][w]) continue; q.Push(i); d[i] = d[w] + 1; pr[0][i] = w; } } for (var k = 0; k + 1 < l; k++) for (var w = 0; w < N; w++) if (pr[k][w] < 0) pr[k + 1][w] = -1; else pr[k + 1][w] = pr[k][pr[k][w]]; lca = true; } if (d[u] > d[v]) { var t = u; u = v; v = t; } for (var k = 0; k < l; k++) if ((((d[v] - d[u]) >> k) & 1) != 0) v = pr[k][v]; if (u == v) return u; for (var k = l - 1; k >= 0; k--) if (pr[k][u] != pr[k][v]) { u = pr[k][u]; v = pr[k][v]; } return pr[0][u]; }
         }
+        class Graph
+        {
+            int n; List<Tuple<int, int, long>> pathList; Dictionary<int, long>[] vtxPath; long INF = (long.MaxValue >> 1) - 1;
+            public Graph(long _n)
+            {
+                n = (int)_n;
+                pathList = new List<Tuple<int, int, long>>();
+                vtxPath = Repeat(0, n).Select(_ => new Dictionary<int, long>()).ToArray();
+            }
+            public void AddPath(long a, long b, long c)
+            {
+                pathList.Add(Tuple.Create((int)a, (int)b, c));
+                vtxPath[a][(int)b] = vtxPath[a].ContainsKey((int)b) ? Min(vtxPath[a][(int)b], c) : c;
+            }
+            public long[,] WarshallFloyd()
+            {
+                var ret = new long[n, n];
+                for (var i = 0; i < n; i++)
+                    for (var j = 0; j < n; j++)
+                        ret[i, j] = vtxPath[i].ContainsKey(j) ? vtxPath[i][j] : INF;
+                for (var k = 0; k < n; k++)
+                    for (var i = 0; i < n; i++)
+                        for (var j = 0; j < n; j++)
+                            ret[i, j] = Min(ret[i, j], ret[i, k] + ret[k, j]);
+                return ret;
+            }
+            public Tuple<long[], int?[], bool[]> BellmanFord(long s)
+            {
+                var dist = Repeat(INF, n).ToArray();
+                var pred = new int?[n];
+                var neg = new bool[n];
+                dist[s] = 0;
+                for (var i = 1; i < n; i++)
+                    foreach (var path in pathList)
+                        if (dist[path.Item2] > (dist[path.Item1] == INF ? INF : dist[path.Item1] + path.Item3))
+                        {
+                            dist[path.Item2] = dist[path.Item1] + path.Item3;
+                            pred[path.Item2] = path.Item1;
+                        }
+                for (var i = 0; i < n; i++)
+                    foreach (var path in pathList)
+                        if (dist[path.Item2] > (dist[path.Item1] == INF ? INF : dist[path.Item1] + path.Item3) || neg[path.Item1])
+                        {
+                            dist[path.Item2] = dist[path.Item1] + path.Item3;
+                            neg[path.Item2] = true;
+                        }
+                return Tuple.Create(dist, pred, neg);
+            }
+            public Tuple<long[], int?[]> Dijkstra(long s)
+            {
+                var dist = Repeat(long.MaxValue >> 2, n).ToArray();
+                var pred = new int?[n];
+                dist[s] = 0;
+                var q = new PQ<long, int>();
+                q.Push(0, (int)s);
+                while (q.Count > 0)
+                {
+                    var u = q.Pop().Item2;
+                    foreach (var path in vtxPath[u])
+                    {
+                        var v = path.Key;
+                        var alt = dist[u] + path.Value;
+                        if (dist[v] > alt)
+                        {
+                            dist[v] = alt;
+                            pred[v] = u;
+                            q.Push(alt, v);
+                        }
+                    }
+                }
+                return Tuple.Create(dist, pred);
+            }
+        }
         class BT<T> where T : IComparable
         {
             class Node { public Node l; public Node r; public T v; public bool b; public int c; }
