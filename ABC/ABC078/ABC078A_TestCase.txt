@@ -1,0 +1,19 @@
+
+[case 0]
+A B
+
+[output]
+<
+
+[case 1]
+E C
+
+[output]
+>
+
+[case 2]
+F F
+
+[output]
+=
+
