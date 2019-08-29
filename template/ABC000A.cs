@@ -43,7 +43,8 @@ namespace Program
         static long GCD(long a, long b) { while (b > 0) { var tmp = b; b = a % b; a = tmp; } return a; }
         static long LCM(long a, long b) => a * b / GCD(a, b);
         static Mat<T> Pow<T>(Mat<T> x, long y) => Mat<T>.Pow(x, y);
-        static T Pow<T>(T x, long y) { T a = (dynamic)1; while (y != 0) { if ((y & 1) == 1) a *= (dynamic)x; x *= (dynamic)x; y >>= 1; } return a; }
+        static Mod Pow(Mod x, long y) { Mod a = 1; while (y != 0) { if ((y & 1) == 1) a.Mul(x); x.Mul(x); y >>= 1; } return a; }
+        static long Pow(long x, long y) { long a = 1; while (y != 0) { if ((y & 1) == 1) a *= x; x *= x; y >>= 1; } return a; }
         static List<long> _fact = new List<long>() { 1 };
         static void _B(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
         static long Comb(long n, long k) { _B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
@@ -84,24 +85,28 @@ namespace Program
             public long Root(long x) => d[x] < 0 ? x : d[x] = Root(d[x]);
             public long Count(long x) => -d[Root(d[x])];
         }
-        struct Mod : IEquatable<object>
+        struct Mod : IEquatable<Mod>, IEquatable<long>
         {
-            static public long _mod = 1000000007; long _val;
-            public Mod(long x) { if (x < _mod && x >= 0) _val = x; else if ((_val = x % _mod) < 0) _val += _mod; }
+            static public long _mod = 1000000007; long v;
+            public Mod(long x) { if (x < _mod && x >= 0) v = x; else if ((v = x % _mod) < 0) v += _mod; }
             static public implicit operator Mod(long x) => new Mod(x);
-            static public implicit operator long(Mod x) => x._val;
-            static public Mod operator +(Mod x, Mod y) { var t = x._val + y._val; return t >= _mod ? new Mod { _val = t - _mod } : new Mod { _val = t }; }
-            static public Mod operator -(Mod x, Mod y) { var t = x._val - y._val; return t < 0 ? new Mod { _val = t + _mod } : new Mod { _val = t }; }
-            static public Mod operator *(Mod x, Mod y) => x._val * y._val;
-            static public Mod operator /(Mod x, Mod y) => x._val * Inverse(y._val);
-            static public bool operator ==(Mod x, Mod y) => x._val == y._val;
-            static public bool operator !=(Mod x, Mod y) => x._val != y._val;
+            static public implicit operator long(Mod x) => x.v;
+            public void Add(Mod x) { if ((v += x.v) >= _mod) v -= _mod; }
+            public void Sub(Mod x) { if ((v -= x.v) < 0) v += _mod; }
+            public void Mul(Mod x) => v = (v * x.v) % _mod;
+            public void Div(Mod x) => v = (v * Inverse(x.v)) % _mod;
+            static public Mod operator +(Mod x, Mod y) { var t = x.v + y.v; return t >= _mod ? new Mod { v = t - _mod } : new Mod { v = t }; }
+            static public Mod operator -(Mod x, Mod y) { var t = x.v - y.v; return t < 0 ? new Mod { v = t + _mod } : new Mod { v = t }; }
+            static public Mod operator *(Mod x, Mod y) => x.v * y.v;
+            static public Mod operator /(Mod x, Mod y) => x.v * Inverse(y.v);
+            static public bool operator ==(Mod x, Mod y) => x.v == y.v;
+            static public bool operator !=(Mod x, Mod y) => x.v != y.v;
             static public long Inverse(long x) { long b = _mod, r = 1, u = 0, t = 0; while (b > 0) { var q = x / b; t = u; u = r - q * u; r = t; t = b; b = x - q * b; x = t; } return r < 0 ? r + _mod : r; }
-            bool IEquatable<object>.Equals(object obj) => obj == null ? false : Equals((Mod)obj);
-            public override bool Equals(object obj) => obj == null ? false : Equals((Mod)obj);
-            public bool Equals(Mod obj) => obj == null ? false : _val == obj._val;
-            public override int GetHashCode() => _val.GetHashCode();
-            public override string ToString() => _val.ToString();
+            public bool Equals(Mod x) => v == x.v;
+            public bool Equals(long x) => v == x;
+            public override bool Equals(object x) => x == null ? false : Equals((Mod)x);
+            public override int GetHashCode() => v.GetHashCode();
+            public override string ToString() => v.ToString();
             static List<Mod> _fact = new List<Mod>() { 1 };
             static void B(long n) { if (n >= _fact.Count) for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i); }
             static public Mod Comb(long n, long k) { B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
