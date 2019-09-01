@@ -1,0 +1,22 @@
+
+[case 0]
+CSS
+CSR
+
+[output]
+2
+
+[case 1]
+SSR
+SSR
+
+[output]
+3
+
+[case 2]
+RRR
+SSS
+
+[output]
+0
+
