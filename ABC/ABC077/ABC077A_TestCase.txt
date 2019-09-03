@@ -1,0 +1,22 @@
+
+[case 0]
+pot
+top
+
+[output]
+YES
+
+[case 1]
+tab
+bet
+
+[output]
+NO
+
+[case 2]
+eye
+eel
+
+[output]
+NO
+
