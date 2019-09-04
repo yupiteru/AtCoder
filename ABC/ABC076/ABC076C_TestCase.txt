@@ -1,0 +1,15 @@
+
+[case 0]
+?tc????
+coder
+
+[output]
+atcoder
+
+[case 1]
+??p??d??
+abc
+
+[output]
+UNRESTORABLE
+
