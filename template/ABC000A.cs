@@ -83,7 +83,7 @@ namespace Program
             public bool Unite(long x, long y) { x = Root(x); y = Root(y); if (x != y) { if (d[y] < d[x]) { var t = y; y = x; x = t; } d[x] += d[y]; d[y] = x; } return x != y; }
             public bool IsSame(long x, long y) => Root(x) == Root(y);
             public long Root(long x) => d[x] < 0 ? x : d[x] = Root(d[x]);
-            public long Count(long x) => -d[Root(d[x])];
+            public long Count(long x) => -d[Root(x)];
         }
         struct Mod : IEquatable<Mod>, IEquatable<long>
         {
