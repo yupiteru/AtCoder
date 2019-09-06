@@ -275,7 +275,7 @@ namespace Program
             public T Query(long l, long r) { var vl = ti; var vr = ti; for (long li = n + l, ri = n + r; li < ri; li >>= 1, ri >>= 1) { if ((li & 1) == 1) vl = f(vl, dat[li++]); if ((ri & 1) == 1) vr = f(dat[--ri], vr); } return f(vl, vr); }
             public T this[long idx] { get { return dat[idx + n]; } set { Update(idx, value); } }
         }
-        class LazySegTree<T, E> where T : IEquatable<T> where E : IEquatable<E>
+        class LazySegTree<T, E>
         {
             int n, height; T ti; E ei; Func<T, T, T> f; Func<T, E, T> g; Func<E, E, E> h; T[] dat; E[] laz;
             public LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) { n = 1; height = 0; while (n < _n) { n <<= 1; ++height; } ti = _ti; ei = _ei; f = _f; g = _g; h = _h; dat = Repeat(ti, n << 1).ToArray(); laz = Repeat(ei, n << 1).ToArray(); }
