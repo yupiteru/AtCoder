@@ -10,7 +10,7 @@ namespace Program
     public static class ABC000A
     {
         static public int numberOfRandomCases = 0;
-        static public void MakeTestCase(List<string> _input, List<string> _output)
+        static public void MakeTestCase(List<string> _input, List<string> _output, ref Func<string[], bool> _outputChecker)
         {
         }
         static public void Solve()

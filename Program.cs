@@ -131,7 +131,12 @@ namespace AtCoder
                         {
                             var input = new List<string>();
                             var output = new List<string>();
-                            item.GetMethod("MakeTestCase").Invoke(null, new object[] { input, output });
+                            var param = new object[] { input, output, null };
+                            if (item.GetMethod("MakeTestCase").GetParameters().Length == 2)
+                                // これは旧版のMakeTestCaseへの対応
+                                item.GetMethod("MakeTestCase").Invoke(null, new object[] { input, output });
+                            else
+                                item.GetMethod("MakeTestCase").Invoke(null, param);
 
                             var result = new StringWriter();
                             var oldIn = Console.In;
@@ -144,38 +149,39 @@ namespace AtCoder
 
                             var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
                             var expect = output.ToArray();
+                            var checker = (Func<string[], bool>)param[2];
                             var ok = true;
-                            for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
+                            if (checker == null)
                             {
-                                if (i >= actual.Length)
+                                for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
                                 {
-                                    if (expect[i].Trim() != "")
+                                    if (i >= actual.Length)
                                     {
-                                        ok = false;
-                                        break;
+                                        if (expect[i].Trim() != "") { ok = false; break; }
+                                    }
+                                    else if (i >= expect.Length)
+                                    {
+                                        if (actual[i].Trim() != "") { ok = false; break; }
+                                    }
+                                    else
+                                    {
+                                        if (actual[i] != expect[i]) { ok = false; break; }
                                     }
                                 }
-                                else if (i >= expect.Length)
-                                {
-                                    if (actual[i].Trim() != "")
-                                    {
-                                        ok = false;
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    if (actual[i] != expect[i])
-                                    {
-                                        ok = false;
-                                        break;
-                                    }
-                                }
+                            }
+                            else
+                            {
+                                ok = checker(actual);
                             }
                             Console.Write($"\r{++doneCount} cases done.");
                             if (!ok)
                             {
                                 Console.WriteLine("");
+                                foreach (var item2 in input)
+                                {
+                                    if (item2 == "") continue;
+                                    Console.WriteLine("    input: " + item2);
+                                }
                                 foreach (var item2 in expect)
                                 {
                                     if (item2 == "") continue;
