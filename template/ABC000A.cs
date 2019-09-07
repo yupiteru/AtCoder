@@ -216,6 +216,7 @@ namespace Program
             public BT() : this((x, y) => x.CompareTo(y)) { }
             bool R(Node n) => n != null && !n.b;
             bool B(Node n) => n != null && n.b;
+            long C(Node n) => n?.c ?? 0;
             Node RtL(Node n) { Node m = n.r, t = m.l; m.l = n; n.r = t; n.c -= m.c - (t?.c ?? 0); m.c += n.c - (t?.c ?? 0); return m; }
             Node RtR(Node n) { Node m = n.l, t = m.r; m.r = n; n.l = t; n.c -= m.c - (t?.c ?? 0); m.c += n.c - (t?.c ?? 0); return m; }
             Node RtLR(Node n) { n.l = RtL(n.l); return RtR(n); }
@@ -230,15 +231,15 @@ namespace Program
             Node BlR(Node n) { if (!ch) return n; if (B(n.l) && R(n.l.r)) { var b = n.b; n = RtLR(n); n.b = b; n.r.b = true; ch = false; } else if (B(n.l) && R(n.l.l)) { var b = n.b; n = RtR(n); n.b = b; n.l.b = true; n.r.b = true; ch = false; } else if (B(n.l)) { ch = n.b; n.b = true; n.l.b = false; } else { n = RtR(n); n.b = true; n.r.b = false; n.r = BlR(n.r); ch = false; } return n; }
             public T this[long i] { get { return At(r, i); } }
             T At(Node n, long i) { if (n == null) return default(T); if (n.l == null) if (i == 0) return n.v; else return At(n.r, i - 1); if (n.l.c == i) return n.v; if (n.l.c > i) return At(n.l, i); return At(n.r, i - n.l.c - 1); }
-            public bool Have(T x) { var t = FindUpper(x); return t.Item1 && t.Item2.CompareTo(x) == 0; }
-            public Tuple<bool, T> FindUpper(T x, bool findSame = true) { var v = FU(r, x, findSame); return v == null ? Tuple.Create(false, default(T)) : v; }
-            Tuple<bool, T> FU(Node n, T x, bool s) { if (n == null) return null; var r = c(x, n.v); if (r < 0) { var v = FU(n.l, x, s); return v == null ? Tuple.Create(true, n.v) : v; } if (r > 0 || !s && r == 0) return FU(n.r, x, s); return Tuple.Create(true, n.v); }
-            public Tuple<bool, T> FindLower(T x, bool findSame = true) { var v = FL(r, x, findSame); return v == null ? Tuple.Create(false, default(T)) : v; }
-            Tuple<bool, T> FL(Node n, T x, bool s) { if (n == null) return null; var r = c(x, n.v); if (r < 0 || !s && r == 0) return FL(n.l, x, s); if (r > 0) { var v = FL(n.r, x, s); return v == null ? Tuple.Create(true, n.v) : v; } return Tuple.Create(true, n.v); }
+            public bool Have(T x) { var t = FindUpper(x); return t < C(r) && At(r, t).CompareTo(x) == 0; }
+            public long FindUpper(T x, bool findSame = true) => FU(r, x, findSame);
+            long FU(Node n, T x, bool s) { if (n == null) return 0; var r = c(x, n.v); if (r < 0) return FU(n.l, x, s); if (r > 0 || !s && r == 0) return C(n.l) + 1 + FU(n.r, x, s); return C(n.l); }
+            public long FindLower(T x, bool findSame = true) { var t = FL(r, x, findSame); return t < 0 ? C(r) : t; }
+            long FL(Node n, T x, bool s) { if (n == null) return -1; var r = c(x, n.v); if (r < 0 || !s && r == 0) return FL(n.l, x, s); if (r > 0) return C(n.l) + 1 + FL(n.r, x, s); return C(n.l); }
             public T Min() { Node n = r, p = null; while (n != null) { p = n; n = n.l; } return p == null ? default(T) : p.v; }
             public T Max() { Node n = r, p = null; while (n != null) { p = n; n = n.r; } return p == null ? default(T) : p.v; }
             public bool Any() => r != null;
-            public int Count() => r?.c ?? 0;
+            public long Count() => C(r);
             public IEnumerable<T> List() => L(r);
             IEnumerable<T> L(Node n) { if (n == null) yield break; foreach (var i in L(n.l)) yield return i; yield return n.v; foreach (var i in L(n.r)) yield return i; }
         }
