@@ -232,10 +232,10 @@ namespace Program
             public T this[long i] { get { return At(r, i); } }
             T At(Node n, long i) { if (n == null) return default(T); if (n.l == null) if (i == 0) return n.v; else return At(n.r, i - 1); if (n.l.c == i) return n.v; if (n.l.c > i) return At(n.l, i); return At(n.r, i - n.l.c - 1); }
             public bool Have(T x) { var t = FindUpper(x); return t < C(r) && At(r, t).CompareTo(x) == 0; }
-            public long FindUpper(T x, bool findSame = true) => FU(r, x, findSame);
-            long FU(Node n, T x, bool s) { if (n == null) return 0; var r = c(x, n.v); if (r < 0) return FU(n.l, x, s); if (r > 0 || !s && r == 0) return C(n.l) + 1 + FU(n.r, x, s); return C(n.l); }
-            public long FindLower(T x, bool findSame = true) { var t = FL(r, x, findSame); return t < 0 ? C(r) : t; }
-            long FL(Node n, T x, bool s) { if (n == null) return -1; var r = c(x, n.v); if (r < 0 || !s && r == 0) return FL(n.l, x, s); if (r > 0) return C(n.l) + 1 + FL(n.r, x, s); return C(n.l); }
+            public long FindUpper(T x, bool allowSame = true) => allowSame ? FL(r, x) + 1 : FU(r, x);
+            long FU(Node n, T x) { if (n == null) return 0; var r = c(x, n.v); if (r < 0) return FU(n.l, x); return C(n.l) + 1 + FU(n.r, x); }
+            public long FindLower(T x, bool allowSame = true) { var t = FL(r, x); if (allowSame) return t + 1 < C(r) && At(r, t + 1).CompareTo(x) == 0 ? t + 1 : t < 0 ? C(r) : t; return t < 0 ? C(r) : t; }
+            long FL(Node n, T x) { if (n == null) return -1; var r = c(x, n.v); if (r > 0) return C(n.l) + 1 + FL(n.r, x); return FL(n.l, x); }
             public T Min() { Node n = r, p = null; while (n != null) { p = n; n = n.l; } return p == null ? default(T) : p.v; }
             public T Max() { Node n = r, p = null; while (n != null) { p = n; n = n.r; } return p == null ? default(T) : p.v; }
             public bool Any() => r != null;
