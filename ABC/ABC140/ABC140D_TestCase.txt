@@ -1,0 +1,29 @@
+
+[case 0]
+6 1
+LRLRRL
+
+[output]
+3
+
+[case 1]
+13 3
+LRRLRLRRLRLLR
+
+[output]
+9
+
+[case 2]
+10 1
+LLLLLRRRRR
+
+[output]
+9
+
+[case 3]
+9 2
+RRRLRLRLL
+
+[output]
+7
+
