@@ -270,7 +270,7 @@ namespace Program
         class SegTree<T>
         {
             int n; T ti; Func<T, T, T> f; T[] dat;
-            public SegTree(long _n, T _ti, Func<T, T, T> _f) { n = 1; while (n < _n) n <<= 1; ti = _ti; f = _f; dat = Repeat(ti, n << 1).ToArray(); }
+            public SegTree(long _n, T _ti, Func<T, T, T> _f) { n = 1; while (n < _n) n <<= 1; ti = _ti; f = _f; dat = Repeat(ti, n << 1).ToArray(); for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]); }
             public SegTree(List<T> l, T _ti, Func<T, T, T> _f) : this(l.Count, _ti, _f) { for (var i = 0; i < l.Count; i++) dat[n + i] = l[i]; for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]); }
             public void Update(long i, T v) { dat[i += n] = v; while ((i >>= 1) > 0) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]); }
             public T Query(long l, long r) { var vl = ti; var vr = ti; for (long li = n + l, ri = n + r; li < ri; li >>= 1, ri >>= 1) { if ((li & 1) == 1) vl = f(vl, dat[li++]); if ((ri & 1) == 1) vr = f(dat[--ri], vr); } return f(vl, vr); }
@@ -279,7 +279,7 @@ namespace Program
         class LazySegTree<T, E>
         {
             int n, height; T ti; E ei; Func<T, T, T> f; Func<T, E, T> g; Func<E, E, E> h; T[] dat; E[] laz;
-            public LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) { n = 1; height = 0; while (n < _n) { n <<= 1; ++height; } ti = _ti; ei = _ei; f = _f; g = _g; h = _h; dat = Repeat(ti, n << 1).ToArray(); laz = Repeat(ei, n << 1).ToArray(); }
+            public LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) { n = 1; height = 0; while (n < _n) { n <<= 1; ++height; } ti = _ti; ei = _ei; f = _f; g = _g; h = _h; dat = Repeat(ti, n << 1).ToArray(); laz = Repeat(ei, n << 1).ToArray(); for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]); }
             public LazySegTree(List<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) : this(l.Count, _ti, _ei, _f, _g, _h) { for (var i = 0; i < l.Count; i++) dat[n + i] = l[i]; for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]); }
             T Reflect(long i) => laz[i].Equals(ei) ? dat[i] : g(dat[i], laz[i]);
             void Eval(long i) { if (laz[i].Equals(ei)) return; laz[(i << 1) | 0] = h(laz[(i << 1) | 0], laz[i]); laz[(i << 1) | 1] = h(laz[(i << 1) | 1], laz[i]); dat[i] = Reflect(i); laz[i] = ei; }
