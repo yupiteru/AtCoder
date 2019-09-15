@@ -1,0 +1,31 @@
+
+[case 0]
+RUDLUDR
+
+[output]
+Yes
+
+[case 1]
+DULL
+
+[output]
+No
+
+[case 2]
+UUUUUUUUUUUUUUU
+
+[output]
+Yes
+
+[case 3]
+ULURU
+
+[output]
+No
+
+[case 4]
+RDULULDURURLRDULRLR
+
+[output]
+Yes
+
