@@ -1,0 +1,19 @@
+
+[case 0]
+12 18
+
+[output]
+3
+
+[case 1]
+420 660
+
+[output]
+4
+
+[case 2]
+1 2019
+
+[output]
+1
+
