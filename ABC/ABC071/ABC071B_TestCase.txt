@@ -1,0 +1,19 @@
+
+[case 0]
+atcoderregularcontest
+
+[output]
+b
+
+[case 1]
+abcdefghijklmnopqrstuvwxyz
+
+[output]
+None
+
+[case 2]
+fajsonlslfepbjtsaayxbymeskptcumtwrmkkinjxnnucagfrg
+
+[output]
+d
+

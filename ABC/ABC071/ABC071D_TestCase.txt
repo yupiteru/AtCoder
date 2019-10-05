@@ -1,0 +1,25 @@
+
+[case 0]
+3
+aab
+ccb
+
+[output]
+6
+
+[case 1]
+1
+Z
+Z
+
+[output]
+3
+
+[case 2]
+52
+RvvttdWIyyPPQFFZZssffEEkkaSSDKqcibbeYrhAljCCGGJppHHn
+RLLwwdWIxxNNQUUXXVVMMooBBaggDKqcimmeYrhAljOOTTJuuzzn
+
+[output]
+958681902
+

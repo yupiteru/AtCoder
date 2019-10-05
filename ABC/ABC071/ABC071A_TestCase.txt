@@ -1,0 +1,13 @@
+
+[case 0]
+5 2 7
+
+[output]
+B
+
+[case 1]
+1 999 1000
+
+[output]
+A
+
