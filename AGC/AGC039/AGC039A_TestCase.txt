@@ -1,0 +1,104 @@
+
+[case 0]
+issii
+2
+
+[output]
+4
+
+[case 1]
+qq
+81
+
+[output]
+81
+
+[case 2]
+cooooooooonteeeeeeeeeest
+999993333
+
+[output]
+8999939997
+
+
+[case 3]
+iiui
+2
+
+[output]
+2
+
+
+[case 4]
+iuii
+2
+
+[output]
+2
+
+[case 5]
+iii
+2
+
+[output]
+3
+
+[case 6]
+i
+2
+
+[output]
+1
+
+
+[case 7]
+ii
+1
+
+[output]
+1
+
+[case 8]
+abcdef
+100000
+
+[output]
+0
+
+
+[case 9]
+ff
+3
+
+[output]
+3
+
+[case 10]
+ff
+2
+
+[output]
+2
+
+[case 11]
+ff
+2
+
+[output]
+2
+
+[case 12]
+abcddabc
+3
+
+[output]
+3
+
+[case 13]
+aaasssaaa
+3
+
+[output]
+11
+
+
