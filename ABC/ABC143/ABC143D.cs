@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 namespace Program
 {
-    public static class ABC143E
+    public static class ABC143D
     {
         static public int numberOfRandomCases = 0;
         static public void MakeTestCase(List<string> _input, List<string> _output, ref Func<string[], bool> _outputChecker)
@@ -16,76 +16,35 @@ namespace Program
         static public void Solve()
         {
             var N = NN;
-            var M = NN;
-            var L = NN;
-            var abcList = Repeat(0, M).Select(_ => new { A = NN - 1, B = NN - 1, C = NN }).ToArray();
-            var Q = NN;
-            var queryList = Repeat(0, Q).Select(_ => new { s = NN - 1, t = NN - 1 }).ToArray();
-            var path = Repeat(0, N).Select(_ => new List<Tuple<long, long>>()).ToArray();
-            foreach (var abc in abcList)
-            {
-                path[abc.A].Add(Tuple.Create(abc.B, abc.C));
-                path[abc.B].Add(Tuple.Create(abc.A, abc.C));
-            }
-            var ans = new long[N, N];
-            var dist1 = new long[N, N];
+            var LList = NNList(N);
+            var sortedList = LList.OrderByRand().OrderByDescending(e => e).ToList();
+            var ans = 0L;
             for (var i = 0; i < N; i++)
             {
-                for (var j = 0; j < N; j++)
+                var a = sortedList[i];
+                for (var j = i + 1; j < N; j++)
                 {
-                    dist1[i, j] = 1000000000000000000;
+                    var b = sortedList[j];
+
+                    var left = j;
+                    var right = N;
+                    while (right - left > 1)
+                    {
+                        var mid = (int)(right + left) / 2;
+                        if (sortedList[mid] > Abs(a - b))
+                        {
+                            left = mid;
+                        }
+                        else
+                        {
+                            right = mid;
+                        }
+                    }
+                    ans += (left - j);
                 }
             }
-            for (var i = 0; i < N; i++)
-            {
-                foreach (var item in path[i])
-                {
-                    dist1[i, item.Item1] = i == item.Item1 ? 0 : item.Item2;
-                }
-            }
-            for (var k = 0; k < N; k++)
-            {
-                for (var i = 0; i < N; i++)
-                {
-                    for (var j = 0; j < N; j++)
-                    {
-                        dist1[i, j] = Min(dist1[i, j], dist1[i, k] + dist1[k, j]);
-                    }
-                }
-            }
-            var dist2 = new long[N, N];
-            for (var i = 0; i < N; i++)
-            {
-                for (var j = 0; j < N; j++)
-                {
-                    if (i == j)
-                    {
-                        dist2[i, j] = 0;
-                    }
-                    else if (dist1[i, j] <= L)
-                    {
-                        dist2[i, j] = 1;
-                    }
-                    else
-                    {
-                        dist2[i, j] = 1000000000000000000;
-                    }
-                }
-            }
-            for (var k = 0; k < N; k++)
-            {
-                for (var i = 0; i < N; i++)
-                {
-                    for (var j = 0; j < N; j++)
-                    {
-                        dist2[i, j] = Min(dist2[i, j], dist2[i, k] + dist2[k, j]);
-                    }
-                }
-            }
-            foreach (var item in queryList)
-            {
-                Console.WriteLine(dist2[item.s, item.t] < 10000000000000 ? dist2[item.s, item.t] - 1 : -1);
-            }
+            Console.WriteLine(ans);
+
         }
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
         static class Console_
@@ -126,36 +85,25 @@ namespace Program
         static Func<T1, T2, T3, T4, TR> Lambda<T1, T2, T3, T4, TR>(Func<T1, T2, T3, T4, Func<T1, T2, T3, T4, TR>, TR> f) { Func<T1, T2, T3, T4, TR> t = (x1, x2, x3, x4) => default(TR); return t = (x1, x2, x3, x4) => f(x1, x2, x3, x4, t); }
         static List<T> LCS<T>(T[] s, T[] t) where T : IEquatable<T> { int sl = s.Length, tl = t.Length; var dp = new int[sl + 1, tl + 1]; for (var i = 0; i < sl; i++) for (var j = 0; j < tl; j++) dp[i + 1, j + 1] = s[i].Equals(t[j]) ? dp[i, j] + 1 : Max(dp[i + 1, j], dp[i, j + 1]); { var r = new List<T>(); int i = sl, j = tl; while (i > 0 && j > 0) if (s[--i].Equals(t[--j])) r.Add(s[i]); else if (dp[i, j + 1] > dp[i + 1, j]) ++j; else ++i; r.Reverse(); return r; } }
         static long LIS<T>(T[] array, bool strict) { var l = new List<T>(); foreach (var e in array) { var i = l.BinarySearch(e); if (i < 0) i = ~i; else if (!strict) ++i; if (i == l.Count) l.Add(e); else l[i] = e; } return l.Count; }
-        class PQ
+        class PQ<T> where T : IComparable
         {
-            List<Tuple<long, long>> h; public Tuple<long, long> Peek => h[0]; public int Count => h.Count;
-            public PQ(int cap, bool asc = true) { h = new List<Tuple<long, long>>(cap); }
-            public PQ(bool asc = true) { h = new List<Tuple<long, long>>(); }
-            public void Push(long k, long v)
-            {
-                var i = h.Count;
-                h.Add(Tuple.Create(k, v));
-                while (i > 0)
-                {
-                    var ni = (i - 1) / 2;
-                    if (k >= h[ni].Item1) break;
-                    h[i] = h[ni]; i = ni;
-                }
-                h[i] = Tuple.Create(k, v);
-            }
-            public long Pop()
-            {
-                var r = h[0];
-                var v = h[h.Count - 1]; h.RemoveAt(h.Count - 1);
-                if (h.Count == 0) return r.Item2;
-                var i = 0; while (i * 2 + 1 < h.Count)
-                {
-                    var i1 = i * 2 + 1; var i2 = i * 2 + 2;
-                    if (i2 < h.Count && h[i1].Item1 > h[i2].Item1) i1 = i2;
-                    if (v.Item1 <= h[i1].Item1) break; h[i] = h[i1]; i = i1;
-                }
-                h[i] = v; return r.Item2;
-            }
+            List<T> h; Comparison<T> c; public T Peek => h[0]; public int Count => h.Count;
+            public PQ(int cap, Comparison<T> c, bool asc = true) { h = new List<T>(cap); this.c = asc ? c : (x, y) => c(y, x); }
+            public PQ(Comparison<T> c, bool asc = true) { h = new List<T>(); this.c = asc ? c : (x, y) => c(y, x); }
+            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
+            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public void Push(T v) { var i = h.Count; h.Add(v); while (i > 0) { var ni = (i - 1) / 2; if (c(v, h[ni]) >= 0) break; h[i] = h[ni]; i = ni; } h[i] = v; }
+            public T Pop() { var r = h[0]; var v = h[h.Count - 1]; h.RemoveAt(h.Count - 1); if (h.Count == 0) return r; var i = 0; while (i * 2 + 1 < h.Count) { var i1 = i * 2 + 1; var i2 = i * 2 + 2; if (i2 < h.Count && c(h[i1], h[i2]) > 0) i1 = i2; if (c(v, h[i1]) <= 0) break; h[i] = h[i1]; i = i1; } h[i] = v; return r; }
+        }
+        class PQ<TK, TV> where TK : IComparable
+        {
+            PQ<Tuple<TK, TV>> q; public Tuple<TK, TV> Peek => q.Peek; public int Count => q.Count;
+            public PQ(int cap, Comparison<TK> c, bool asc = true) { q = new PQ<Tuple<TK, TV>>(cap, (x, y) => c(x.Item1, y.Item1), asc); }
+            public PQ(Comparison<TK> c, bool asc = true) { q = new PQ<Tuple<TK, TV>>((x, y) => c(x.Item1, y.Item1), asc); }
+            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
+            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public void Push(TK k, TV v) => q.Push(Tuple.Create(k, v));
+            public Tuple<TK, TV> Pop() => q.Pop();
         }
         public class UF
         {
@@ -263,6 +211,30 @@ namespace Program
                             neg[path.Item2] = true;
                         }
                 return Tuple.Create(dist, pred, neg);
+            }
+            public Tuple<long[], int?[]> Dijkstra(long s)
+            {
+                var dist = Repeat(long.MaxValue >> 2, n).ToArray();
+                var pred = new int?[n];
+                dist[s] = 0;
+                var q = new PQ<long, int>();
+                q.Push(0, (int)s);
+                while (q.Count > 0)
+                {
+                    var u = q.Pop().Item2;
+                    foreach (var path in vtxPath[u])
+                    {
+                        var v = path.Key;
+                        var alt = dist[u] + path.Value;
+                        if (dist[v] > alt)
+                        {
+                            dist[v] = alt;
+                            pred[v] = u;
+                            q.Push(alt, v);
+                        }
+                    }
+                }
+                return Tuple.Create(dist, pred);
             }
         }
         class BT<T> where T : IComparable
