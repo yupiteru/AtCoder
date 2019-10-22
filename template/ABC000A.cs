@@ -199,5 +199,19 @@ namespace Program
             public T Query(long l, long r) { Thrust(l += n); Thrust(r += n - 1); var vl = ti; var vr = ti; for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1) { if ((li & 1) == 1) vl = f(vl, Reflect(li++)); if ((ri & 1) == 1) vr = f(Reflect(--ri), vr); } return f(vl, vr); }
             public T this[long idx] { get { Thrust(idx += n); return dat[idx] = Reflect(idx); } set { Thrust(idx += n); dat[idx] = value; laz[idx] = ei; Recalc(idx); } }
         }
+        class SlidingWindowAggregation<T>
+        {
+            T[][] l; T[][] a; int[] n; Func<T, T, T> f;
+            public SlidingWindowAggregation(IEnumerable<T> ary, Func<T, T, T> _f) { l = new T[2][]; a = new T[2][]; n = new int[2]; f = _f; l[0] = new T[16]; a[0] = new T[16]; n[0] = 0; if (ary.Any()) { var t = ary.ToArray(); n[1] = t.Length; l[1] = new T[n[1]]; a[1] = new T[n[1]]; for (var i = 0; i < l[1].Length; i++) { l[1][i] = t[i]; if (i == 0) a[1][i] = t[i]; else a[1][i] = this.f(a[1][i - 1], t[i]); } } else { l[1] = new T[16]; a[1] = new T[16]; n[1] = 0; } }
+            public SlidingWindowAggregation(Func<T, T, T> f) : this(new T[0], f) { }
+            public int Count => n[0] + n[1];
+            void Push(int la, T v) { if (l[la].Length == n[la]) { var nar = new T[n[la] * 2]; var nag = new T[n[la] * 2]; Array.Copy(l[la], nar, n[la]); Array.Copy(a[la], nag, n[la]); l[la] = nar; a[la] = nag; } if (n[la] == 0) a[la][0] = v; else a[la][n[la]] = la == 0 ? f(v, a[la][n[la] - 1]) : f(a[la][n[la] - 1], v); l[la][n[la]++] = v; }
+            public void PushBack(T val) => Push(1, val);
+            public void PushFront(T val) => Push(0, val);
+            public T Pop(int la) { var lb = 1 - la; if (n[la] == 0) { if (n[lb] == 0) throw new Exception(); var m = (n[lb] - 1) / 2; if (l[la].Length <= m) { l[la] = new T[m + 1]; a[la] = new T[m + 1]; } n[la] = 0; for (var i = m; i >= 0; i--) { if (n[la] == 0) a[la][n[la]] = l[lb][i]; else a[la][n[la]] = la == 0 ? f(l[lb][i], a[la][n[la] - 1]) : f(a[la][n[la] - 1], l[lb][i]); l[la][n[la]++] = l[lb][i]; } for (var i = m + 1; i < n[lb]; i++) { var j = i - m - 1; if (j == 0) a[lb][j] = l[lb][i]; else a[lb][j] = la == 0 ? f(l[lb][i], a[lb][j - 1]) : f(a[lb][j - 1], l[lb][i]); l[lb][j] = l[lb][i]; } n[lb] -= n[la]; } return l[la][--n[la]]; }
+            public T PopBack() => Pop(1);
+            public T PopFront() => Pop(0);
+            public T Aggregate() { if (n[0] == 0 && n[1] == 0) throw new Exception(); else if (n[1] == 0) return a[0][n[0] - 1]; else if (n[0] == 0) return a[1][n[1] - 1]; else return f(a[0][n[0] - 1], a[1][n[1] - 1]); }
+        }
     }
 }
