@@ -15,7 +15,6 @@ namespace Program
         }
         static public void Solve()
         {
-
         }
         static public void Main(string[] args) { if (args.Length == 0) { var sw = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = false }; Console.SetOut(sw); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
         static class Console_
@@ -30,10 +29,9 @@ namespace Program
         static double[] NDList(long N) => Repeat(0, N).Select(_ => ND).ToArray();
         static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
         static IEnumerable<T> OrderByRand<T>(this IEnumerable<T> x) => x.OrderBy(_ => xorshift);
+        static long Count<T>(this IEnumerable<T> x, Func<T, bool> pred) => Enumerable.Count(x, pred);
         static IEnumerable<T> Repeat<T>(T v, long n) => Enumerable.Repeat<T>(v, (int)n);
         static IEnumerable<int> Range(long s, long c) => Enumerable.Range((int)s, (int)c);
-        static void RevSort<T>(T[] l) where T : IComparable { Array.Sort(l, (x, y) => y.CompareTo(x)); }
-        static void RevSort<T>(T[] l, Comparison<T> comp) where T : IComparable { Array.Sort(l, (x, y) => comp(y, x)); }
         static IEnumerable<long> Primes(long x) { if (x < 2) yield break; yield return 2; var halfx = x / 2; var table = new bool[halfx + 1]; var max = (long)(Math.Sqrt(x) / 2); for (long i = 1; i <= max; ++i) { if (table[i]) continue; var add = 2 * i + 1; yield return add; for (long j = 2 * i * (i + 1); j <= halfx; j += add) table[j] = true; } for (long i = max + 1; i <= halfx; ++i) if (!table[i] && 2 * i + 1 <= x) yield return 2 * i + 1; }
         static IEnumerable<long> Factors(long x) { if (x < 2) yield break; while (x % 2 == 0) { x /= 2; yield return 2; } var max = (long)Math.Sqrt(x); for (long i = 3; i <= max; i += 2) while (x % i == 0) { x /= i; yield return i; } if (x != 1) yield return x; }
         static IEnumerable<long> Divisor(long x) { if (x < 1) yield break; var max = (long)Math.Sqrt(x); for (long i = 1; i <= max; ++i) { if (x % i != 0) continue; yield return i; if (i != x / i) yield return x / i; } }
@@ -42,7 +40,6 @@ namespace Program
         static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = (uint)(DateTime.Now.Ticks & 0xffffffff); while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
         static long GCD(long a, long b) { while (b > 0) { var tmp = b; b = a % b; a = tmp; } return a; }
         static long LCM(long a, long b) => a * b / GCD(a, b);
-        static Mat<T> Pow<T>(Mat<T> x, long y) => Mat<T>.Pow(x, y);
         static Mod Pow(Mod x, long y) { Mod a = 1; while (y != 0) { if ((y & 1) == 1) a.Mul(x); x.Mul(x); y >>= 1; } return a; }
         static long Pow(long x, long y) { long a = 1; while (y != 0) { if ((y & 1) == 1) a *= x; x *= x; y >>= 1; } return a; }
         static List<long> _fact = new List<long>() { 1 };
@@ -56,23 +53,23 @@ namespace Program
         static Func<T1, T2, T3, T4, TR> Lambda<T1, T2, T3, T4, TR>(Func<T1, T2, T3, T4, Func<T1, T2, T3, T4, TR>, TR> f) { Func<T1, T2, T3, T4, TR> t = (x1, x2, x3, x4) => default(TR); return t = (x1, x2, x3, x4) => f(x1, x2, x3, x4, t); }
         static List<T> LCS<T>(T[] s, T[] t) where T : IEquatable<T> { int sl = s.Length, tl = t.Length; var dp = new int[sl + 1, tl + 1]; for (var i = 0; i < sl; i++) for (var j = 0; j < tl; j++) dp[i + 1, j + 1] = s[i].Equals(t[j]) ? dp[i, j] + 1 : Max(dp[i + 1, j], dp[i, j + 1]); { var r = new List<T>(); int i = sl, j = tl; while (i > 0 && j > 0) if (s[--i].Equals(t[--j])) r.Add(s[i]); else if (dp[i, j + 1] > dp[i + 1, j]) ++j; else ++i; r.Reverse(); return r; } }
         static long LIS<T>(T[] array, bool strict) { var l = new List<T>(); foreach (var e in array) { var i = l.BinarySearch(e); if (i < 0) i = ~i; else if (!strict) ++i; if (i == l.Count) l.Add(e); else l[i] = e; } return l.Count; }
-        class PQ<T> where T : IComparable
+        class PQ<T>
         {
             List<T> h; Comparison<T> c; public T Peek => h[0]; public int Count => h.Count;
             public PQ(int cap, Comparison<T> c, bool asc = true) { h = new List<T>(cap); this.c = asc ? c : (x, y) => c(y, x); }
             public PQ(Comparison<T> c, bool asc = true) { h = new List<T>(); this.c = asc ? c : (x, y) => c(y, x); }
-            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
-            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public PQ(int cap, bool asc = true) : this(cap, Comparer<T>.Default.Compare, asc) { }
+            public PQ(bool asc = true) : this(Comparer<T>.Default.Compare, asc) { }
             public void Push(T v) { var i = h.Count; h.Add(v); while (i > 0) { var ni = (i - 1) / 2; if (c(v, h[ni]) >= 0) break; h[i] = h[ni]; i = ni; } h[i] = v; }
             public T Pop() { var r = h[0]; var v = h[h.Count - 1]; h.RemoveAt(h.Count - 1); if (h.Count == 0) return r; var i = 0; while (i * 2 + 1 < h.Count) { var i1 = i * 2 + 1; var i2 = i * 2 + 2; if (i2 < h.Count && c(h[i1], h[i2]) > 0) i1 = i2; if (c(v, h[i1]) <= 0) break; h[i] = h[i1]; i = i1; } h[i] = v; return r; }
         }
-        class PQ<TK, TV> where TK : IComparable
+        class PQ<TK, TV>
         {
             PQ<Tuple<TK, TV>> q; public Tuple<TK, TV> Peek => q.Peek; public int Count => q.Count;
             public PQ(int cap, Comparison<TK> c, bool asc = true) { q = new PQ<Tuple<TK, TV>>(cap, (x, y) => c(x.Item1, y.Item1), asc); }
             public PQ(Comparison<TK> c, bool asc = true) { q = new PQ<Tuple<TK, TV>>((x, y) => c(x.Item1, y.Item1), asc); }
-            public PQ(int cap, bool asc = true) : this(cap, (x, y) => x.CompareTo(y), asc) { }
-            public PQ(bool asc = true) : this((x, y) => x.CompareTo(y), asc) { }
+            public PQ(int cap, bool asc = true) : this(cap, Comparer<TK>.Default.Compare, asc) { }
+            public PQ(bool asc = true) : this(Comparer<TK>.Default.Compare, asc) { }
             public void Push(TK k, TV v) => q.Push(Tuple.Create(k, v));
             public Tuple<TK, TV> Pop() => q.Pop();
         }
@@ -112,20 +109,6 @@ namespace Program
             static public Mod Comb(long n, long k) { B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k]; }
             static public Mod Perm(long n, long k) { B(n); if (n == 0 && k == 0) return 1; if (n < k || n < 0) return 0; return _fact[(int)n] / _fact[(int)(n - k)]; }
         }
-        struct Mat<T>
-        {
-            T[,] m;
-            public Mat(T[,] v) { m = (T[,])v.Clone(); }
-            static public implicit operator Mat<T>(T[,] v) => new Mat<T>(v);
-            public T this[int r, int c] { get { return m[r, c]; } set { m[r, c] = value; } }
-            static public Mat<T> operator +(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)x; return tm; }
-            static public Mat<T> operator +(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] += (dynamic)b[r, c]; return tm; }
-            static public Mat<T> operator -(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)x; return tm; }
-            static public Mat<T> operator -(Mat<T> a, Mat<T> b) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] -= (dynamic)b[r, c]; return tm; }
-            static public Mat<T> operator *(Mat<T> a, T x) { var tm = (T[,])a.m.Clone(); for (int r = 0; r < tm.GetLength(0); ++r) for (int c = 0; c < tm.GetLength(1); ++c) tm[r, c] *= (dynamic)x; return tm; }
-            static public Mat<T> operator *(Mat<T> a, Mat<T> b) { var nr = a.m.GetLength(0); var nc = b.m.GetLength(1); var tm = new T[nr, nc]; for (int i = 0; i < nr; ++i) for (int j = 0; j < nc; ++j) tm[i, j] = (dynamic)0; for (int r = 0; r < nr; ++r) for (int c = 0; c < nc; ++c) for (int i = 0; i < a.m.GetLength(1); ++i) tm[r, c] += a[r, i] * (dynamic)b[i, c]; return tm; }
-            static public Mat<T> Pow(Mat<T> x, long y) { var n = x.m.GetLength(0); var t = (Mat<T>)new T[n, n]; for (int i = 0; i < n; ++i) for (int j = 0; j < n; ++j) t[i, j] = (dynamic)(i == j ? 1 : 0); while (y != 0) { if ((y & 1) == 1) t *= x; x *= x; y >>= 1; } return t; }
-        }
         class Tree
         {
             long N; int l; List<long>[] p; int[] d; long[][] pr; long r; Tuple<long, long, int>[] e; Tuple<long, long>[] b; bool lca; bool euler; bool bfs;
@@ -134,79 +117,6 @@ namespace Program
             public Tuple<long, long>[] BFSLeaf() => BFSRoot().Reverse().ToArray();
             public Tuple<long, long, int>[] Euler() { if (!euler) { var ne = new List<Tuple<long, long, int>>(); var s = new Stack<Tuple<long, long>>(); var d = new bool[N]; d[r] = true; s.Push(Tuple.Create(r, -1L)); while (s.Count > 0) { var w = s.Peek(); var ad = true; foreach (var i in p[w.Item1]) { if (d[i]) continue; d[i] = true; ad = false; s.Push(Tuple.Create(i, w.Item1)); } if (!ad || p[w.Item1].Count == 1) ne.Add(Tuple.Create(w.Item1, w.Item2, 1)); if (ad) { s.Pop(); ne.Add(Tuple.Create(w.Item1, w.Item2, -1)); } } e = ne.ToArray(); euler = true; } return e; }
             public long LCA(long u, long v) { if (!lca) { l = 0; while (N > (1 << l)) l++; d = new int[N]; pr = Repeat(0, l).Select(_ => new long[N]).ToArray(); d[r] = 0; pr[0][r] = -1; var q = new Stack<long>(); q.Push(r); while (q.Count > 0) { var w = q.Pop(); foreach (var i in p[w]) { if (i == pr[0][w]) continue; q.Push(i); d[i] = d[w] + 1; pr[0][i] = w; } } for (var k = 0; k + 1 < l; k++) for (var w = 0; w < N; w++) if (pr[k][w] < 0) pr[k + 1][w] = -1; else pr[k + 1][w] = pr[k][pr[k][w]]; lca = true; } if (d[u] > d[v]) { var t = u; u = v; v = t; } for (var k = 0; k < l; k++) if ((((d[v] - d[u]) >> k) & 1) != 0) v = pr[k][v]; if (u == v) return u; for (var k = l - 1; k >= 0; k--) if (pr[k][u] != pr[k][v]) { u = pr[k][u]; v = pr[k][v]; } return pr[0][u]; }
-        }
-        class Graph
-        {
-            int n; List<Tuple<int, int, long>> pathList; Dictionary<int, long>[] vtxPath; long INF = (long.MaxValue >> 1) - 1;
-            public Graph(long _n)
-            {
-                n = (int)_n;
-                pathList = new List<Tuple<int, int, long>>();
-                vtxPath = Repeat(0, n).Select(_ => new Dictionary<int, long>()).ToArray();
-            }
-            public void AddPath(long a, long b, long c)
-            {
-                pathList.Add(Tuple.Create((int)a, (int)b, c));
-                vtxPath[a][(int)b] = vtxPath[a].ContainsKey((int)b) ? Min(vtxPath[a][(int)b], c) : c;
-            }
-            public long[,] WarshallFloyd()
-            {
-                var ret = new long[n, n];
-                for (var i = 0; i < n; i++)
-                    for (var j = 0; j < n; j++)
-                        ret[i, j] = vtxPath[i].ContainsKey(j) ? vtxPath[i][j] : INF;
-                for (var k = 0; k < n; k++)
-                    for (var i = 0; i < n; i++)
-                        for (var j = 0; j < n; j++)
-                            ret[i, j] = Min(ret[i, j], ret[i, k] + ret[k, j]);
-                return ret;
-            }
-            public Tuple<long[], int?[], bool[]> BellmanFord(long s)
-            {
-                var dist = Repeat(INF, n).ToArray();
-                var pred = new int?[n];
-                var neg = new bool[n];
-                dist[s] = 0;
-                for (var i = 1; i < n; i++)
-                    foreach (var path in pathList)
-                        if (dist[path.Item2] > (dist[path.Item1] == INF ? INF : dist[path.Item1] + path.Item3))
-                        {
-                            dist[path.Item2] = dist[path.Item1] + path.Item3;
-                            pred[path.Item2] = path.Item1;
-                        }
-                for (var i = 0; i < n; i++)
-                    foreach (var path in pathList)
-                        if (dist[path.Item2] > (dist[path.Item1] == INF ? INF : dist[path.Item1] + path.Item3) || neg[path.Item1])
-                        {
-                            dist[path.Item2] = dist[path.Item1] + path.Item3;
-                            neg[path.Item2] = true;
-                        }
-                return Tuple.Create(dist, pred, neg);
-            }
-            public Tuple<long[], int?[]> Dijkstra(long s)
-            {
-                var dist = Repeat(long.MaxValue >> 2, n).ToArray();
-                var pred = new int?[n];
-                dist[s] = 0;
-                var q = new PQ<long, int>();
-                q.Push(0, (int)s);
-                while (q.Count > 0)
-                {
-                    var u = q.Pop().Item2;
-                    foreach (var path in vtxPath[u])
-                    {
-                        var v = path.Key;
-                        var alt = dist[u] + path.Value;
-                        if (dist[v] > alt)
-                        {
-                            dist[v] = alt;
-                            pred[v] = u;
-                            q.Push(alt, v);
-                        }
-                    }
-                }
-                return Tuple.Create(dist, pred);
-            }
         }
         class BT<T> where T : IComparable
         {
@@ -231,10 +141,10 @@ namespace Program
             Node BlR(Node n) { if (!ch) return n; if (B(n.l) && R(n.l.r)) { var b = n.b; n = RtLR(n); n.b = b; n.r.b = true; ch = false; } else if (B(n.l) && R(n.l.l)) { var b = n.b; n = RtR(n); n.b = b; n.l.b = true; n.r.b = true; ch = false; } else if (B(n.l)) { ch = n.b; n.b = true; n.l.b = false; } else { n = RtR(n); n.b = true; n.r.b = false; n.r = BlR(n.r); ch = false; } return n; }
             public T this[long i] { get { return At(r, i); } }
             T At(Node n, long i) { if (n == null) return default(T); if (n.l == null) if (i == 0) return n.v; else return At(n.r, i - 1); if (n.l.c == i) return n.v; if (n.l.c > i) return At(n.l, i); return At(n.r, i - n.l.c - 1); }
-            public bool Have(T x) { var t = FindUpper(x); return t < C(r) && At(r, t).CompareTo(x) == 0; }
+            public bool Have(T x) { var t = FindUpper(x); return t < C(r) && c(At(r, t), x) == 0; }
             public long FindUpper(T x, bool allowSame = true) => allowSame ? FL(r, x) + 1 : FU(r, x);
             long FU(Node n, T x) { if (n == null) return 0; var r = c(x, n.v); if (r < 0) return FU(n.l, x); return C(n.l) + 1 + FU(n.r, x); }
-            public long FindLower(T x, bool allowSame = true) { var t = FL(r, x); if (allowSame) return t + 1 < C(r) && At(r, t + 1).CompareTo(x) == 0 ? t + 1 : t < 0 ? C(r) : t; return t < 0 ? C(r) : t; }
+            public long FindLower(T x, bool allowSame = true) { var t = FL(r, x); if (allowSame) return t + 1 < C(r) && c(At(r, t + 1), x) == 0 ? t + 1 : t < 0 ? C(r) : t; return t < 0 ? C(r) : t; }
             long FL(Node n, T x) { if (n == null) return -1; var r = c(x, n.v); if (r > 0) return C(n.l) + 1 + FL(n.r, x); return FL(n.l, x); }
             public T Min() { Node n = r, p = null; while (n != null) { p = n; n = n.l; } return p == null ? default(T) : p.v; }
             public T Max() { Node n = r, p = null; while (n != null) { p = n; n = n.r; } return p == null ? default(T) : p.v; }
