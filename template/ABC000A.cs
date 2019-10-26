@@ -160,7 +160,7 @@ namespace Program
             public Dict() : this(_ => default(V)) { }
             new public V this[K i] { get { V v; return TryGetValue(i, out v) ? v : base[i] = d(i); } set { base[i] = value; } }
             public override int GetHashCode() { var ret = 0; for (var e = GetEnumerator(); e.MoveNext();) { ret ^= e.Current.Key.GetHashCode(); ret ^= e.Current.Value.GetHashCode(); } return ret; }
-            public override bool Equals(object obj) { var o = (Dict<K, V>)obj; foreach (var kv in o) { if (!ContainsKey(kv.Key) || !this[kv.Key].Equals(kv.Value)) return false; } return true; }
+            public override bool Equals(object obj) { var o = (Dict<K, V>)obj; foreach (var kv in o) { if (!ContainsKey(kv.Key) || !this[kv.Key].Equals(kv.Value)) return false; } return o.Count == Count; }
         }
         class Deque<T>
         {
