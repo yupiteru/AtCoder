@@ -1,0 +1,13 @@
+[case 1]
+4
+ooxx
+xoox
+xxxx
+xxxx
+
+
+[output]
+xxxo
+xxoo
+xxox
+xxxx
