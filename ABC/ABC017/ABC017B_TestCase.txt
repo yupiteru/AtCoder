@@ -1,0 +1,23 @@
+[case 1]
+chokuou
+
+
+[output]
+YES
+
+
+[case 2]
+kuccho
+
+
+[output]
+NO
+
+
+[case 3]
+atcoder
+
+
+[output]
+NO
+
