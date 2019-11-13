@@ -31,6 +31,15 @@
                 "${workspaceFolder}/AtCoder.csproj"
             ],
             "problemMatcher": "$tsc"
-        }
+        },
+        {
+            "label": "copyWithLib",
+            "command": "copy.pl",
+            "type": "shell",
+            "args": [
+                "${file}"
+            ],
+            "problemMatcher": []
+        },
     ]
 }
