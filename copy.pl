@@ -35,7 +35,7 @@ my $str = "";
 my %usedLib;
 while(my $line = <$fh>) {
   $str .= $line;
-  if($line =~ /LIB_([A-Za-z0-9_]+)/) {
+  while($line =~ /LIB_([A-Za-z0-9_]+)/g) {
     $usedLib{$1} = 1;
   }
 }
