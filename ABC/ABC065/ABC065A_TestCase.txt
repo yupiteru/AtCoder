@@ -1,0 +1,19 @@
+
+[case 0]
+4 3 6
+
+[output]
+safe
+
+[case 1]
+6 5 1
+
+[output]
+delicious
+
+[case 2]
+3 7 12
+
+[output]
+dangerous
+
