@@ -13,11 +13,19 @@ namespace Library
     ////start
     class LIB_UnionFind
     {
-        int[] d;
+        long[] d;
+        Func<long, long, long> f;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_UnionFind(int s)
         {
-            d = Enumerable.Repeat(-1, s).ToArray();
+            d = Enumerable.Repeat(-1L, s).ToArray();
+            f = (x, y) => x + y;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_UnionFind(IEnumerable<long> s, Func<long, long, long> func)
+        {
+            d = s.Select(e => -e).ToArray();
+            f = func;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Unite(int x, int y)
@@ -26,11 +34,7 @@ namespace Library
             y = Root(y);
             if (x != y)
             {
-                if (d[y] < d[x])
-                {
-                    var t = y; y = x; x = t;
-                }
-                d[x] += d[y];
+                d[x] = -f(-d[x], -d[y]);
                 d[y] = x;
             }
             return x != y;
@@ -38,9 +42,9 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSame(int x, int y) => Root(x) == Root(y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Root(int x) => d[x] < 0 ? x : d[x] = Root(d[x]);
+        public int Root(int x) => d[x] < 0 ? x : (int)(d[x] = Root((int)d[x]));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Count(int x) => -d[Root(x)];
+        public long Calc(int x) => -d[Root(x)];
     }
     ////end
 }

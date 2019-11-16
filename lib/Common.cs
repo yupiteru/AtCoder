@@ -14,7 +14,29 @@ namespace Library
     class LIB_Common
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static List<T> LCS<T>(T[] s, T[] t) where T : IEquatable<T>
+        static public List<Tuple<int, T>> RunLength<T>(IEnumerable<T> l)
+        {
+            T before = default(T);
+            var cnt = 0;
+            var ret = new List<Tuple<int, T>>();
+            foreach (var item in l)
+            {
+                if (!before.Equals(item))
+                {
+                    if (cnt != 0)
+                    {
+                        ret.Add(Tuple.Create(cnt, before));
+                        cnt = 0;
+                    }
+                }
+                before = item;
+                ++cnt;
+            }
+            if (cnt != 0) ret.Add(Tuple.Create(cnt, before));
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public List<T> LCS<T>(T[] s, T[] t) where T : IEquatable<T>
         {
             int sl = s.Length, tl = t.Length;
             var dp = new int[sl + 1, tl + 1];
@@ -39,7 +61,7 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long LIS<T>(T[] array, bool strict)
+        static public long LIS<T>(T[] array, bool strict)
         {
             var l = new List<T>();
             foreach (var e in array)

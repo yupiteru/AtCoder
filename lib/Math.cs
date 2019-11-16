@@ -14,7 +14,7 @@ namespace Library
     class LIB_Math
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<long> Primes(long x)
+        static public IEnumerable<long> Primes(long x)
         {
             if (x < 2) yield break;
             yield return 2;
@@ -34,7 +34,7 @@ namespace Library
                     yield return 2 * i + 1;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<long> Factors(long x)
+        static public IEnumerable<long> Factors(long x)
         {
             if (x < 2) yield break;
             while (x % 2 == 0)
@@ -52,7 +52,7 @@ namespace Library
             if (x != 1) yield return x;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static IEnumerable<long> Divisor(long x)
+        static public IEnumerable<long> Divisor(long x)
         {
             if (x < 1) yield break;
             var max = (long)Math.Sqrt(x);
@@ -64,7 +64,7 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long GCD(long a, long b)
+        static public long GCD(long a, long b)
         {
             while (b > 0)
             {
@@ -75,9 +75,9 @@ namespace Library
             return a;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long LCM(long a, long b) => a * b / GCD(a, b);
+        static public long LCM(long a, long b) => a * b / GCD(a, b);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long Pow(long x, long y)
+        static public long Pow(long x, long y)
         {
             long a = 1;
             while (y != 0)
@@ -96,7 +96,7 @@ namespace Library
                 for (int i = _fact.Count; i <= n; ++i) _fact.Add(_fact[i - 1] * i);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long Comb(long n, long k)
+        static public long Comb(long n, long k)
         {
             Build(n);
             if (n == 0 && k == 0) return 1;
@@ -104,7 +104,7 @@ namespace Library
             return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long Perm(long n, long k)
+        static public long Perm(long n, long k)
         {
             Build(n);
             if (n == 0 && k == 0) return 1;
