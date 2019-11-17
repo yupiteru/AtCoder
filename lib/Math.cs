@@ -111,6 +111,33 @@ namespace Library
             if (n < k || n < 0) return 0;
             return _fact[(int)n] / _fact[(int)(n - k)];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public List<List<int>> NextPermutation(long n)
+        {
+            if (n <= 0) throw new Exception();
+            var ret = new List<List<int>>();
+            ret.Add(new List<int>());
+            for (var i = 0; i < n; i++)
+            {
+                var reta = new List<List<int>>();
+                foreach (var item in ret)
+                {
+                    var retb = Enumerable.Repeat(0, i + 1).Select(_ => new List<int>()).ToList();
+                    for (var k = 0; k < item.Count; k++)
+                    {
+                        for (var j = 0; j <= i; j++)
+                        {
+                            if (k == j) retb[j].Add(i);
+                            retb[j].Add(item[k]);
+                        }
+                    }
+                    retb[i].Add(i);
+                    reta.AddRange(retb);
+                }
+                ret = reta;
+            }
+            return ret;
+        }
     }
     ////end
 }

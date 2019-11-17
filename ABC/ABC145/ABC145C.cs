@@ -21,38 +21,8 @@ namespace Program
         {
             var N = NN;
             var xy = Repeat(0, N).Select(_ => new { x = NN, y = NN }).ToArray();
-            var taiki = new List<int>();
-            for (var i = 0; i < N; i++)
-            {
-                taiki.Add(i);
-            }
-            var makekeiro = Lambda<List<int>, List<List<int>>>((x, fun) =>
-            {
-                var ret = new List<List<int>>();
-                if (x.Count == 1)
-                {
-                    var reta = new List<int>();
-                    reta.Add(x[0]);
-                    ret.Add(reta);
-                    return ret;
-                }
-                for (var i = 0; i < x.Count; i++)
-                {
-                    var thisItem = x[i];
-                    var tmp = new List<int>(x);
-                    tmp.Remove(x[i]);
-                    foreach (var item in fun(tmp))
-                    {
-                        var reta = new List<int>();
-                        reta.Add(thisItem);
-                        reta.AddRange(item);
-                        ret.Add(reta);
-                    }
-                }
-                return ret;
-            });
             double ans = 0.0;
-            var allkeiro = makekeiro(taiki);
+            var allkeiro = LIB_Math.NextPermutation(N);
             foreach (var item in allkeiro)
             {
                 var thisThist = 0.0;
