@@ -1,0 +1,25 @@
+
+[case 0]
+2 1
+
+[output]
+Brown
+
+[case 1]
+5 0
+
+[output]
+Alice
+
+[case 2]
+0 0
+
+[output]
+Brown
+
+[case 3]
+4 8
+
+[output]
+Alice
+
