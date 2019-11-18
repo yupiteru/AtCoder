@@ -1,0 +1,43 @@
+
+[case 0]
+5
+4 5 1 2 3
+
+[output]
+YES
+
+[case 1]
+5
+6 9 12 10 8
+
+[output]
+YES
+
+[case 2]
+4
+1 2 3 1
+
+[output]
+NO
+
+
+[case 3]
+5
+5 6 2 3 4
+
+[output]
+NO
+
+[case 4]
+3
+12 9 15
+
+[output]
+YES
+
+[case 5]
+3
+6 6 6
+
+[output]
+YES
