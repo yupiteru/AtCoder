@@ -112,7 +112,7 @@ namespace Library
             return _fact[(int)n] / _fact[(int)(n - k)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public List<List<int>> NextPermutation(long n)
+        static public List<List<int>> MakePermutation(long n)
         {
             if (n <= 0) throw new Exception();
             var ret = new List<List<int>>();
