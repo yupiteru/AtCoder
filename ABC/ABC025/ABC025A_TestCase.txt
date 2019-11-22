@@ -1,0 +1,26 @@
+[case 1]
+abcde
+8
+
+
+[output]
+bc
+
+
+[case 2]
+aeiou
+22
+
+
+[output]
+ue
+
+
+[case 3]
+vwxyz
+25
+
+
+[output]
+zz
+
