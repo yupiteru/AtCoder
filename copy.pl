@@ -5,6 +5,7 @@ use Win32::Clipboard;
 opendir my $dh, "lib";
 my %library;
 my %classToFilename;
+my %filenameToUsedLib;
 while(my $libfile = readdir $dh) {
   if($libfile =~ /\.cs$/) {
     open my $libfh, "<lib\\$libfile";
@@ -17,6 +18,9 @@ while(my $libfile = readdir $dh) {
         }
         if($line =~ /(class|struct) LIB_([A-Za-z0-9_]+)/) {
           $classToFilename{$2} = $libfile;
+        }
+        if($line =~ /LIB_([A-Za-z0-9_]+)/) {
+          ${$filenameToUsedLib{$libfile}}[@{$filenameToUsedLib{$libfile}}] = $1;
         }
         $libstr .= $line;
       }elsif($line =~ m|////start|) {
@@ -36,7 +40,11 @@ my %usedLib;
 while(my $line = <$fh>) {
   $str .= $line;
   while($line =~ /LIB_([A-Za-z0-9_]+)/g) {
-    $usedLib{$classToFilename{$1}} = 1;
+    my $libFileName = $classToFilename{$1};
+    $usedLib{$libFileName} = 1;
+    foreach my $item (@{$filenameToUsedLib{$libFileName}}) {
+      $usedLib{$classToFilename{$item}} = 1;
+    }
   }
 }
 close $fh;
