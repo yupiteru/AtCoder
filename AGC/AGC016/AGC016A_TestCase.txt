@@ -1,0 +1,25 @@
+
+[case 0]
+serval
+
+[output]
+3
+
+[case 1]
+jackal
+
+[output]
+2
+
+[case 2]
+zzz
+
+[output]
+0
+
+[case 3]
+whbrjpjyhsrywlqjxdbrbaomnw
+
+[output]
+8
+
