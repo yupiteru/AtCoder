@@ -1,0 +1,22 @@
+
+[case 0]
+2
+ABCXYZ
+
+[output]
+CDEZAB
+
+[case 1]
+0
+ABCXYZ
+
+[output]
+ABCXYZ
+
+[case 2]
+13
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+[output]
+NOPQRSTUVWXYZABCDEFGHIJKLM
+

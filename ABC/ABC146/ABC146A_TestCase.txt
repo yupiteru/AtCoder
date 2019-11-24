@@ -1,0 +1,13 @@
+
+[case 0]
+SAT
+
+[output]
+1
+
+[case 1]
+SUN
+
+[output]
+7
+
