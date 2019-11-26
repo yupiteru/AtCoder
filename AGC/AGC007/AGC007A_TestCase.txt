@@ -1,0 +1,32 @@
+
+[case 0]
+4 5
+##...
+.##..
+..##.
+...##
+
+[output]
+Possible
+
+[case 1]
+5 3
+###
+..#
+###
+#..
+###
+
+[output]
+Impossible
+
+[case 2]
+4 5
+##...
+.###.
+.###.
+...##
+
+[output]
+Impossible
+

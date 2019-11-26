@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Program
 {
-    public class SOUNDHOUND2018E
+    public class SOUNDHOUND2018_SUMMER_QUALE
     {
         static public void Main(string[] args)
         {
