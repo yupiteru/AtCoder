@@ -1,0 +1,36 @@
+
+[case 0]
+3
+1 10 100
+
+[output]
+Yes
+
+[case 1]
+4
+1 2 3 4
+
+[output]
+No
+
+[case 2]
+3
+1 4 1
+
+[output]
+Yes
+
+[case 3]
+2
+1 1
+
+[output]
+No
+
+[case 4]
+6
+2 7 1 8 2 8
+
+[output]
+Yes
+
