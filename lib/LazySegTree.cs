@@ -86,6 +86,58 @@ namespace Library
             }
             return f(vl, vr);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int FindToRight(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
+        {
+            if (l + 1 == r)
+            {
+                acc = f(acc, Reflect(k));
+                return check(acc) ? k - n : -1;
+            }
+            Eval(k);
+            int m = (l + r) >> 1;
+            if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
+            if (st <= l && !check(f(acc, dat[k])))
+            {
+                acc = f(acc, dat[k]);
+                return -1;
+            }
+            int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
+            if (vl != -1) return vl;
+            return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int FindToRight(int st, Func<T, bool> check)
+        {
+            T acc = ti;
+            return FindToRight(st, check, ref acc, 1, 0, n);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int FindToLeft(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
+        {
+            if (l + 1 == r)
+            {
+                acc = f(Reflect(k), acc);
+                return check(acc) ? k - n : -1;
+            }
+            Eval(k);
+            int m = (l + r) >> 1;
+            if (m > st) return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
+            if (st >= r - 1 && !check(f(dat[k], acc)))
+            {
+                acc = f(dat[k], acc);
+                return -1;
+            }
+            int vr = FindToLeft(st, check, ref acc, (k << 1) | 1, m, r);
+            if (vr != -1) return vr;
+            return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int FindToLeft(int st, Func<T, bool> check)
+        {
+            T acc = ti;
+            return FindToLeft(st, check, ref acc, 1, 0, n);
+        }
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

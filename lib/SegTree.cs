@@ -52,56 +52,57 @@ namespace Library
             }
             return f(vl, vr);
         }
-        public T this[long idx]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return dat[idx + n]; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { Update(idx, value); }
-        }
-    }
-    class LIB_SegTree
-    {
-        int n;
-        long ti;
-        Func<long, long, long> f;
-        long[] dat;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_SegTree(long _n, long _ti, Func<long, long, long> _f)
+        int FindToRight(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
         {
-            n = 1;
-            while (n < _n) n <<= 1;
-            ti = _ti;
-            f = _f;
-            dat = Enumerable.Repeat(ti, n << 1).ToArray();
-            for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_SegTree(IEnumerable<long> l, long _ti, Func<long, long, long> _f) : this(l.Count(), _ti, _f)
-        {
-            var idx = 0;
-            foreach (var item in l) dat[n + idx++] = item;
-            for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Update(long i, long v)
-        {
-            dat[i += n] = v;
-            while ((i >>= 1) > 0) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long Query(long l, long r)
-        {
-            var vl = ti;
-            var vr = ti;
-            for (long li = n + l, ri = n + r; li < ri; li >>= 1, ri >>= 1)
+            if (l + 1 == r)
             {
-                if ((li & 1) == 1) vl = f(vl, dat[li++]);
-                if ((ri & 1) == 1) vr = f(dat[--ri], vr);
+                acc = f(acc, dat[k]);
+                return check(acc) ? k - n : -1;
             }
-            return f(vl, vr);
+            int m = (l + r) >> 1;
+            if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
+            if (st <= l && !check(f(acc, dat[k])))
+            {
+                acc = f(acc, dat[k]);
+                return -1;
+            }
+            int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
+            if (vl != -1) return vl;
+            return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
         }
-        public long this[long idx]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int FindToRight(int st, Func<T, bool> check)
+        {
+            T acc = ti;
+            return FindToRight(st, check, ref acc, 1, 0, n);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int FindToLeft(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
+        {
+            if (l + 1 == r)
+            {
+                acc = f(dat[k], acc);
+                return check(acc) ? k - n : -1;
+            }
+            int m = (l + r) >> 1;
+            if (m > st) return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
+            if (st >= r - 1 && !check(f(dat[k], acc)))
+            {
+                acc = f(dat[k], acc);
+                return -1;
+            }
+            int vr = FindToLeft(st, check, ref acc, (k << 1) | 1, m, r);
+            if (vr != -1) return vr;
+            return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int FindToLeft(int st, Func<T, bool> check)
+        {
+            T acc = ti;
+            return FindToLeft(st, check, ref acc, 1, 0, n);
+        }
+        public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return dat[idx + n]; }
