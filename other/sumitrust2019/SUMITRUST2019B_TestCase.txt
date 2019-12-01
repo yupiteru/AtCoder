@@ -1,0 +1,19 @@
+
+[case 0]
+432
+
+[output]
+400
+
+[case 1]
+1079
+
+[output]
+:(
+
+[case 2]
+1001
+
+[output]
+927
+
