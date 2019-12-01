@@ -42,12 +42,23 @@ while(my $line = <$fh>) {
   while($line =~ /LIB_([A-Za-z0-9_]+)/g) {
     my $libFileName = $classToFilename{$1};
     $usedLib{$libFileName} = 1;
-    foreach my $item (@{$filenameToUsedLib{$libFileName}}) {
-      $usedLib{$classToFilename{$item}} = 1;
-    }
   }
 }
 close $fh;
+
+# todo “ª‚Ì—Ç‚¢•û–@‚Å‚â‚é
+my $changed = 1;
+while($changed == 1) {
+  $changed = 0;
+  foreach my $item (keys(%usedLib)) {
+    foreach my $item2 (@{$filenameToUsedLib{$item}}) {
+      if(! defined $usedLib{$classToFilename{$item2}}) {
+        $changed = 1;
+        $usedLib{$classToFilename{$item2}} = 1;
+      }
+    }
+  }
+}
 
 $str .= "namespace Library {\r\n";
 foreach my $item (keys(%usedLib)) {
