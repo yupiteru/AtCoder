@@ -46,7 +46,6 @@ while(my $line = <$fh>) {
 }
 close $fh;
 
-# todo “ª‚Ì—Ç‚¢•û–@‚Å‚â‚é
 my $changed = 1;
 while($changed == 1) {
   $changed = 0;
