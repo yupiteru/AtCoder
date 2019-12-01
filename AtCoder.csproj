@@ -10,7 +10,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="lib/*.cs" />
-    <Compile Include="**/*$(TargetProblem)*.cs" />
+    <Compile Include="**/*$(TargetProblem)*.cs" Exclude="Program.cs;lib/*.cs"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp">
