@@ -13,7 +13,17 @@ namespace Library
     ////start
     class LIB_RedBlackTree
     {
+        public struct SumEntity
+        {
+            public long s;
+            public long c;
+        }
         static public LIB_RedBlackTree<long, long, long> CreateRUQRmQ() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, long.MaxValue, Math.Min, (x, y) => y, (x, y) => y);
+        static public LIB_RedBlackTree<long, long, long> CreateRAQRmQ() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, 0, Math.Min, (x, y) => x + y, (x, y) => x + y);
+        static public LIB_RedBlackTree<long, long, long> CreateRUQRMQ() => new LIB_RedBlackTree<long, long, long>(long.MinValue, long.MinValue, Math.Max, (x, y) => y, (x, y) => y);
+        static public LIB_RedBlackTree<long, long, long> CreateRAQRMQ() => new LIB_RedBlackTree<long, long, long>(long.MinValue, 0, Math.Max, (x, y) => x + y, (x, y) => x + y);
+        static public LIB_RedBlackTree<long, SumEntity, long> CreateRUQRSQ() => new LIB_RedBlackTree<long, SumEntity, long>(new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
+        static public LIB_RedBlackTree<long, SumEntity, long> CreateRAQRSQ() => new LIB_RedBlackTree<long, SumEntity, long>(new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
     }
     class LIB_RedBlackTree<Key, ValueT, ValueE>
     {
