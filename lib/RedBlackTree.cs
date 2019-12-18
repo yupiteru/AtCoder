@@ -38,6 +38,7 @@ namespace Library
             public ValueE lazy;
             public bool isBlack;
             public int cnt;
+            public bool needRecalc;
         }
         Func<ValueT, ValueT, ValueT> f;
         Func<ValueT, ValueE, ValueT> g;
@@ -72,7 +73,7 @@ namespace Library
         {
             if (n == null || ei.Equals(n.lazy)) return;
             n.val = g(n.val, n.lazy);
-            n.dat = g(n.dat, n.lazy);
+            if (!n.needRecalc) n.dat = g(n.dat, n.lazy);
             if (n.left != null) n.left.lazy = h(n.left.lazy, n.lazy);
             if (n.right != null) n.right.lazy = h(n.right.lazy, n.lazy);
             n.lazy = ei;
@@ -81,10 +82,19 @@ namespace Library
         void Recalc(Node n)
         {
             if (n == null) return;
-            Eval(n); Eval(n.left); Eval(n.right);
+            Eval(n);
+            if (!n.needRecalc) return;
             n.dat = n.val;
-            if (n.left != null) n.dat = f(n.left.dat, n.dat);
-            if (n.right != null) n.dat = f(n.dat, n.right.dat);
+            if (n.left != null)
+            {
+                Recalc(n.left);
+                n.dat = f(n.left.dat, n.dat);
+            }
+            if (n.right != null)
+            {
+                Recalc(n.right);
+                n.dat = f(n.dat, n.right.dat);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RotateL(Node n)
@@ -94,7 +104,7 @@ namespace Library
             m.left = n; n.right = t;
             n.cnt -= m.cnt - Cnt(t);
             m.cnt += n.cnt - Cnt(t);
-            if (ope) { Recalc(n); Recalc(m); }
+            if (ope) { n.needRecalc = true; m.needRecalc = true; }
             return m;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,7 +115,7 @@ namespace Library
             m.right = n; n.left = t;
             n.cnt -= m.cnt - Cnt(t);
             m.cnt += n.cnt - Cnt(t);
-            if (ope) { Recalc(n); Recalc(m); }
+            if (ope) { n.needRecalc = true; m.needRecalc = true; }
             return m;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,7 +147,7 @@ namespace Library
             if (ope) Eval(n);
             if (c(key, n.key) < 0) n.left = Add(n.left, key, val);
             else n.right = Add(n.right, key, val);
-            if (ope) Recalc(n);
+            if (ope) n.needRecalc = true;
             n.cnt++;
             return Balance(n);
         }
@@ -189,13 +199,13 @@ namespace Library
             if (r < 0)
             {
                 n.left = Remove(n.left, key);
-                if (ope) Recalc(n);
+                if (ope) n.needRecalc = true;
                 return BalanceL(n);
             }
             if (r > 0)
             {
                 n.right = Remove(n.right, key);
-                if (ope) Recalc(n);
+                if (ope) n.needRecalc = true;
                 return BalanceR(n);
             }
             if (n.left == null)
@@ -206,7 +216,7 @@ namespace Library
             n.left = RemoveMax(n.left);
             n.key = lmax.key;
             n.val = lmax.val;
-            if (ope) Recalc(n);
+            if (ope) n.needRecalc = true;
             return BalanceL(n);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,7 +227,7 @@ namespace Library
             if (n.right != null)
             {
                 n.right = RemoveMax(n.right);
-                if (ope) Recalc(n);
+                if (ope) n.needRecalc = true;
                 return BalanceR(n);
             }
             lmax = n;
@@ -380,7 +390,6 @@ namespace Library
                 if (l < lc) Update(n.left, l, lc, val);
                 if (lc + 1 < r) Update(n.right, 0, r - lc - 1, val);
             }
-            Recalc(n);
             return;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -392,16 +401,8 @@ namespace Library
             if (n == null) return ti;
             Eval(n);
             var lc = Cnt(n.left);
-            if (lc < l)
-            {
-                v3 = Query(n.right, l - lc - 1, r - lc - 1);
-                Recalc(n);
-            }
-            else if (r <= lc)
-            {
-                v1 = Query(n.left, l, r);
-                Recalc(n);
-            }
+            if (lc < l) v3 = Query(n.right, l - lc - 1, r - lc - 1);
+            else if (r <= lc) v1 = Query(n.left, l, r);
             else if (l <= 0 && Cnt(n) <= r)
             {
                 Recalc(n);
@@ -411,7 +412,6 @@ namespace Library
             {
                 if (l < lc) v1 = Query(n.left, l, lc);
                 if (lc + 1 < r) v3 = Query(n.right, 0, r - lc - 1);
-                Recalc(n);
                 v2 = n.val;
             }
             return f(f(v1, v2), v3);

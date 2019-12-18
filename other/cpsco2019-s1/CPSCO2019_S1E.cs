@@ -22,10 +22,10 @@ namespace Program
             var N = NN;
             var Q = NN;
             var AList = NNList(N);
-            var tree = new LIB_RedBlackTree<long>();
+            var tree = new LIB_RedBlackTree<long, long, long>(0, long.MaxValue, (x, y) => x ^ y, (x, y) => 0, (x, y) => 0);
             foreach (var item in AList)
             {
-                tree.Add(item);
+                tree.Add(item, item);
             }
             for (var i = 0; i < Q; i++)
             {
@@ -41,21 +41,19 @@ namespace Program
                 else
                 {
                     var cnt = rIdx - lIdx;
-                    var ans = 0L;
+                    Console.WriteLine(tree.Query(lIdx, rIdx));
                     var removeKeys = new List<long>();
                     for (var j = lIdx; j < rIdx; j++)
                     {
-                        ans ^= tree[j];
-                        removeKeys.Add(tree[j]);
+                        removeKeys.Add(tree[j].Key);
                     }
-                    Console.WriteLine(ans);
                     foreach (var item in removeKeys)
                     {
                         tree.Remove(item);
                     }
                     if (cnt % 2 == 1)
                     {
-                        tree.Add(X);
+                        tree.Add(X, X);
                     }
                 }
             }
