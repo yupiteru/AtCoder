@@ -22,7 +22,7 @@ namespace Program
             var N = NN;
             var xy = Repeat(0, N).Select(_ => new { x = NN, y = NN }).ToArray();
             double ans = 0.0;
-            var allkeiro = LIB_Math.MakePermutation(N);
+            var allkeiro = LIB_Math.MakePermutation(N).ToList();
             foreach (var item in allkeiro)
             {
                 var thisThist = 0.0;

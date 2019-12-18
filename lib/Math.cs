@@ -112,31 +112,36 @@ namespace Library
             return _fact[(int)n] / _fact[(int)(n - k)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public List<List<int>> MakePermutation(long n)
+        static public IEnumerable<List<int>> MakePermutation(long n, bool zeroIndexed = true)
         {
             if (n <= 0) throw new Exception();
-            var ret = new List<List<int>>();
-            ret.Add(new List<int>());
-            for (var i = 0; i < n; i++)
+            var c = new int[n];
+            var a = new int[n];
+            if (!zeroIndexed) a[0] = 1;
+            for (var i = 1; i < n; i++) a[i] = a[i - 1] + 1;
+            yield return new List<int>(a);
+            for (var i = 0; i < n;)
             {
-                var reta = new List<List<int>>();
-                foreach (var item in ret)
+                if (c[i] < i)
                 {
-                    var retb = Enumerable.Repeat(0, i + 1).Select(_ => new List<int>()).ToList();
-                    for (var k = 0; k < item.Count; k++)
+                    if (i % 2 == 0)
                     {
-                        for (var j = 0; j <= i; j++)
-                        {
-                            if (k == j) retb[j].Add(i);
-                            retb[j].Add(item[k]);
-                        }
+                        var t = a[0]; a[0] = a[i]; a[i] = t;
                     }
-                    retb[i].Add(i);
-                    reta.AddRange(retb);
+                    else
+                    {
+                        var t = a[c[i]]; a[c[i]] = a[i]; a[i] = t;
+                    }
+                    yield return new List<int>(a);
+                    ++c[i];
+                    i = 0;
                 }
-                ret = reta;
+                else
+                {
+                    c[i] = 0;
+                    ++i;
+                }
             }
-            return ret;
         }
     }
     ////end
