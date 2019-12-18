@@ -381,6 +381,7 @@ namespace Library
         {
             if (n == null) return;
             Eval(n);
+            n.needRecalc = true;
             var lc = Cnt(n.left);
             if (lc < l) Update(n.right, l - lc - 1, r - lc - 1, val);
             else if (r <= lc) Update(n.left, l, r, val);
