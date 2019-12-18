@@ -59,20 +59,45 @@ namespace Library
             for (var j = height; j > 0; j--) Eval(i >> j);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Thrust(long l, long r)
+        {
+            if (l == r) { Thrust(l); return; }
+            var xor = l ^ r;
+            var i = height;
+            for (; (xor >> i) != 0; --i) Eval(l >> i);
+            for (; i != 0; --i) { Eval(l >> i); Eval(r >> i); }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Recalc(long i)
         {
             while ((i >>= 1) > 0) dat[i] = f(Reflect((i << 1) | 0), Reflect((i << 1) | 1));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Recalc(long l, long r)
+        {
+            var xor = l ^ r;
+            while (xor > 1)
+            {
+                xor >>= 1; l >>= 1; r >>= 1;
+                dat[l] = f(Reflect((l << 1) | 0), Reflect((l << 1) | 1));
+                dat[r] = f(Reflect((r << 1) | 0), Reflect((r << 1) | 1));
+            }
+            while (l > 1)
+            {
+                l >>= 1;
+                dat[l] = f(Reflect((l << 1) | 0), Reflect((l << 1) | 1));
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, E v)
         {
-            Thrust(l += n); Thrust(r += n - 1);
+            Thrust(l += n, r += n - 1);
             for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
             {
                 if ((li & 1) == 1) { laz[li] = h(laz[li], v); ++li; }
                 if ((ri & 1) == 1) { --ri; laz[ri] = h(laz[ri], v); }
             }
-            Recalc(l); Recalc(r);
+            Recalc(l, r);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Query(long l, long r)
