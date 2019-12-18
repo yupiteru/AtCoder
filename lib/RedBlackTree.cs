@@ -84,6 +84,7 @@ namespace Library
             if (n == null) return;
             Eval(n);
             if (!n.needRecalc) return;
+            n.needRecalc = false;
             n.dat = n.val;
             if (n.left != null)
             {

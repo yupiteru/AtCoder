@@ -27,14 +27,14 @@ namespace Program
             var N = NN;
             var M = NN;
             var pab = Repeat(0, M).Select(_ => new { p = NN, a = ND, b = ND }).ToArray();
-            var zaatu = pab.Select(e => e.p).Distinct().OrderByRand().OrderBy(e => e).Select((e, i) => new { e, i }).ToDictionary(e => e.e, e => e.i);
-            var tree = new LIB_SegTree<Box>(zaatu.Count, new Box { a = 1, b = 0 }, (x, y) => new Box { a = y.a * x.a, b = y.b + y.a * x.b });
+            var tree = new LIB_RedBlackTree<long, Box, Box>(new Box { a = 1, b = 0 }, new Box { a = 1, b = 0 }, (x, y) => new Box { a = y.a * x.a, b = y.b + y.a * x.b }, (x, y) => y, (x, y) => y);
             double max = 1;
             double min = 1;
             foreach (var item in pab)
             {
-                tree[zaatu[item.p]] = new Box { a = item.a, b = item.b };
-                var v = tree.Query(0, zaatu.Count);
+                if (tree.Have(item.p)) tree.Remove(item.p);
+                tree.Add(item.p, new Box { a = item.a, b = item.b });
+                var v = tree.Query(0, tree.Count);
                 var vd = v.a + v.b;
                 max = Max(vd, max);
                 min = Min(vd, min);
