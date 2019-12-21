@@ -1,0 +1,19 @@
+
+[case 0]
+redcoder
+
+[output]
+1
+
+[case 1]
+vvvvvv
+
+[output]
+0
+
+[case 2]
+abcdabc
+
+[output]
+2
+
