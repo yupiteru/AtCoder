@@ -53,13 +53,13 @@ namespace Program
                     }
                     if (i != 0)
                     {
-                        dp[i, j] |= dp[i - 1, j] >> moved;
-                        dp[i, j] |= dp[i - 1, j] << moved;
+                        dp[i, j].Or(dp[i - 1, j] >> moved);
+                        dp[i, j].Or(dp[i - 1, j] << moved);
                     }
                     if (j != 0)
                     {
-                        dp[i, j] |= dp[i, j - 1] >> moved;
-                        dp[i, j] |= dp[i, j - 1] << moved;
+                        dp[i, j].Or(dp[i, j - 1] >> moved);
+                        dp[i, j].Or(dp[i, j - 1] << moved);
                     }
                 }
             }

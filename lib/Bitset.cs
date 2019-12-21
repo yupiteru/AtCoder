@@ -47,11 +47,21 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void And(LIB_Bitset x)
+        {
+            for (var i = 0; i < ary.Length; i++) ary[i] &= x.ary[i];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator &(LIB_Bitset x, LIB_Bitset y)
         {
             var ret = new LIB_Bitset(x.n);
             for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i] & y.ary[i];
             return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Or(LIB_Bitset x)
+        {
+            for (var i = 0; i < ary.Length; i++) ary[i] |= x.ary[i];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator |(LIB_Bitset x, LIB_Bitset y)
@@ -61,6 +71,11 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Xor(LIB_Bitset x)
+        {
+            for (var i = 0; i < ary.Length; i++) ary[i] ^= x.ary[i];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator ^(LIB_Bitset x, LIB_Bitset y)
         {
             var ret = new LIB_Bitset(x.n);
@@ -68,11 +83,28 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Flip()
+        {
+            for (var i = 0; i < ary.Length; i++) ary[i] = ~ary[i];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator ~(LIB_Bitset x)
         {
             var ret = new LIB_Bitset(x.n);
             for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = ~x.ary[i];
             return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ShiftLeft(int num)
+        {
+            var moveCnt = num >> 6;
+            var moveBit = num & 63;
+            for (var i = ary.Length - 1; i >= moveCnt; i--)
+            {
+                ary[i] = ary[i - moveCnt] << moveBit;
+                if (moveBit > 0 && i > moveCnt) ary[i] |= ary[i - moveCnt - 1] >> (64 - moveBit);
+            }
+            ary[ary.Length - 1] &= ceil[n & 63];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator <<(LIB_Bitset x, int num)
@@ -87,6 +119,18 @@ namespace Library
             }
             ret.ary[ret.ary.Length - 1] &= ceil[ret.n & 63];
             return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ShiftRight(int num)
+        {
+            var moveCnt = num >> 6;
+            var moveBit = num & 63;
+            var aryMax = ary.Length - moveCnt;
+            for (var i = 0; i < aryMax; i++)
+            {
+                ary[i] = ary[i + moveCnt] >> moveBit;
+                if (moveBit > 0 && i < aryMax - 1) ary[i] |= ary[i + moveCnt + 1] << (64 - moveBit);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator >>(LIB_Bitset x, int num)
