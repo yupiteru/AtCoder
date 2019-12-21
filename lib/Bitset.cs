@@ -31,19 +31,19 @@ namespace Library
         {
             if (size <= 0) throw new Exception();
             n = size;
-            ary = new ulong[(n - 1) / 64 + 1];
+            ary = new ulong[((n - 1) >> 6) + 1];
         }
         public long Count => n;
         public long CountOne => ary.Sum(e => LIB_BitUtil.CountOne(e));
         public bool this[int idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return LIB_BitUtil.IsSet(ary[idx / 64], idx % 64); }
+            get { return LIB_BitUtil.IsSet(ary[idx >> 6], idx & 63); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (value) ary[idx / 64] |= LIB_BitUtil.BitMask[idx % 64];
-                else ary[idx / 64] &= ~LIB_BitUtil.BitMask[idx % 64];
+                if (value) ary[idx >> 6] |= LIB_BitUtil.BitMask[idx & 63];
+                else ary[idx >> 6] &= ~LIB_BitUtil.BitMask[idx & 63];
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,22 +78,22 @@ namespace Library
         static public LIB_Bitset operator <<(LIB_Bitset x, int num)
         {
             var ret = new LIB_Bitset(x.n);
-            var moveCnt = num / 64;
-            var moveBit = num % 64;
+            var moveCnt = num >> 6;
+            var moveBit = num & 63;
             for (var i = ret.ary.Length - 1; i >= moveCnt; i--)
             {
                 ret.ary[i] = x.ary[i - moveCnt] << moveBit;
                 if (moveBit > 0 && i > moveCnt) ret.ary[i] |= x.ary[i - moveCnt - 1] >> (64 - moveBit);
             }
-            ret.ary[ret.ary.Length - 1] &= ceil[ret.n % 64];
+            ret.ary[ret.ary.Length - 1] &= ceil[ret.n & 63];
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator >>(LIB_Bitset x, int num)
         {
             var ret = new LIB_Bitset(x.n);
-            var moveCnt = num / 64;
-            var moveBit = num % 64;
+            var moveCnt = num >> 6;
+            var moveBit = num & 63;
             var aryMax = ret.ary.Length - moveCnt;
             for (var i = 0; i < aryMax; i++)
             {
