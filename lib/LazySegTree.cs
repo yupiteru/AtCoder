@@ -105,6 +105,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, E v)
         {
+            if (r < l) throw new Exception();
             Thrust(l += n, r += n - 1);
             for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
             {
@@ -116,6 +117,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Query(long l, long r)
         {
+            if (r < l) throw new Exception();
             Thrust(l += n); Thrust(r += n - 1);
             var vl = ti; var vr = ti;
             for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
