@@ -1,0 +1,13 @@
+
+[case 0]
+oder atc
+
+[output]
+atcoder
+
+[case 1]
+humu humu
+
+[output]
+humuhumu
+
