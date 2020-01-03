@@ -1,0 +1,29 @@
+
+[case 0]
+15 10
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snuke snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+snake snake snake snake snake snake snake snake snake snake
+
+[output]
+H6
+
+[case 1]
+1 1
+snuke
+
+[output]
+A1
+
