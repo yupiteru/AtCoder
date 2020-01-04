@@ -71,9 +71,11 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => v.ToString();
         static List<LIB_Mod> _fact = new List<LIB_Mod>() { 1 };
+        static long _factm = _mod;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void B(long n)
         {
+            if (_factm != _mod) _fact = new List<LIB_Mod>() { 1 };
             if (n >= _fact.Count)
                 for (int i = _fact.Count; i <= n; ++i)
                     _fact.Add(_fact[i - 1] * i);
