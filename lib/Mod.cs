@@ -79,6 +79,7 @@ namespace Library
             if (n >= _fact.Count)
                 for (int i = _fact.Count; i <= n; ++i)
                     _fact.Add(_fact[i - 1] * i);
+            _factm = _mod;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod Comb(long n, long k)
