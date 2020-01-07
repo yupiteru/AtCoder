@@ -57,6 +57,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, T v)
         {
+            if (l == r) return;
             if (r < l) throw new Exception();
             Thrust(l += n, r += n - 1);
             for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)

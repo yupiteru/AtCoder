@@ -43,6 +43,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Query(long l, long r)
         {
+            if (l == r) return ti;
             if (r < l) throw new Exception();
             var vl = ti;
             var vr = ti;
