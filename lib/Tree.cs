@@ -225,33 +225,25 @@ namespace Library
                     else if (path[item].Count == 2)
                     {
                         var x = path[item][0]; var y = path[item][1];
-                        var xval = f(val, dp[x][item]); var yval = f(val, dp[y][item]);
-                        if (x != v) dp[item][x] = yval;
-                        if (y != v) dp[item][y] = xval;
+                        if (x != v) dp[item][x] = f(val, dp[y][item]);
+                        if (y != v) dp[item][y] = f(val, dp[x][item]);
                     }
                     else if (path[item].Count == 3)
                     {
                         var x = path[item][0]; var y = path[item][1]; var z = path[item][2];
-                        var yzval = f(val, f(dp[y][item], dp[z][item]));
-                        var xzval = f(val, f(dp[x][item], dp[z][item]));
-                        var xyval = f(val, f(dp[x][item], dp[y][item]));
-                        if (x != v) dp[item][x] = yzval;
-                        if (y != v) dp[item][y] = xzval;
-                        if (z != v) dp[item][z] = xyval;
+                        if (x != v) dp[item][x] = f(val, f(dp[y][item], dp[z][item]));
+                        if (y != v) dp[item][y] = f(val, f(dp[x][item], dp[z][item]));
+                        if (z != v) dp[item][z] = f(val, f(dp[x][item], dp[y][item]));
                     }
                     else if (path[item].Count == 4)
                     {
                         var x = path[item][0]; var y = path[item][1]; var z = path[item][2]; var w = path[item][3];
                         var xyval = f(val, f(dp[x][item], dp[y][item]));
                         var zwval = f(val, f(dp[z][item], dp[w][item]));
-                        var yzwval = f(dp[y][item], zwval);
-                        var xzwval = f(dp[x][item], zwval);
-                        var xywval = f(xyval, dp[w][item]);
-                        var xyzval = f(xyval, dp[z][item]);
-                        if (x != v) dp[item][x] = yzwval;
-                        if (y != v) dp[item][y] = xzwval;
-                        if (z != v) dp[item][z] = xywval;
-                        if (w != v) dp[item][w] = xyzval;
+                        if (x != v) dp[item][x] = f(dp[y][item], zwval);
+                        if (y != v) dp[item][y] = f(dp[x][item], zwval);
+                        if (z != v) dp[item][z] = f(xyval, dp[w][item]);
+                        if (w != v) dp[item][w] = f(xyval, dp[z][item]);
                     }
                     else
                     {
