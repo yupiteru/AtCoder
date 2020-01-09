@@ -229,6 +229,24 @@ namespace Library
                         if (x != v) dp[item][x] = yval;
                         if (y != v) dp[item][y] = xval;
                     }
+                    else if (path[item].Count == 3)
+                    {
+                        var x = path[item][0]; var y = path[item][1]; var z = path[item][2];
+                        var yzval = f(val, f(dp[y][item], dp[z][item])); var xzval = f(val, f(dp[x][item], dp[z][item])); var xyval = f(val, f(dp[x][item], dp[y][item]));
+                        if (x != v) dp[item][x] = yzval;
+                        if (y != v) dp[item][y] = xzval;
+                        if (z != v) dp[item][z] = xyval;
+                    }
+                    else if (path[item].Count == 4)
+                    {
+                        var x = path[item][0]; var y = path[item][1]; var z = path[item][2]; var w = path[item][3];
+                        var xyval = f(dp[x][item], dp[y][item]); var zwval = f(dp[z][item], dp[w][item]);
+                        var yzwval = f(val, f(dp[y][item], zwval)); var xzwval = f(val, f(dp[x][item], zwval)); var xywval = f(val, f(xyval, dp[w][item])); var xyzval = f(val, f(xyval, dp[z][item]));
+                        if (x != v) dp[item][x] = yzwval;
+                        if (y != v) dp[item][y] = xzwval;
+                        if (z != v) dp[item][z] = xywval;
+                        if (w != v) dp[item][w] = xyzval;
+                    }
                     else
                     {
                         swag.Clear();
