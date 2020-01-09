@@ -195,60 +195,54 @@ namespace Library
                 }
                 dp[item.node][item.parent] = acc;
             }
-            Func<long, long, T> fun = null;
-            fun = (vtx, parent) =>
+            var swag = new LIB_SlidingWindowAggregation<T>(f);
+            var done = new bool[N];
+            var q = new Queue<long>();
+            done[0] = true;
+            q.Enqueue(0);
+            foreach (var item in path[0]) swag.PushBack(dp[item][0]);
+            swag.PushBack(idxToVal(0));
+            foreach (var item in path[0])
             {
-                var acc = idxToVal(vtx);
-                if (path[vtx].Count == 1)
+                swag.PopFront();
+                dp[0][item] = swag.Aggregate();
+                swag.PushBack(dp[item][0]);
+            }
+            while (q.Count > 0)
+            {
+                var v = q.Dequeue();
+                foreach (var item in path[v])
                 {
-                    var x = path[vtx][0];
-                    if (x != parent) { dp[vtx][x] = acc; acc = f(acc, fun(x, vtx)); }
-                }
-                else if (path[vtx].Count == 2)
-                {
-                    var x = path[vtx][0]; var y = path[vtx][1];
-                    var xval = f(acc, dp[x][vtx]); var yval = f(acc, dp[y][vtx]);
-                    if (x != parent) { dp[vtx][x] = yval; acc = f(acc, fun(x, vtx)); }
-                    if (y != parent) { dp[vtx][y] = xval; acc = f(acc, fun(y, vtx)); }
-                }
-                else if (path[vtx].Count == 3)
-                {
-                    var x = path[vtx][0]; var y = path[vtx][1]; var z = path[vtx][2];
-                    var yzval = f(acc, f(dp[y][vtx], dp[z][vtx])); var xzval = f(acc, f(dp[x][vtx], dp[z][vtx])); var xyval = f(acc, f(dp[x][vtx], dp[y][vtx]));
-                    if (x != parent) { dp[vtx][x] = yzval; acc = f(acc, fun(x, vtx)); }
-                    if (y != parent) { dp[vtx][y] = xzval; acc = f(acc, fun(y, vtx)); }
-                    if (z != parent) { dp[vtx][z] = xyval; acc = f(acc, fun(z, vtx)); }
-                }
-                else if (path[vtx].Count == 4)
-                {
-                    var x = path[vtx][0]; var y = path[vtx][1]; var z = path[vtx][2]; var w = path[vtx][3];
-                    var xyval = f(dp[x][vtx], dp[y][vtx]); var zwval = f(dp[z][vtx], dp[w][vtx]);
-                    var yzwval = f(acc, f(dp[y][vtx], zwval)); var xzwval = f(acc, f(dp[x][vtx], zwval)); var xywval = f(acc, f(xyval, dp[w][vtx])); var xyzval = f(acc, f(xyval, dp[z][vtx]));
-                    if (x != parent) { dp[vtx][x] = yzwval; acc = f(acc, fun(x, vtx)); }
-                    if (y != parent) { dp[vtx][y] = xzwval; acc = f(acc, fun(y, vtx)); }
-                    if (z != parent) { dp[vtx][z] = xywval; acc = f(acc, fun(z, vtx)); }
-                    if (w != parent) { dp[vtx][w] = xyzval; acc = f(acc, fun(w, vtx)); }
-                }
-                else
-                {
-                    var ary = new T[path[vtx].Count + 1];
-                    for (var i = 0; i < path[vtx].Count; i++) ary[i] = dp[path[vtx][i]][vtx];
-                    ary[path[vtx].Count] = acc;
-                    var swag = new LIB_SlidingWindowAggregation<T>(ary, f);
-                    foreach (var item in path[vtx])
+                    if (done[item]) continue;
+                    done[item] = true;
+                    q.Enqueue(item);
+                    var val = idxToVal(item);
+                    if (path[item].Count == 1)
                     {
-                        swag.PopFront();
-                        if (item != parent)
+                        var x = path[item][0];
+                        if (x != v) dp[item][x] = val;
+                    }
+                    else if (path[item].Count == 2)
+                    {
+                        var x = path[item][0]; var y = path[item][1];
+                        var xval = f(val, dp[x][item]); var yval = f(val, dp[y][item]);
+                        if (x != v) dp[item][x] = yval;
+                        if (y != v) dp[item][y] = xval;
+                    }
+                    else
+                    {
+                        swag.Clear();
+                        foreach (var item2 in path[item]) swag.PushBack(dp[item2][item]);
+                        swag.PushBack(val);
+                        foreach (var item2 in path[item])
                         {
-                            dp[vtx][item] = swag.Aggregate();
-                            acc = f(acc, fun(item, vtx));
+                            swag.PopFront();
+                            if (item2 != v) dp[item][item2] = swag.Aggregate();
+                            swag.PushBack(dp[item2][item]);
                         }
-                        swag.PushBack(dp[item][vtx]);
                     }
                 }
-                return dp[vtx][parent] = acc;
-            };
-            fun(0, -1);
+            }
             return new TreeDPResult<T>(dp);
         }
     }

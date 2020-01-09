@@ -45,6 +45,11 @@ namespace Library
         public LIB_SlidingWindowAggregation(Func<T, T, T> f) : this(new T[0], f) { }
         public int Count => size[0] + size[1];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear()
+        {
+            size[0] = size[1] = 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Push(int lista, T val)
         {
             if (list[lista].Length == size[lista])
