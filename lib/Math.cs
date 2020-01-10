@@ -75,7 +75,7 @@ namespace Library
             return a;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long LCM(long a, long b) => a * b / GCD(a, b);
+        static public long LCM(long a, long b) => a / GCD(a, b) * b;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long Pow(long x, long y)
         {
