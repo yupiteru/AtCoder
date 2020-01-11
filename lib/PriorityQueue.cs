@@ -16,11 +16,11 @@ namespace Library
         List<T> heap;
         Comparison<T> comp;
         public T Peek => heap[0];
-        public int Count => heap.Count;
+        public long Count => heap.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_PriorityQueue(int cap, Comparison<T> cmp, bool asc = true)
+        public LIB_PriorityQueue(long cap, Comparison<T> cmp, bool asc = true)
         {
-            heap = new List<T>(cap);
+            heap = new List<T>((int)cap);
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -30,7 +30,7 @@ namespace Library
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_PriorityQueue(int cap, bool asc = true) : this(cap, Comparer<T>.Default.Compare, asc) { }
+        public LIB_PriorityQueue(long cap, bool asc = true) : this(cap, Comparer<T>.Default.Compare, asc) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(bool asc = true) : this(Comparer<T>.Default.Compare, asc) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,9 +70,9 @@ namespace Library
     {
         LIB_PriorityQueue<KeyValuePair<TK, TV>> q;
         public KeyValuePair<TK, TV> Peek => q.Peek;
-        public int Count => q.Count;
+        public long Count => q.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_PriorityQueue(int cap, Comparison<TK> cmp, bool asc = true)
+        public LIB_PriorityQueue(long cap, Comparison<TK> cmp, bool asc = true)
         {
             q = new LIB_PriorityQueue<KeyValuePair<TK, TV>>(cap, (x, y) => cmp(x.Key, y.Key), asc);
         }
@@ -82,7 +82,7 @@ namespace Library
             q = new LIB_PriorityQueue<KeyValuePair<TK, TV>>((x, y) => cmp(x.Key, y.Key), asc);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_PriorityQueue(int cap, bool asc = true) : this(cap, Comparer<TK>.Default.Compare, asc) { }
+        public LIB_PriorityQueue(long cap, bool asc = true) : this(cap, Comparer<TK>.Default.Compare, asc) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(bool asc = true) : this(Comparer<TK>.Default.Compare, asc) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -16,17 +16,17 @@ namespace Library
         T[] array;
         int front, cap;
         public int Count;
-        public T this[int i]
+        public T this[long i]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return array[GetIndex(i)]; }
+            get { return array[GetIndex((int)i)]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { array[GetIndex(i)] = value; }
+            set { array[GetIndex((int)i)] = value; }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_Deque(int cap = 16)
+        public LIB_Deque(long cap = 16)
         {
-            array = new T[this.cap = cap];
+            array = new T[this.cap = (int)cap];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int GetIndex(int i)
@@ -79,7 +79,7 @@ namespace Library
             array = nb; front = 0; cap <<= 1;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Insert(int i, T x)
+        public void Insert(long i, T x)
         {
             if (i > Count) throw new Exception();
             this.PushFront(x);
@@ -87,11 +87,11 @@ namespace Library
             this[i] = x;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T RemoveAt(int i)
+        public T RemoveAt(long i)
         {
             if (i < 0 || i >= Count) throw new Exception();
             var r = this[i];
-            for (int j = i; j > 0; j--) this[j] = this[j - 1];
+            for (var j = i; j > 0; j--) this[j] = this[j - 1];
             this.PopFront();
             return r;
         }

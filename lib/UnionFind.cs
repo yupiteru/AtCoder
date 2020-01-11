@@ -16,9 +16,9 @@ namespace Library
         long[] d;
         Func<long, long, long> f;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_UnionFind(int s)
+        public LIB_UnionFind(long s)
         {
-            d = Enumerable.Repeat(-1L, s).ToArray();
+            d = Enumerable.Repeat(-1L, (int)s).ToArray();
             f = (x, y) => x + y;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,7 +28,7 @@ namespace Library
             f = func;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Unite(int x, int y)
+        public bool Unite(long x, long y)
         {
             x = Root(x);
             y = Root(y);
@@ -40,11 +40,11 @@ namespace Library
             return x != y;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsSame(int x, int y) => Root(x) == Root(y);
+        public bool IsSame(long x, long y) => Root(x) == Root(y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Root(int x) => d[x] < 0 ? x : (int)(d[x] = Root((int)d[x]));
+        public long Root(long x) => d[x] < 0 ? x : d[x] = Root(d[x]);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long Calc(int x) => -d[Root(x)];
+        public long Calc(long x) => -d[Root(x)];
     }
     ////end
 }

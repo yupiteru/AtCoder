@@ -13,8 +13,8 @@ namespace Library
     ////start
     class LIB_Tree
     {
-        long N;
-        List<long>[] path;
+        int N;
+        List<int>[] path;
         public struct EulerRes
         {
             public long node;
@@ -31,27 +31,27 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Tree(long n)
         {
-            N = n;
-            path = Enumerable.Repeat(0, (int)N).Select(_ => new List<long>()).ToArray();
+            N = (int)n;
+            path = Enumerable.Repeat(0, N).Select(_ => new List<int>()).ToArray();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddPath(long u, long v)
         {
             if (u >= N || v >= N) throw new Exception();
-            path[u].Add(v);
-            path[v].Add(u);
+            path[u].Add((int)v);
+            path[v].Add((int)u);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long[] GetSurround(long u) => path[u].ToArray();
+        public long[] GetSurround(long u) => path[u].Cast<long>().ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<BFSRes> BFSFromRoot(long root)
         {
             bfsList = new List<BFSRes>();
-            var q = new Queue<long>();
+            var q = new Queue<int>();
             var done = new bool[N];
             bfsList.Add(new BFSRes { node = root, parent = -1 });
             done[root] = true;
-            q.Enqueue(root);
+            q.Enqueue((int)root);
             while (q.Count > 0)
             {
                 var w = q.Dequeue();
@@ -71,10 +71,10 @@ namespace Library
         public List<EulerRes> EulerTour(long root)
         {
             eulerList = new List<EulerRes>();
-            var s = new Stack<Tuple<long, long>>();
+            var s = new Stack<Tuple<int, int>>();
             var done = new bool[N];
             done[root] = true;
-            s.Push(Tuple.Create(root, -1L));
+            s.Push(Tuple.Create((int)root, -1));
             while (s.Count > 0)
             {
                 var w = s.Peek();
@@ -99,9 +99,9 @@ namespace Library
         {
             int[] depth;
             int l;
-            long[][] pr;
+            int[][] pr;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public LCAResult(int[] depth, int l, long[][] pr)
+            public LCAResult(int[] depth, int l, int[][] pr)
             {
                 this.depth = depth;
                 this.l = l;
@@ -139,11 +139,11 @@ namespace Library
             var depth = new int[N];
             var l = 0;
             while (N > (1 << l)) l++;
-            var pr = Enumerable.Repeat(0, l).Select(_ => new long[N]).ToArray();
+            var pr = Enumerable.Repeat(0, l).Select(_ => new int[N]).ToArray();
             depth[root] = 0;
             pr[0][root] = -1;
-            var q = new Stack<long>();
-            q.Push(root);
+            var q = new Stack<int>();
+            q.Push((int)root);
             while (q.Count > 0)
             {
                 var w = q.Pop();
@@ -167,8 +167,8 @@ namespace Library
         }
         public class TreeDPResult<T>
         {
-            Dictionary<long, T>[] dp;
-            public TreeDPResult(Dictionary<long, T>[] dp)
+            Dictionary<int, T>[] dp;
+            public TreeDPResult(Dictionary<int, T>[] dp)
             {
                 this.dp = dp;
             }
@@ -177,27 +177,27 @@ namespace Library
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
-                    return dp[vtx][parent];
+                    return dp[vtx][(int)parent];
                 }
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TreeDPResult<T> BuildTreeDP<T>(Func<long, T> idxToVal, Func<T, T, T> f)
         {
-            var dp = Enumerable.Repeat(0, (int)N).Select(_ => new Dictionary<long, T>()).ToArray();
+            var dp = Enumerable.Repeat(0, N).Select(_ => new Dictionary<int, T>()).ToArray();
             foreach (var item in BFSFromLeaf(0))
             {
                 var acc = idxToVal(item.node);
                 foreach (var item2 in path[item.node])
                 {
                     if (item2 == item.parent) continue;
-                    acc = f(acc, dp[item2][item.node]);
+                    acc = f(acc, dp[item2][(int)item.node]);
                 }
-                dp[item.node][item.parent] = acc;
+                dp[item.node][(int)item.parent] = acc;
             }
             var swag = new LIB_SlidingWindowAggregation<T>(f);
             var done = new bool[N];
-            var q = new Queue<long>();
+            var q = new Queue<int>();
             done[0] = true;
             q.Enqueue(0);
             foreach (var item in path[0]) swag.PushBack(dp[item][0]);
