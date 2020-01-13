@@ -1,0 +1,13 @@
+
+[case 0]
+a
+
+[output]
+b
+
+[case 1]
+y
+
+[output]
+z
+

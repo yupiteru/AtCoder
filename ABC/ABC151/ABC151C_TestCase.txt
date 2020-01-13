@@ -1,0 +1,27 @@
+
+[case 0]
+2 5
+1 WA
+1 AC
+2 WA
+2 AC
+2 WA
+
+[output]
+2 2
+
+[case 1]
+100000 3
+7777 AC
+7777 AC
+7777 AC
+
+[output]
+1 0
+
+[case 2]
+6 0
+
+[output]
+0 0
+
