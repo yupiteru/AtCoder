@@ -189,11 +189,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node Remove(Node n, Key key)
         {
-            if (n == null)
-            {
-                isNeedFix = false;
-                return n;
-            }
+            if (n == null) throw new Exception();
             if (ope) Eval(n);
             n.cnt--;
             var r = c(key, n.key);
