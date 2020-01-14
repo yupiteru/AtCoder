@@ -355,24 +355,26 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Min()
         {
-            Node n = root, p = null;
+            Node n = root.left, p = root;
             while (n != null)
             {
-                Eval(p = n);
+                p = n;
+                if (ope) Eval(p);
                 n = n.left;
             }
-            return new KeyValuePair<Key, ValueT>(n.key, n.val);
+            return new KeyValuePair<Key, ValueT>(p.key, p.val);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Max()
         {
-            Node n = root, p = null;
+            Node n = root.right, p = root;
             while (n != null)
             {
-                Eval(p = n);
+                p = n;
+                if (ope) Eval(p);
                 n = n.right;
             }
-            return new KeyValuePair<Key, ValueT>(n.key, n.val);
+            return new KeyValuePair<Key, ValueT>(p.key, p.val);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, ValueE val) => Update(root, l, r, val);
