@@ -14,7 +14,7 @@ namespace Library
     ////start
     class LIB_String
     {
-        static int[] ZAlgorithm(long[] s)
+        public static int[] ZAlgorithm(long[] s)
         {
             var ret = new int[s.Length];
             ret[0] = s.Length;
