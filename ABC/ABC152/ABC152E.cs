@@ -21,24 +21,16 @@ namespace Program
         {
             var N = NN;
             var AList = NNList(N);
-            var total = new LIB_Dict<long, long>();
+            LIB_FactorizedNumber lcm = 1;
             foreach (var item in AList)
             {
-                var tmp = LIB_Math.Factors(item).GroupBy(e => e).ToDictionary(e => e.Key, e => e.Count());
-                foreach (var item2 in tmp)
-                {
-                    total[item2.Key] = Max(item2.Value, total[item2.Key]);
-                }
-            }
-            LIB_Mod total2 = 1;
-            foreach (var item in total)
-            {
-                total2 *= LIB_Mod.Pow(item.Key, item.Value);
+                lcm.LCM(item);
             }
             LIB_Mod sum = 0;
+            LIB_Mod lcmm = lcm;
             for (var i = 0; i < N; i++)
             {
-                sum += total2 / AList[i];
+                sum += lcmm / AList[i];
             }
             Console.WriteLine(sum);
         }
