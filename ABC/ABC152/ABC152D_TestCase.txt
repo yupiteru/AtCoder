@@ -1,0 +1,31 @@
+
+[case 0]
+25
+
+[output]
+17
+
+[case 1]
+1
+
+[output]
+1
+
+[case 2]
+100
+
+[output]
+108
+
+[case 3]
+2020
+
+[output]
+40812
+
+[case 4]
+200000
+
+[output]
+400000008
+
