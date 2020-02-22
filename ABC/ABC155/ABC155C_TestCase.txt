@@ -1,17 +1,55 @@
+
+[case 0]
+7
+beat
+vet
+beet
+bed
+vet
+bet
+beet
+
+[output]
+beet
+vet
+
 [case 1]
 8
+buffalo
+buffalo
+buffalo
+buffalo
+buffalo
+buffalo
+buffalo
+buffalo
 
 [output]
-10
+buffalo
 
 [case 2]
-1000000000000
+7
+bass
+bass
+kick
+kick
+bass
+kick
+kick
 
 [output]
-2499686339916
+kick
 
 [case 3]
-100
+4
+ushi
+tapu
+nichia
+kun
 
 [output]
-191
+kun
+nichia
+tapu
+ushi
+
