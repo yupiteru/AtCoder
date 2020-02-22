@@ -90,6 +90,14 @@ namespace Library
             return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_Mod CombOK(long n, long k)
+        {
+            LIB_Mod ret = 1;
+            for (var i = 0; i < k; i++) ret *= n - i;
+            for (var i = 1; i <= k; i++) ret /= i;
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod Perm(long n, long k)
         {
             B(n);

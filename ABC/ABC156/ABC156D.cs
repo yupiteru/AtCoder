@@ -23,25 +23,7 @@ namespace Program
             var a = NN;
             var b = NN;
             LIB_Mod ans = LIB_Mod.Pow(2, n);
-            LIB_Mod aa = 1;
-            LIB_Mod bb = 1;
-            for (var i = 0; i < a; i++)
-            {
-                aa *= n - i;
-            }
-            for (var i = a; i > 0; i--)
-            {
-                aa /= i;
-            }
-            for (var i = 0; i < b; i++)
-            {
-                bb *= n - i;
-            }
-            for (var i = b; i > 0; i--)
-            {
-                bb /= i;
-            }
-            Console.WriteLine(ans - aa - bb - 1);
+            Console.WriteLine(ans - LIB_Mod.CombOK(n, a) - LIB_Mod.CombOK(n, b) - 1);
         }
         static class Console_
         {
