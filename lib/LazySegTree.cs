@@ -25,7 +25,7 @@ namespace Library
         static public LIB_LazySegTree<SumEntity, long> CreateRUQRSQ(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
         static public LIB_LazySegTree<SumEntity, long> CreateRAQRSQ(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
     }
-    class LIB_LazySegTree<T, E>
+    class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
         int n, height;
         T ti;
@@ -120,7 +120,7 @@ namespace Library
         {
             if (l == r) return ti;
             if (r < l) throw new Exception();
-            Thrust(l += n); Thrust(r += n - 1);
+            Thrust(l += n, r += n - 1);
             var vl = ti; var vr = ti;
             for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
             {

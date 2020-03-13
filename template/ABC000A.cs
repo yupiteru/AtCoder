@@ -20,21 +20,17 @@ namespace Program
         static public void Solve()
         {
         }
-        static class Console_
-        {
-            static Queue<string> param = new Queue<string>();
-            public static string NextString() { if (param.Count == 0) foreach (var item in Console.ReadLine().Split(' ')) param.Enqueue(item); return param.Dequeue(); }
-        }
         class Printer : StreamWriter
         {
             public override IFormatProvider FormatProvider { get { return CultureInfo.InvariantCulture; } }
             public Printer(Stream stream) : base(stream, new UTF8Encoding(false, true)) { base.AutoFlush = false; }
             public Printer(Stream stream, Encoding encoding) : base(stream, encoding) { base.AutoFlush = false; }
         }
-        static public void Main(string[] args) { if (args.Length == 0) { Console.SetOut(new Printer(Console.OpenStandardOutput())); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
-        static long NN => long.Parse(Console_.NextString());
-        static double ND => double.Parse(Console_.NextString());
-        static string NS => Console_.NextString();
+        static LIB_FastIO fastio = new LIB_FastIODebug();
+        static public void Main(string[] args) { if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
+        static long NN => fastio.Long();
+        static double ND => fastio.Double();
+        static string NS => fastio.Scan();
         static long[] NNList(long N) => Repeat(0, N).Select(_ => NN).ToArray();
         static double[] NDList(long N) => Repeat(0, N).Select(_ => ND).ToArray();
         static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
