@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_DualSegTree<T>
+    class LIB_DualSegTree<T> where T : IEquatable<T>
     {
         int n, height;
         T ti;
