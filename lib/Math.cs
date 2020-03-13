@@ -83,7 +83,7 @@ namespace Library
             while (y != 0)
             {
                 if ((y & 1) == 1) a *= x;
-                x *= x;
+                if (x < long.MaxValue / x) x *= x;
                 y >>= 1;
             }
             return a;
