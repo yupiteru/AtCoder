@@ -14,92 +14,115 @@ namespace Library
     class LIB_Geo2D
     {
         static readonly double EPS = 1e-10;
-        public struct Point
+        public struct Vec
         {
             public double x;
             public double y;
+            public Vec(double x, double y) { this.x = x; this.y = y; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator +(Point a, Point b) => new Point() { x = a.x + b.x, y = a.y + b.y };
+            static public Vec operator +(Vec a, Vec b) => new Vec() { x = a.x + b.x, y = a.y + b.y };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator -(Point a, Point b) => new Point() { x = a.x - b.x, y = a.y - b.y };
+            static public Vec operator -(Vec a, Vec b) => new Vec() { x = a.x - b.x, y = a.y - b.y };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator *(Point p, double v) => new Point() { x = p.x * v, y = p.y * v };
+            static public Vec operator *(Vec p, double v) => new Vec() { x = p.x * v, y = p.y * v };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator *(double v, Point p) => p * v;
+            static public Vec operator *(double v, Vec p) => p * v;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator /(Point p, double v) => new Point() { x = p.x / v, y = p.y / v };
+            static public Vec operator /(Vec p, double v) => new Vec() { x = p.x / v, y = p.y / v };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public Point operator /(double v, Point p) => p / v;
+            static public Vec operator /(double v, Vec p) => p / v;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        double Norm(Point p) => p.x * p.x + p.y * p.y;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        double Cross(Point p1, Point p2) => p1.x * p2.y - p1.y * p2.x;
         public struct Circle
         {
-            public Point p;
-            public double r;
+            public Vec p;
+            /// <summary>
+            /// 半径の2乗
+            /// </summary>
+            public double r2;
+            /// <summary>
+            /// 半径
+            /// </summary>
+            public double r
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return Sqrt(r2); }
+                private set { }
+            }
         }
-        List<Point> pointList;
+        /// <summary>
+        /// pの長さの2乗を得る
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_Geo2D()
+        static public double Norm(Vec p) => p.x * p.x + p.y * p.y;
+        /// <summary>
+        /// 内積
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public double Dot(Vec p1, Vec p2) => p1.x * p2.x + p1.y * p2.y;
+        /// <summary>
+        /// 外積（平行四辺形の面積）負になり得る
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public double Cross(Vec p1, Vec p2) => p1.x * p2.y - p1.y * p2.x;
+        /// <summary>
+        /// 3点を通る円を返す
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public Circle GetCircleFrom3Vec(Vec p1, Vec p2, Vec p3)
         {
-            pointList = new List<Point>();
+            var A = Norm(p2 - p3);
+            var B = Norm(p3 - p1);
+            var C = Norm(p1 - p2);
+            var S = Abs(Cross(p2 - p1, p3 - p1));
+            var p = (A * (B + C - A) * p1 + B * (C + A - B) * p2 + C * (A + B - C) * p3) / (4 * S * S);
+            var r = Norm(p - p1);
+            return new Circle() { p = p, r2 = r };
         }
+        /// <summary>
+        /// 2点を通る円を返す
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddPoint(double x, double y)
+        static public Circle GetCircleFrom2Vec(Vec p1, Vec p2)
         {
-            pointList.Add(new Point() { x = x, y = y });
+            var c = (p1 + p2) / 2;
+            return new Circle() { p = c, r2 = Norm(p1 - c) };
         }
+        /// <summary>
+        /// 最小包含円を返す
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Circle GetEncloseCircle()
+        static public Circle GetEncloseCircle(IEnumerable<Vec> pointList)
         {
-            if (pointList.Count < 2) throw new Exception();
+            var pList = pointList.ToArray();
+            if (pList.Length < 2) throw new Exception();
             var rnd = new Random();
-            var list = pointList.OrderBy(_ => rnd.Next()).ToArray();
-            Func<Point, Point, Point, Circle> mc3 = null;
-            mc3 = (a, b, c) =>
+            var list = pList.OrderBy(_ => rnd.Next()).ToArray();
+            Func<Vec, Circle, bool> inCircle = null;
+            inCircle = (p, c) => Norm(p - c.p) <= c.r2 + EPS;
             {
-                var A = Norm(b - c);
-                var B = Norm(c - a);
-                var C = Norm(a - b);
-                var S = Abs(Cross(b - a, c - a));
-                var p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) / (4 * S * S);
-                var r = Norm(p - a);
-                return new Circle() { p = p, r = r };
-            };
-            Func<Point, Point, Circle> mc2 = null;
-            mc2 = (a, b) =>
-            {
-                var c = (a + b) / 2;
-                return new Circle() { p = c, r = Norm(a - c) };
-            };
-            Func<Point, Circle, bool> inCircle = null;
-            inCircle = (p, c) => Norm(p - c.p) <= c.r + EPS;
-            {
-                var c = mc2(list[0], list[1]);
+                var c = GetCircleFrom2Vec(list[0], list[1]);
                 for (var i = 2; i < list.Length; i++)
                 {
                     if (!inCircle(list[i], c))
                     {
-                        c = mc2(list[0], list[i]);
+                        c = GetCircleFrom2Vec(list[0], list[i]);
                         for (var j = 1; j < i; j++)
                         {
                             if (!inCircle(list[j], c))
                             {
-                                c = mc2(list[i], list[j]);
+                                c = GetCircleFrom2Vec(list[i], list[j]);
                                 for (var k = 0; k < j; k++)
                                 {
                                     if (!inCircle(list[k], c))
                                     {
-                                        c = mc3(list[i], list[j], list[k]);
+                                        c = GetCircleFrom3Vec(list[i], list[j], list[k]);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                return new Circle() { p = c.p, r = Sqrt(c.r) };
+                return c;
             }
         }
     }

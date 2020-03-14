@@ -21,12 +21,7 @@ namespace Program
         {
             var N = NN;
             var xy = Repeat(0, N).Select(_ => new { x = NN, y = NN }).ToArray();
-            var geo = new LIB_Geo2D();
-            foreach (var item in xy)
-            {
-                geo.AddPoint(item.x, item.y);
-            }
-            Console.WriteLine(geo.GetEncloseCircle().r);
+            Console.WriteLine(LIB_Geo2D.GetEncloseCircle(xy.Select(e => new LIB_Geo2D.Vec(e.x, e.y))).r);
         }
         static class Console_
         {
