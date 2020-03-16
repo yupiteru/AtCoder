@@ -47,51 +47,68 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void And(LIB_Bitset x)
-        {
-            for (var i = 0; i < ary.Length; i++) ary[i] &= x.ary[i];
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator &(LIB_Bitset x, LIB_Bitset y)
         {
+            if (x.n < y.n) { var t = x; x = y; y = t; }
             var ret = new LIB_Bitset(x.n);
-            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i] & y.ary[i];
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            for (var i = 0; i < y.ary.Length; i++) ret.ary[i] &= y.ary[i];
             return ret;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Or(LIB_Bitset x)
-        {
-            for (var i = 0; i < ary.Length; i++) ary[i] |= x.ary[i];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator |(LIB_Bitset x, LIB_Bitset y)
         {
+            if (x.n < y.n) { var t = x; x = y; y = t; }
             var ret = new LIB_Bitset(x.n);
-            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i] | y.ary[i];
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            for (var i = 0; i < y.ary.Length; i++) ret.ary[i] |= y.ary[i];
             return ret;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Xor(LIB_Bitset x)
-        {
-            for (var i = 0; i < ary.Length; i++) ary[i] ^= x.ary[i];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator ^(LIB_Bitset x, LIB_Bitset y)
         {
+            if (x.n < y.n) { var t = x; x = y; y = t; }
             var ret = new LIB_Bitset(x.n);
-            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i] ^ y.ary[i];
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            for (var i = 0; i < y.ary.Length; i++) ret.ary[i] ^= y.ary[i];
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_Bitset operator &(LIB_Bitset x, long y)
+        {
+            var ret = new LIB_Bitset(x.n);
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            ret.ary[0] &= (ulong)y;
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_Bitset operator |(LIB_Bitset x, long y)
+        {
+            var ret = new LIB_Bitset(x.n);
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            ret.ary[0] |= (ulong)y;
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_Bitset operator ^(LIB_Bitset x, long y)
+        {
+            var ret = new LIB_Bitset(x.n);
+            for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = x.ary[i];
+            ret.ary[0] ^= (ulong)y;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Flip()
         {
             for (var i = 0; i < ary.Length; i++) ary[i] = ~ary[i];
+            ary[ary.Length - 1] &= ceil[n & 63];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator ~(LIB_Bitset x)
         {
             var ret = new LIB_Bitset(x.n);
             for (var i = 0; i < ret.ary.Length; i++) ret.ary[i] = ~x.ary[i];
+            ret.ary[ret.ary.Length - 1] &= ceil[ret.n & 63];
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,7 +164,14 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool operator ==(LIB_Bitset x, LIB_Bitset y) => x.n == y.n && Enumerable.Range(0, x.ary.Length).All(e => x.ary[e] == y.ary[e]);
+        static public bool operator ==(LIB_Bitset x, LIB_Bitset y)
+        {
+            if (x.n < y.n) { var t = x; x = y; y = t; }
+            var i = 0;
+            for (; i < y.ary.Length; i++) if (x.ary[i] != y.ary[i]) return false;
+            for (; i < x.ary.Length; i++) if (x.ary[i] != 0) return false;
+            return true;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public bool operator !=(LIB_Bitset x, LIB_Bitset y) => !(x == y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
