@@ -88,6 +88,18 @@ namespace Library
             }
             return a;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public decimal Sqrt(decimal x)
+        {
+            decimal prev, cur = (decimal)Math.Sqrt((double)x);
+            do
+            {
+                prev = cur;
+                if (prev == 0) return 0;
+                cur = (prev + x / prev) / 2;
+            } while (cur != prev);
+            return cur;
+        }
         static List<long> _fact = new List<long>() { 1 };
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Build(long n)

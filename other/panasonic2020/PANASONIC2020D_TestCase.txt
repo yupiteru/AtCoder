@@ -1,0 +1,14 @@
+
+[case 0]
+1
+
+[output]
+a
+
+[case 1]
+2
+
+[output]
+aa
+ab
+

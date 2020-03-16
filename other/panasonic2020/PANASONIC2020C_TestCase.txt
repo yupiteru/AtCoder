@@ -1,0 +1,19 @@
+
+[case 0]
+2 3 9
+
+[output]
+No
+
+[case 1]
+2 3 10
+
+[output]
+Yes
+
+[case 2]
+49999999 250000000 999999998
+
+[output]
+Yes
+
