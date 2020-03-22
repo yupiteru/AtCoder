@@ -1,0 +1,19 @@
+
+[case 0]
+akasaka
+
+[output]
+Yes
+
+[case 1]
+level
+
+[output]
+No
+
+[case 2]
+atcoder
+
+[output]
+No
+
