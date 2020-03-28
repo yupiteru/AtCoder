@@ -187,7 +187,7 @@ namespace Library
         /// <param name="idxToVal">頂点番号から値を取得</param>
         /// <param name="mergeSubTrees">部分木と部分木のマージ (subtree, subtree)</param>
         /// <param name="mergeVertexAndSubtree">頂点と部分木の結果のマージ (vertex, subtrees)</param>
-        /// <returns>2次元配列[node, parent]の部分木のDP値</returns>
+        /// <returns>2次元配列[node, parent]の部分木のDP値。parent=-1はnodeをルートとした木の値</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TreeDPResult<T> BuildTreeDP<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees, Func<T, T, T> mergeVertexAndSubtree)
         {
