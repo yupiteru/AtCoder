@@ -41,14 +41,7 @@ namespace Program
             );
             for (var i = 0; i < N; i++)
             {
-                long cnt = 0;
-                LIB_Mod ans = 1;
-                foreach (var item in tree.GetSurround(i))
-                {
-                    ans *= LIB_Mod.Comb(cnt + dp[item, i].cnt, dp[item, i].cnt) * dp[item, i].pat;
-                    cnt += dp[item, i].cnt;
-                }
-                Console.WriteLine(ans);
+                Console.WriteLine(dp[i, -1].pat);
             }
         }
         class Printer : StreamWriter

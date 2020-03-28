@@ -194,6 +194,14 @@ namespace Library
             var f = mergeSubTrees;
             var h = mergeVertexAndSubtree;
             var dp = Enumerable.Repeat(0, N).Select(_ => new Dictionary<int, T>()).ToArray();
+            var done = new bool[N];
+            Action<long, T> upd = (vtx, val) =>
+            {
+                if (vtx == -1) return;
+                if (done[vtx]) dp[vtx][-1] = f(dp[vtx][-1], val);
+                else dp[vtx][-1] = val;
+                done[vtx] = true;
+            };
             foreach (var item in BFSFromLeaf(0))
             {
                 var ary = path[item.node].Where(e => e != item.parent).ToArray();
@@ -204,43 +212,39 @@ namespace Library
                     foreach (var item2 in ary.Skip(1)) acc = f(acc, dp[item2][(int)item.node]);
                     val = h(val, acc);
                 }
-                dp[item.node][(int)item.parent] = val;
+                upd(item.parent, dp[item.node][(int)item.parent] = val);
             }
             var swag = new LIB_SlidingWindowAggregation<T>(f);
-            var done = new bool[N];
-            var q = new Queue<int>();
             Action<int, int> process = (node, parent) =>
             {
-                done[node] = true;
-                q.Enqueue(node);
                 var val = idxToVal(node);
                 if (path[node].Count == 1)
                 {
                     var x = path[node][0];
-                    if (x != parent) dp[node][x] = val;
+                    if (x != parent) upd(x, dp[node][x] = val);
                 }
                 else if (path[node].Count == 2)
                 {
                     var x = path[node][0]; var y = path[node][1];
-                    if (x != parent) dp[node][x] = h(val, dp[y][node]);
-                    if (y != parent) dp[node][y] = h(val, dp[x][node]);
+                    if (x != parent) upd(x, dp[node][x] = h(val, dp[y][node]));
+                    if (y != parent) upd(y, dp[node][y] = h(val, dp[x][node]));
                 }
                 else if (path[node].Count == 3)
                 {
                     var x = path[node][0]; var y = path[node][1]; var z = path[node][2];
-                    if (x != parent) dp[node][x] = h(val, f(dp[y][node], dp[z][node]));
-                    if (y != parent) dp[node][y] = h(val, f(dp[x][node], dp[z][node]));
-                    if (z != parent) dp[node][z] = h(val, f(dp[x][node], dp[y][node]));
+                    if (x != parent) upd(x, dp[node][x] = h(val, f(dp[y][node], dp[z][node])));
+                    if (y != parent) upd(y, dp[node][y] = h(val, f(dp[x][node], dp[z][node])));
+                    if (z != parent) upd(z, dp[node][z] = h(val, f(dp[x][node], dp[y][node])));
                 }
                 else if (path[node].Count == 4)
                 {
                     var x = path[node][0]; var y = path[node][1]; var z = path[node][2]; var w = path[node][3];
                     var xy = f(dp[x][node], dp[y][node]);
                     var zw = f(dp[z][node], dp[w][node]);
-                    if (x != parent) dp[node][x] = h(val, f(dp[y][node], zw));
-                    if (y != parent) dp[node][y] = h(val, f(dp[x][node], zw));
-                    if (z != parent) dp[node][z] = h(val, f(xy, dp[w][node]));
-                    if (w != parent) dp[node][w] = h(val, f(xy, dp[z][node]));
+                    if (x != parent) upd(x, dp[node][x] = h(val, f(dp[y][node], zw)));
+                    if (y != parent) upd(y, dp[node][y] = h(val, f(dp[x][node], zw)));
+                    if (z != parent) upd(z, dp[node][z] = h(val, f(xy, dp[w][node])));
+                    if (w != parent) upd(w, dp[node][w] = h(val, f(xy, dp[z][node])));
                 }
                 else
                 {
@@ -249,21 +253,13 @@ namespace Library
                     foreach (var item2 in path[node])
                     {
                         swag.PopFront();
-                        if (item2 != parent) dp[node][item2] = h(val, swag.Aggregate());
+                        if (item2 != parent) upd(item2, dp[node][item2] = h(val, swag.Aggregate()));
                         swag.PushBack(dp[item2][node]);
                     }
                 }
             };
-            process(0, -1);
-            while (q.Count > 0)
-            {
-                var v = q.Dequeue();
-                foreach (var item in path[v])
-                {
-                    if (done[item]) continue;
-                    process(item, v);
-                }
-            }
+            foreach (var item in BFSFromRoot(0)) process((int)item.node, (int)item.parent);
+            for (var i = 0; i < N; i++) dp[i][-1] = done[i] ? h(idxToVal(i), dp[i][-1]) : idxToVal(i);
             return new TreeDPResult<T>(dp);
         }
     }
