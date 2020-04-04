@@ -1,0 +1,25 @@
+
+[case 0]
+15
+
+[output]
+23
+
+[case 1]
+1
+
+[output]
+1
+
+[case 2]
+13
+
+[output]
+21
+
+[case 3]
+100000
+
+[output]
+3234566667
+
