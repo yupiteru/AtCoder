@@ -71,7 +71,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PushFront(T val) => Push(0, val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Pop(int lista)
+        T Pop(int lista)
         {
             var listb = 1 - lista;
             if (size[lista] == 0)
