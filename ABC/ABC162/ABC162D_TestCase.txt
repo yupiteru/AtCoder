@@ -1,0 +1,15 @@
+
+[case 0]
+4
+RRGB
+
+[output]
+1
+
+[case 1]
+39
+RBRBGRBGGBBRRGBBRRRBGGBRBGBRBGBRBBBGBBB
+
+[output]
+1800
+
