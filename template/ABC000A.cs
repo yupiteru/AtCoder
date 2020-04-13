@@ -13,6 +13,7 @@ namespace Program
 {
     public static class ABC000A
     {
+        static bool SAIKI = false;
         static public int numberOfRandomCases = 0;
         static public void MakeTestCase(List<string> _input, List<string> _output, ref Func<string[], bool> _outputChecker)
         {
@@ -27,11 +28,11 @@ namespace Program
             public Printer(Stream stream, Encoding encoding) : base(stream, encoding) { base.AutoFlush = false; }
         }
         static LIB_FastIO fastio = new LIB_FastIODebug();
-        static public void Main(string[] args) { if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } var t = new Thread(Solve, 134217728); t.Start(); t.Join(); Console.Out.Flush(); }
+        static public void Main(string[] args) { if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } if (SAIKI) { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } else Solve(); Console.Out.Flush(); }
         static long NN => fastio.Long();
         static double ND => fastio.Double();
         static string NS => fastio.Scan();
-        static long[] NNList(long N) => Repeat(0, N).Select(_ => NN).ToArray();
+        static byte[] NNList(long N) => Repeat(0, N).Select(_ => (byte)NN).ToArray();
         static double[] NDList(long N) => Repeat(0, N).Select(_ => ND).ToArray();
         static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
         static long Count<T>(this IEnumerable<T> x, Func<T, bool> pred) => Enumerable.Count(x, pred);
