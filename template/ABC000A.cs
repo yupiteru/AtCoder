@@ -32,7 +32,7 @@ namespace Program
         static long NN => fastio.Long();
         static double ND => fastio.Double();
         static string NS => fastio.Scan();
-        static byte[] NNList(long N) => Repeat(0, N).Select(_ => (byte)NN).ToArray();
+        static long[] NNList(long N) => Repeat(0, N).Select(_ => NN).ToArray();
         static double[] NDList(long N) => Repeat(0, N).Select(_ => ND).ToArray();
         static string[] NSList(long N) => Repeat(0, N).Select(_ => NS).ToArray();
         static long Count<T>(this IEnumerable<T> x, Func<T, bool> pred) => Enumerable.Count(x, pred);
