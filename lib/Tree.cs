@@ -165,102 +165,119 @@ namespace Library
             }
             return new LCAResult(depth, l, pr);
         }
-        public class TreeDPResult<T>
-        {
-            Dictionary<int, T>[] dp;
-            public TreeDPResult(Dictionary<int, T>[] dp)
-            {
-                this.dp = dp;
-            }
-            public T this[long vtx, long parent]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    return dp[vtx][(int)parent];
-                }
-            }
-        }
         /// <summary>
         /// 全方位木DP
         /// </summary>
         /// <param name="idxToVal">頂点番号から値を取得</param>
         /// <param name="mergeSubTrees">部分木と部分木のマージ (subtree, subtree)</param>
-        /// <param name="mergeVertexAndSubtree">頂点と部分木の結果のマージ (vertex, subtrees)</param>
         /// <returns>2次元配列[node, parent]の部分木のDP値。parent=-1はnodeをルートとした木の値</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TreeDPResult<T> BuildTreeDP<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees, Func<T, T, T> mergeVertexAndSubtree)
+        public CReRooting<T> ReRooting<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees) => new CReRooting<T>(this, idxToVal, mergeSubTrees);
+        public class CReRooting<T>
         {
-            var f = mergeSubTrees;
-            var h = mergeVertexAndSubtree;
-            var dp = Enumerable.Repeat(0, N).Select(_ => new Dictionary<int, T>()).ToArray();
-            var done = new bool[N];
-            Action<long, T> upd = (vtx, val) =>
+            LIB_Tree tree;
+            Dictionary<int, T>[] dp;
+            Func<T, T, T> f;
+            Func<long, T> g;
+            Func<long, long, T, T> g2;
+            Func<T, T, T> h;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public CReRooting(LIB_Tree tree, Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees)
             {
-                if (vtx == -1) return;
-                if (done[vtx]) dp[vtx][-1] = f(dp[vtx][-1], val);
-                else dp[vtx][-1] = val;
-                done[vtx] = true;
-            };
-            foreach (var item in BFSFromLeaf(0))
-            {
-                var ary = path[item.node].Where(e => e != item.parent).ToArray();
-                var val = idxToVal(item.node);
-                if (ary.Length > 0)
-                {
-                    var acc = dp[ary[0]][(int)item.node];
-                    foreach (var item2 in ary.Skip(1)) acc = f(acc, dp[item2][(int)item.node]);
-                    val = h(val, acc);
-                }
-                upd(item.parent, dp[item.node][(int)item.parent] = val);
+                this.tree = tree;
+                dp = Enumerable.Repeat(0, tree.N).Select(_ => new Dictionary<int, T>()).ToArray();
+                f = mergeSubTrees;
+                g = idxToVal;
+                g2 = (r, p, v) => v;
+                h = (v, t) => t;
             }
-            var swag = new LIB_SlidingWindowAggregation<T>(f);
-            Action<int, int> process = (node, parent) =>
+            public T this[long vtx, long parent]
             {
-                var val = idxToVal(node);
-                if (path[node].Count == 1)
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return dp[vtx][(int)parent]; }
+            }
+            /// <summary>
+            /// 頂点番号(root, parent)で表す辺とrootをルートとする部分木をマージするメソッドを設定
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void SetMergeEdgeAndSubtree(Func<long, long, T, T> mergeEdgeAndSubtree) { g2 = mergeEdgeAndSubtree; }
+            /// <summary>
+            /// 頂点と部分木の結果をマージ(vertex, subtrees)するメソッドを設定
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void SetMergeVertexAndSubtree(Func<T, T, T> mergeVertexAndSubtree) { h = mergeVertexAndSubtree; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Build()
+            {
+                var done = new bool[tree.N];
+                Action<long, long, T> upd = (vtx, rt, val) =>
                 {
-                    var x = path[node][0];
-                    if (x != parent) upd(x, dp[node][x] = val);
-                }
-                else if (path[node].Count == 2)
+                    if (vtx == -1) return;
+                    if (done[vtx]) dp[vtx][-1] = f(dp[vtx][-1], g2(rt, vtx, val));
+                    else dp[vtx][-1] = g2(rt, vtx, val);
+                    done[vtx] = true;
+                };
+                foreach (var item in tree.BFSFromLeaf(0))
                 {
-                    var x = path[node][0]; var y = path[node][1];
-                    if (x != parent) upd(x, dp[node][x] = h(val, dp[y][node]));
-                    if (y != parent) upd(y, dp[node][y] = h(val, dp[x][node]));
-                }
-                else if (path[node].Count == 3)
-                {
-                    var x = path[node][0]; var y = path[node][1]; var z = path[node][2];
-                    if (x != parent) upd(x, dp[node][x] = h(val, f(dp[y][node], dp[z][node])));
-                    if (y != parent) upd(y, dp[node][y] = h(val, f(dp[x][node], dp[z][node])));
-                    if (z != parent) upd(z, dp[node][z] = h(val, f(dp[x][node], dp[y][node])));
-                }
-                else if (path[node].Count == 4)
-                {
-                    var x = path[node][0]; var y = path[node][1]; var z = path[node][2]; var w = path[node][3];
-                    var xy = f(dp[x][node], dp[y][node]);
-                    var zw = f(dp[z][node], dp[w][node]);
-                    if (x != parent) upd(x, dp[node][x] = h(val, f(dp[y][node], zw)));
-                    if (y != parent) upd(y, dp[node][y] = h(val, f(dp[x][node], zw)));
-                    if (z != parent) upd(z, dp[node][z] = h(val, f(xy, dp[w][node])));
-                    if (w != parent) upd(w, dp[node][w] = h(val, f(xy, dp[z][node])));
-                }
-                else
-                {
-                    swag.Clear();
-                    foreach (var item2 in path[node]) swag.PushBack(dp[item2][node]);
-                    foreach (var item2 in path[node])
+                    var ary = tree.path[item.node].Where(e => e != item.parent).ToArray();
+                    var val = g(item.node);
+                    if (ary.Length > 0)
                     {
-                        swag.PopFront();
-                        if (item2 != parent) upd(item2, dp[node][item2] = h(val, swag.Aggregate()));
-                        swag.PushBack(dp[item2][node]);
+                        var acc = g2(ary[0], item.node, dp[ary[0]][(int)item.node]);
+                        foreach (var item2 in ary.Skip(1)) acc = f(acc, g2(item2, item.node, dp[item2][(int)item.node]));
+                        val = h(val, acc);
                     }
+                    upd(item.parent, item.node, dp[item.node][(int)item.parent] = val);
                 }
-            };
-            foreach (var item in BFSFromRoot(0)) process((int)item.node, (int)item.parent);
-            for (var i = 0; i < N; i++) dp[i][-1] = done[i] ? h(idxToVal(i), dp[i][-1]) : idxToVal(i);
-            return new TreeDPResult<T>(dp);
+                var swag = new LIB_SlidingWindowAggregation<T>(f);
+                Action<int, int> process = (node, parent) =>
+                {
+                    var val = g(node);
+                    if (tree.path[node].Count == 1)
+                    {
+                        var x = tree.path[node][0];
+                        if (x != parent) upd(x, node, dp[node][x] = val);
+                    }
+                    else if (tree.path[node].Count == 2)
+                    {
+                        var x = tree.path[node][0]; var y = tree.path[node][1];
+                        if (x != parent) upd(x, node, dp[node][x] = h(val, g2(y, node, dp[y][node])));
+                        if (y != parent) upd(y, node, dp[node][y] = h(val, g2(x, node, dp[x][node])));
+                    }
+                    else if (tree.path[node].Count == 3)
+                    {
+                        var x = tree.path[node][0]; var y = tree.path[node][1]; var z = tree.path[node][2];
+                        if (x != parent) upd(x, node, dp[node][x] = h(val, f(g2(y, node, dp[y][node]), g2(z, node, dp[z][node]))));
+                        if (y != parent) upd(y, node, dp[node][y] = h(val, f(g2(x, node, dp[x][node]), g2(z, node, dp[z][node]))));
+                        if (z != parent) upd(z, node, dp[node][z] = h(val, f(g2(x, node, dp[x][node]), g2(y, node, dp[y][node]))));
+                    }
+                    else if (tree.path[node].Count == 4)
+                    {
+                        var x = tree.path[node][0]; var y = tree.path[node][1]; var z = tree.path[node][2]; var w = tree.path[node][3];
+                        var xy = f(g2(x, node, dp[x][node]), g2(y, node, dp[y][node]));
+                        var zw = f(g2(z, node, dp[z][node]), g2(w, node, dp[w][node]));
+                        if (x != parent) upd(x, node, dp[node][x] = h(val, f(g2(y, node, dp[y][node]), zw)));
+                        if (y != parent) upd(y, node, dp[node][y] = h(val, f(g2(x, node, dp[x][node]), zw)));
+                        if (z != parent) upd(z, node, dp[node][z] = h(val, f(xy, g2(w, node, dp[w][node]))));
+                        if (w != parent) upd(w, node, dp[node][w] = h(val, f(xy, g2(z, node, dp[z][node]))));
+                    }
+                    else
+                    {
+                        swag.Clear();
+                        var pre = new T[tree.path[node].Count];
+                        for (var i = 0; i < pre.Length; ++i) swag.PushBack(pre[i] = g2(tree.path[node][i], node, dp[tree.path[node][i]][node]));
+                        for (var i = 0; i < pre.Length; ++i)
+                        {
+                            var item2 = tree.path[node][i];
+                            swag.PopFront();
+                            if (item2 != parent) upd(item2, node, dp[node][item2] = h(val, swag.Aggregate()));
+                            swag.PushBack(pre[i]);
+                        }
+                    }
+                };
+                foreach (var item in tree.BFSFromRoot(0)) process((int)item.node, (int)item.parent);
+                for (var i = 1; i < tree.N; i++) dp[i][-1] = done[i] ? h(g(i), dp[i][-1]) : g(i);
+            }
         }
     }
     ////end

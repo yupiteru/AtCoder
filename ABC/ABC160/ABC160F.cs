@@ -26,22 +26,25 @@ namespace Program
             {
                 tree.AddPath(item.a - 1, item.b - 1);
             }
-            var dp = tree.BuildTreeDP(
+            var rerooting = tree.ReRooting(
                 e => new { cnt = 1, pat = (LIB_Mod)1 },
                 (x, y) => new
                 {
                     cnt = x.cnt + y.cnt,
                     pat = LIB_Mod.Comb(x.cnt + y.cnt, y.cnt) * x.pat * y.pat
-                },
+                }
+            );
+            rerooting.SetMergeVertexAndSubtree(
                 (x, y) => new
                 {
                     cnt = y.cnt + 1,
                     pat = y.pat
                 }
             );
+            rerooting.Build();
             for (var i = 0; i < N; i++)
             {
-                Console.WriteLine(dp[i, -1].pat);
+                Console.WriteLine(rerooting[i, -1].pat);
             }
         }
         class Printer : StreamWriter
