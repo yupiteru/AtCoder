@@ -18,6 +18,7 @@ namespace Library
         {
             public double x;
             public double y;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Vec(double x, double y) { this.x = x; this.y = y; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Vec operator +(Vec a, Vec b) => new Vec() { x = a.x + b.x, y = a.y + b.y };
@@ -31,6 +32,17 @@ namespace Library
             static public Vec operator /(Vec p, double v) => new Vec() { x = p.x / v, y = p.y / v };
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static public Vec operator /(double v, Vec p) => p / v;
+        }
+        public struct Line
+        {
+            public double a;
+            public double b;
+            public double c;
+            /// <summary>
+            /// ax + by + c = 0
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Line(double a, double b, double c) { this.a = a; this.b = b; this.c = c; }
         }
         public struct Circle
         {
@@ -64,6 +76,30 @@ namespace Library
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public double Distance(Circle c, Vec p) => Norm(p - c.p) - c.r2;
+        /// <summary>
+        /// 円と直線の交点を求める
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public Vec[] Intersection(Line l, Circle c) => Intersection(c, l);
+        /// <summary>
+        /// 円と直線の交点を求める
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public Vec[] Intersection(Circle c, Line l)
+        {
+            var d = l.a * c.p.x + l.b * c.p.y + l.c;
+            var ab2 = (l.a * l.a + l.b * l.b);
+            var d2 = ab2 * c.r2 - d * d;
+            if (d2 < -EPS) return new Vec[0];
+            if (d2 > EPS)
+            {
+                var rd = Sqrt(d2);
+                var p1 = new Vec((-l.a * d + l.b * rd) / ab2 + c.p.x, (-l.b * d - l.a * rd) / ab2 + c.p.y);
+                var p2 = new Vec((-l.a * d - l.b * rd) / ab2 + c.p.x, (-l.b * d + l.a * rd) / ab2 + c.p.y);
+                return new[] { p1, p2 };
+            }
+            return new[] { new Vec(-l.a * d / ab2 + c.p.x, -l.b * d / ab2 + c.p.y) };
+        }
         /// <summary>
         /// 円と円の交点を求める
         /// </summary>
