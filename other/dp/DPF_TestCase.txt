@@ -1,0 +1,28 @@
+
+[case 0]
+axyb
+abyxb
+
+[output]
+axb
+
+[case 1]
+aa
+xayaz
+
+[output]
+aa
+
+[case 2]
+a
+z
+
+[output]
+
+[case 3]
+abracadabra
+avadakedavra
+
+[output]
+aaadara
+
