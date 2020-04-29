@@ -50,7 +50,5 @@ namespace Program
         static uint xorshift { get { _xsi.MoveNext(); return _xsi.Current; } }
         static IEnumerator<uint> _xsi = _xsc();
         static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = (uint)(DateTime.Now.Ticks & 0xffffffff); while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
-        static bool MinEqual(this ref long x, long y) { if (x <= y) return false; x = y; return true; }
-        static bool MaxEqual(this ref long x, long y) { if (x >= y) return false; x = y; return true; }
     }
 }
