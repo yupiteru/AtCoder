@@ -1,0 +1,58 @@
+
+[case 0]
+2 1 3 0
+AB
+AC
+
+[output]
+Yes
+A
+C
+
+[case 1]
+3 1 0 0
+AB
+BC
+AB
+
+[output]
+No
+
+[case 2]
+1 0 9 0
+AC
+
+[output]
+No
+
+[case 3]
+8 6 9 1
+AC
+BC
+AB
+BC
+AC
+BC
+AB
+AB
+
+[output]
+Yes
+C
+B
+B
+C
+C
+B
+A
+A
+
+
+[case 4]
+2 1 1 0
+AB
+AC
+
+[output]
+Yes
+
