@@ -11,160 +11,9 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_Tree
+    // copy key class LIB_ReRooting
+    partial class /* not copy key */ LIB_Tree
     {
-        int N;
-        List<int>[] path;
-        public struct EulerRes
-        {
-            public long node;
-            public long parent;
-            public long direction;
-        }
-        List<EulerRes> eulerList;
-        public struct BFSRes
-        {
-            public long node;
-            public long parent;
-        }
-        List<BFSRes> bfsList;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_Tree(long n)
-        {
-            N = (int)n;
-            path = Enumerable.Repeat(0, N).Select(_ => new List<int>()).ToArray();
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddPath(long u, long v)
-        {
-            if (u >= N || v >= N) throw new Exception();
-            path[u].Add((int)v);
-            path[v].Add((int)u);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int[] GetSurround(long u) => path[u].ToArray();
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<BFSRes> BFSFromRoot(long root)
-        {
-            bfsList = new List<BFSRes>();
-            var q = new Queue<int>();
-            var done = new bool[N];
-            bfsList.Add(new BFSRes { node = root, parent = -1 });
-            done[root] = true;
-            q.Enqueue((int)root);
-            while (q.Count > 0)
-            {
-                var w = q.Dequeue();
-                foreach (var i in path[w])
-                {
-                    if (done[i]) continue;
-                    done[i] = true;
-                    q.Enqueue(i);
-                    bfsList.Add(new BFSRes { node = i, parent = w });
-                }
-            }
-            return bfsList;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<BFSRes> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<EulerRes> EulerTour(long root)
-        {
-            eulerList = new List<EulerRes>();
-            var s = new Stack<Tuple<int, int>>();
-            var done = new bool[N];
-            done[root] = true;
-            s.Push(Tuple.Create((int)root, -1));
-            while (s.Count > 0)
-            {
-                var w = s.Peek();
-                var ad = true;
-                foreach (var i in path[w.Item1])
-                {
-                    if (done[i]) continue;
-                    done[i] = true;
-                    ad = false;
-                    s.Push(Tuple.Create(i, w.Item1));
-                }
-                if (!ad || path[w.Item1].Count == 1) eulerList.Add(new EulerRes { node = w.Item1, parent = w.Item2, direction = 1 });
-                if (ad)
-                {
-                    s.Pop();
-                    eulerList.Add(new EulerRes { node = w.Item1, parent = w.Item2, direction = -1 });
-                }
-            }
-            return eulerList;
-        }
-        public class LCAResult
-        {
-            int[] depth;
-            int l;
-            int[][] pr;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public LCAResult(int[] depth, int l, int[][] pr)
-            {
-                this.depth = depth;
-                this.l = l;
-                this.pr = pr;
-            }
-            public long this[long u, long v]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    if (depth[u] > depth[v])
-                    {
-                        var t = u; u = v; v = t;
-                    }
-                    for (var k = 0; k < l; k++)
-                    {
-                        if ((((depth[v] - depth[u]) >> k) & 1) != 0) v = pr[k][v];
-                    }
-                    if (u == v) return u;
-                    for (var k = l - 1; k >= 0; k--)
-                    {
-                        if (pr[k][u] != pr[k][v])
-                        {
-                            u = pr[k][u];
-                            v = pr[k][v];
-                        }
-                    }
-                    return pr[0][u];
-                }
-            }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LCAResult BuildLCA(long root)
-        {
-            var depth = new int[N];
-            var l = 0;
-            while (N > (1 << l)) l++;
-            var pr = Enumerable.Repeat(0, l).Select(_ => new int[N]).ToArray();
-            depth[root] = 0;
-            pr[0][root] = -1;
-            var q = new Stack<int>();
-            q.Push((int)root);
-            while (q.Count > 0)
-            {
-                var w = q.Pop();
-                foreach (var i in path[w])
-                {
-                    if (i == pr[0][w]) continue;
-                    q.Push(i);
-                    depth[i] = depth[w] + 1;
-                    pr[0][i] = w;
-                }
-            }
-            for (var k = 0; k + 1 < l; k++)
-            {
-                for (var w = 0; w < N; w++)
-                {
-                    if (pr[k][w] < 0) pr[k + 1][w] = -1;
-                    else pr[k + 1][w] = pr[k][pr[k][w]];
-                }
-            }
-            return new LCAResult(depth, l, pr);
-        }
         /// <summary>
         /// 全方位木DP
         /// </summary>
@@ -172,7 +21,7 @@ namespace Library
         /// <param name="mergeSubTrees">部分木と部分木のマージ (subtree, subtree)</param>
         /// <returns>2次元配列[node, parent]の部分木のDP値。parent=-1はnodeをルートとした木の値</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CReRooting<T> ReRooting<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees) => new CReRooting<T>(this, idxToVal, mergeSubTrees);
+        public CReRooting<T> LIB_ReRooting<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees) => new CReRooting<T>(this, idxToVal, mergeSubTrees);
         public class CReRooting<T>
         {
             LIB_Tree tree;

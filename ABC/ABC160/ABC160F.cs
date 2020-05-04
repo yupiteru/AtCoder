@@ -26,7 +26,7 @@ namespace Program
             {
                 tree.AddPath(item.a - 1, item.b - 1);
             }
-            var rerooting = tree.ReRooting(
+            var rerooting = tree.LIB_ReRooting(
                 e => new { cnt = 1, pat = (LIB_Mod)1 },
                 (x, y) => new
                 {
