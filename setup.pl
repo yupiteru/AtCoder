@@ -9,10 +9,14 @@ if(length $limit > 1 or !$limit =~ /[A-Z]/) {
 }
 my $baseFolder = "problems";
 
-if(-e $baseFolder) {
-  remove_tree $baseFolder;
+opendir my $dh, "$baseFolder";
+while(my $file = readdir $dh) {
+  if($file =~ /.*\.cs|.*\.txt/) {
+    unlink "$baseFolder\\$file";
+  }
 }
-mkdir $baseFolder;
+closedir $dh;
+
 
 open my $fh, "<template\\template.cs";
 my @data;
