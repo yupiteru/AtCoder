@@ -1,7 +1,0 @@
-
-[case 0]
-ABC
-
-[output]
-ARC
-
