@@ -155,6 +155,25 @@ namespace Library
                 }
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public bool NextPermutation(long[] ary)
+        {
+            var n = ary.Length;
+            var i = n - 1;
+            while (i - 1 >= 0 && ary[i - 1] > ary[i]) --i;
+            if (i == 0) return false;
+            var j = i;
+            while (j + 1 < n && ary[i - 1] < ary[j + 1]) ++j;
+            var tmp = ary[i - 1]; ary[i - 1] = ary[j]; ary[j] = tmp;
+            var s = i;
+            var t = n - 1;
+            while (t - s > 0)
+            {
+                tmp = ary[t]; ary[t] = ary[s]; ary[s] = tmp;
+                ++s; --t;
+            }
+            return true;
+        }
     }
     ////end
 }
