@@ -67,7 +67,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsBlack(Node n) => n != null && n.isBlack;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int Cnt(Node n) => n?.cnt ?? 0;
+        int Cnt(Node n) => n == null ? 0 : n.cnt;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Eval(Node n)
         {
@@ -149,14 +149,13 @@ namespace Library
             if (c(key, n.key) < 0) n.left = Add(n.left, key, val);
             else n.right = Add(n.right, key, val);
             n.needRecalc = true;
-            n.cnt++;
+            ++n.cnt;
             return Balance(n);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node Balance(Node n)
         {
-            if (!isNeedFix) return n;
-            if (!IsBlack(n)) return n;
+            if (!isNeedFix || !IsBlack(n)) return n;
             if (IsRed(n.left) && IsRed(n.left.left))
             {
                 n = RotateR(n);
@@ -189,9 +188,8 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node Remove(Node n, Key key)
         {
-            if (n == null) throw new Exception();
             if (ope) Eval(n);
-            n.cnt--;
+            --n.cnt;
             var r = c(key, n.key);
             if (r < 0)
             {
@@ -220,7 +218,7 @@ namespace Library
         Node RemoveMax(Node n)
         {
             if (ope) Eval(n);
-            n.cnt--;
+            --n.cnt;
             if (n.right != null)
             {
                 n.right = RemoveMax(n.right);
@@ -323,7 +321,7 @@ namespace Library
             return At(n.right, i - n.left.cnt - 1);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Have(Key key)
+        public bool ContainsKey(Key key)
         {
             var t = LowerBound(key);
             return t < Cnt(root) && c(At(root, t).Key, key) == 0;
@@ -447,7 +445,7 @@ namespace Library
             get { return tree[i]; }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Have(Key key) => tree.Have(key);
+        public bool ContainsKey(Key key) => tree.ContainsKey(key);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long UpperBound(Key key) => tree.UpperBound(key);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -479,7 +477,7 @@ namespace Library
             get { return tree[i].Key; }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Have(T val) => tree.Have(val);
+        public bool ContainsKey(T val) => tree.ContainsKey(val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long UpperBound(T val) => tree.UpperBound(val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
