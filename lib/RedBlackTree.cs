@@ -27,6 +27,7 @@ namespace Library
     }
     class LIB_RedBlackTree<Key, ValueT, ValueE> where ValueE : IEquatable<ValueE>
     {
+        bool ope;
         class Node
         {
             public Node left;
@@ -49,7 +50,7 @@ namespace Library
         bool isNeedFix;
         Node lmax;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, ValueT> g, Func<ValueE, ValueE, ValueE> h, Comparison<Key> c)
+        public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, ValueT> g, Func<ValueE, ValueE, ValueE> h, Comparison<Key> c, bool ope = true)
         {
             this.ti = ti;
             this.ei = ei;
@@ -57,6 +58,7 @@ namespace Library
             this.g = g;
             this.h = h;
             this.c = c;
+            this.ope = ope;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, ValueT> g, Func<ValueE, ValueE, ValueE> h) : this(ti, ei, f, g, h, Comparer<Key>.Default.Compare) { }
@@ -98,7 +100,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RotateL(Node n)
         {
-            Eval(n); Eval(n.right);
+            if (ope) { Eval(n); Eval(n.right); }
             Node m = n.right, t = m.left;
             m.left = n; n.right = t;
             n.cnt -= m.cnt - Cnt(t);
@@ -109,7 +111,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RotateR(Node n)
         {
-            Eval(n); Eval(n.left);
+            if (ope) { Eval(n); Eval(n.left); }
             Node m = n.left, t = m.right;
             m.right = n; n.left = t;
             n.cnt -= m.cnt - Cnt(t);
@@ -143,7 +145,7 @@ namespace Library
                 isNeedFix = true;
                 return new Node() { key = key, val = val, dat = val, lazy = ei, cnt = 1 };
             }
-            Eval(n);
+            if (ope) Eval(n);
             if (c(key, n.key) < 0) n.left = Add(n.left, key, val);
             else n.right = Add(n.right, key, val);
             n.needRecalc = true;
@@ -188,7 +190,7 @@ namespace Library
         Node Remove(Node n, Key key)
         {
             if (n == null) throw new Exception();
-            Eval(n);
+            if (ope) Eval(n);
             n.cnt--;
             var r = c(key, n.key);
             if (r < 0)
@@ -217,7 +219,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RemoveMax(Node n)
         {
-            Eval(n);
+            if (ope) Eval(n);
             n.cnt--;
             if (n.right != null)
             {
@@ -310,7 +312,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         KeyValuePair<Key, ValueT> At(Node n, long i)
         {
-            Eval(n);
+            if (ope) Eval(n);
             if (n.left == null)
             {
                 if (i == 0) return new KeyValuePair<Key, ValueT>(n.key, n.val);
@@ -353,7 +355,7 @@ namespace Library
             while (n != null)
             {
                 p = n;
-                Eval(p);
+                if (ope) Eval(p);
                 n = n.left;
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
@@ -365,7 +367,7 @@ namespace Library
             while (n != null)
             {
                 p = n;
-                Eval(p);
+                if (ope) Eval(p);
                 n = n.right;
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
@@ -432,7 +434,7 @@ namespace Library
     {
         LIB_RedBlackTree<Key, Value, int> tree;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(Comparison<Key> c) { tree = new LIB_RedBlackTree<Key, Value, int>(default(Value), 0, (x, y) => x, (x, y) => x, (x, y) => x, c); }
+        public LIB_RedBlackTree(Comparison<Key> c) { tree = new LIB_RedBlackTree<Key, Value, int>(default(Value), 0, (x, y) => x, (x, y) => x, (x, y) => x, c, false); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<Key>.Default.Compare) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -464,7 +466,7 @@ namespace Library
     {
         LIB_RedBlackTree<T, int, int> tree;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(Comparison<T> c) { tree = new LIB_RedBlackTree<T, int, int>(0, 0, (x, y) => x, (x, y) => x, (x, y) => x, c); }
+        public LIB_RedBlackTree(Comparison<T> c) { tree = new LIB_RedBlackTree<T, int, int>(0, 0, (x, y) => x, (x, y) => x, (x, y) => x, c, false); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<T>.Default.Compare) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
