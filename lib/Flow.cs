@@ -15,16 +15,19 @@ namespace Library
     {
         LIB_Dict<int, long>[] path;
         int N;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Flow(long n)
         {
             N = (int)n;
             path = Enumerable.Repeat(0, N).Select(_ => new LIB_Dict<int, long>()).ToArray();
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddPath(long a, long b, long c)
         {
             path[a][(int)b] += c;
             path[b][(int)a] += 0;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long FordFulkerson(long s, long t)
         {
             var f = Enumerable.Repeat(0, N).Select(_ => new LIB_Dict<int, long>()).ToArray();
@@ -52,6 +55,7 @@ namespace Library
             for (long flow; (flow = dfs((int)s, long.MaxValue)) > 0; ++counter) sum += flow;
             return sum;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Dinic(long s, long t)
         {
             var f = Enumerable.Repeat(0, N).Select(_ => new LIB_Dict<int, long>()).ToArray();

@@ -13,12 +13,18 @@ namespace Library
     ////start
     class LIB_FastIO
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FastIO() { str = Console.OpenStandardInput(); }
         readonly Stream str;
         readonly byte[] buf = new byte[1024];
         int len, ptr;
         public bool isEof = false;
-        public bool IsEndOfStream { get { return isEof; } }
+        public bool IsEndOfStream
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return isEof; }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         byte read()
         {
             if (isEof) throw new EndOfStreamException();
@@ -33,6 +39,7 @@ namespace Library
             }
             return buf[ptr++];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         char Char()
         {
             byte b = 0;
@@ -40,6 +47,7 @@ namespace Library
             while (b < 33 || 126 < b);
             return (char)b;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         virtual public string Scan()
         {
             var sb = new StringBuilder();
@@ -47,6 +55,7 @@ namespace Library
                 sb.Append(b);
             return sb.ToString();
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         virtual public long Long()
         {
             long ret = 0; byte b = 0; var ng = false;
@@ -60,15 +69,21 @@ namespace Library
                 else ret = ret * 10 + b - '0';
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         virtual public double Double() { return double.Parse(Scan(), CultureInfo.InvariantCulture); }
     }
     class LIB_FastIODebug : LIB_FastIO
     {
         Queue<string> param = new Queue<string>();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         string NextString() { if (param.Count == 0) foreach (var item in Console.ReadLine().Split(' ')) param.Enqueue(item); return param.Dequeue(); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FastIODebug() { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string Scan() => NextString();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override long Long() => long.Parse(NextString());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override double Double() => double.Parse(NextString());
     }
     ////end
