@@ -22,10 +22,12 @@ namespace Library
             public bool isDequeueNode;
         }
         List<Node> info;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PersistentQueue()
         {
             info = new List<Node>();
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Enqueue(long t, T x)
         {
             var ret = info.Count;
@@ -43,6 +45,7 @@ namespace Library
             info.Add(n);
             return ret;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int FrontIdx(int t)
         {
             var idx = t;
@@ -55,7 +58,9 @@ namespace Library
             }
             return idx;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Peek(long t) => info[FrontIdx((int)t)].v;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Dequeue(long t)
         {
             var idx = (int)t;
