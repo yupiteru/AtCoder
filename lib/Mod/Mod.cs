@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    struct LIB_Mod : IEquatable<LIB_Mod>, IEquatable<long>
+    partial struct LIB_Mod : IEquatable<LIB_Mod>, IEquatable<long>
     {
         static public long _mod = 1000000007; long v;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

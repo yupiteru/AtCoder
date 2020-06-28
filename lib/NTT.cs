@@ -102,6 +102,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] Multiply(long[] a, long[] b, long mod)
         {
+            if (mod == 998244353) return Multiply(a, b);
             var m1 = new LIB_NTT(1045430273, 3);
             var m2 = new LIB_NTT(1051721729, 6);
             var m3 = new LIB_NTT(1053818881, 7);
