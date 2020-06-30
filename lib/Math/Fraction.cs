@@ -112,9 +112,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object x) => x == null ? false : Equals((LIB_Fraction)x);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        // Nume ^ Deno だとTLEしたため Nume のみにしてある
-        // HashCode 衝突しまくるんですか？
-        public override int GetHashCode() => Numerator.GetHashCode();
+        public override int GetHashCode()
+        {
+            var hash = 23L;
+            hash = hash * 37 + Numerator;
+            hash = hash * 37 + Denominator;
+            return hash.GetHashCode();
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => Denominator == 1 ? Numerator.ToString() : $"{Numerator}/{Denominator}";
     }
