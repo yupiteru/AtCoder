@@ -114,10 +114,10 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            var hash = 23L;
-            hash = hash * 37 + Numerator;
-            hash = hash * 37 + Denominator;
-            return hash.GetHashCode();
+            unchecked
+            {
+                return (Numerator.GetHashCode() << 5 + Numerator.GetHashCode()) ^ Denominator.GetHashCode();
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => Denominator == 1 ? Numerator.ToString() : $"{Numerator}/{Denominator}";
