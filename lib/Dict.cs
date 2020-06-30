@@ -33,13 +33,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            var ret = 0;
-            for (var e = GetEnumerator(); e.MoveNext();)
+            unchecked
             {
-                ret ^= e.Current.Key.GetHashCode();
-                ret ^= e.Current.Value.GetHashCode();
+                var ret = 23;
+                for (var e = GetEnumerator(); e.MoveNext();) ret = (ret * 37) ^ (e.Current.Key.GetHashCode() << 5 + e.Current.Key.GetHashCode()) ^ e.Current.Value.GetHashCode();
+                return ret;
             }
-            return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
