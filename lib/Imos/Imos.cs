@@ -23,7 +23,7 @@ namespace Library
             b = false;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Update(long l, long r, long v)
+        public void Add(long l, long r, long v)
         {
             b = false;
             if (l >= r) return;
