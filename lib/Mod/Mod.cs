@@ -106,6 +106,8 @@ namespace Library
             return _fact[(int)n] / _fact[(int)(n - k)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_Mod KanzenPerm(long n) => Enumerable.Range(0, (int)n + 1).Aggregate((LIB_Mod)0, (a, e) => a + (1 - ((e & 1) << 1)) * LIB_Mod.Comb(n, e) * LIB_Mod.Perm(n - e, n - e));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod Pow(LIB_Mod x, long y)
         {
             LIB_Mod a = 1;
