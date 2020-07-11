@@ -26,7 +26,7 @@ namespace Library
             for (; value > 0; value &= value - 1) yield return value & -value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long CountOne(ulong value)
+        static public long PopCount(ulong value)
         {
             value = (value & 0x5555555555555555) + ((value >> 1) & 0x5555555555555555);
             value = (value & 0x3333333333333333) + ((value >> 2) & 0x3333333333333333);
@@ -37,7 +37,7 @@ namespace Library
             return (long)value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long CountOne(long value) => CountOne((ulong)value);
+        static public long PopCount(long value) => PopCount((ulong)value);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public bool IsSet(ulong value, int idx) => (value & BitMask[idx]) != 0;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
