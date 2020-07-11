@@ -34,7 +34,7 @@ namespace Library
             ary = new ulong[((n - 1) >> 6) + 1];
         }
         public long Count => n;
-        public long CountOne => ary.Sum(e => LIB_BitUtil.CountOne(e));
+        public long PopCount => ary.Sum(e => LIB_BitUtil.PopCount(e));
         public bool this[int idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
