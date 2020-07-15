@@ -27,7 +27,7 @@ namespace Library
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
-        int n, height;
+        int n, height, sz;
         T ti;
         E ei;
         Func<T, T, T> f;
@@ -38,7 +38,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h)
         {
-            n = 1; height = 0;
+            n = 1; height = 0; sz = (int)_n;
             while (n < _n) { n <<= 1; ++height; }
             ti = _ti;
             ei = _ei;
@@ -135,7 +135,7 @@ namespace Library
             if (l + 1 == r)
             {
                 acc = f(acc, Reflect(k));
-                return check(acc) ? k - n : -1;
+                return check(acc) ? k - n : sz;
             }
             Eval(k);
             int m = (l + r) >> 1;
@@ -143,10 +143,10 @@ namespace Library
             if (st <= l && !check(f(acc, dat[k])))
             {
                 acc = f(acc, dat[k]);
-                return -1;
+                return sz;
             }
             int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
-            if (vl != -1) return vl;
+            if (vl != sz) return vl;
             return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

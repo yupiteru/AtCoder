@@ -13,14 +13,14 @@ namespace Library
     ////start
     class LIB_SegTree<T>
     {
-        int n;
+        int n, sz;
         T ti;
         Func<T, T, T> f;
         T[] dat;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_SegTree(long _n, T _ti, Func<T, T, T> _f)
         {
-            n = 1;
+            n = 1; sz = (int)_n;
             while (n < _n) n <<= 1;
             ti = _ti;
             f = _f;
@@ -60,17 +60,17 @@ namespace Library
             if (l + 1 == r)
             {
                 acc = f(acc, dat[k]);
-                return check(acc) ? k - n : -1;
+                return check(acc) ? k - n : sz;
             }
             int m = (l + r) >> 1;
             if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
             if (st <= l && !check(f(acc, dat[k])))
             {
                 acc = f(acc, dat[k]);
-                return -1;
+                return sz;
             }
             int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
-            if (vl != -1) return vl;
+            if (vl != sz) return vl;
             return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
