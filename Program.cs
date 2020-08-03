@@ -132,11 +132,7 @@ namespace AtCoder
                             var input = new List<string>();
                             var output = new List<string>();
                             var param = new object[] { input, output, null };
-                            if (item.GetMethod("MakeTestCase").GetParameters().Length == 2)
-                                // これは旧版のMakeTestCaseへの対応
-                                item.GetMethod("MakeTestCase").Invoke(null, new object[] { input, output });
-                            else
-                                item.GetMethod("MakeTestCase").Invoke(null, param);
+                            item.GetMethod("MakeTestCase").Invoke(null, param);
 
                             var result = new StringWriter();
                             var oldIn = Console.In;
