@@ -14,25 +14,25 @@ namespace Library
     class LIB_Common
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public List<Tuple<int, T>> RunLength<T>(IEnumerable<T> l)
+        static public List<(int count, T value)> RunLength<T>(IEnumerable<T> l)
         {
             T before = default(T);
             var cnt = 0;
-            var ret = new List<Tuple<int, T>>();
+            var ret = new List<(int count, T value)>();
             foreach (var item in l)
             {
                 if (!before.Equals(item))
                 {
                     if (cnt != 0)
                     {
-                        ret.Add(Tuple.Create(cnt, before));
+                        ret.Add((cnt, before));
                         cnt = 0;
                     }
                 }
                 before = item;
                 ++cnt;
             }
-            if (cnt != 0) ret.Add(Tuple.Create(cnt, before));
+            if (cnt != 0) ret.Add((cnt, before));
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -15,17 +15,6 @@ namespace Library
     {
         int N;
         List<int>[] path;
-        public struct EulerRes
-        {
-            public long node;
-            public long parent;
-            public long direction;
-        }
-        public struct BFSRes
-        {
-            public long node;
-            public long parent;
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Tree(long n)
         {
@@ -42,12 +31,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[] GetSurround(long u) => path[u].ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<BFSRes> BFSFromRoot(long root)
+        public List<(long node, long parent)> BFSFromRoot(long root)
         {
-            var bfsList = new List<BFSRes>();
+            var bfsList = new List<(long node, long parent)>();
             var q = new Queue<int>();
             var done = new bool[N];
-            bfsList.Add(new BFSRes { node = root, parent = -1 });
+            bfsList.Add((root, -1));
             done[root] = true;
             q.Enqueue((int)root);
             while (q.Count > 0)
@@ -58,17 +47,17 @@ namespace Library
                     if (done[i]) continue;
                     done[i] = true;
                     q.Enqueue(i);
-                    bfsList.Add(new BFSRes { node = i, parent = w });
+                    bfsList.Add((i, w));
                 }
             }
             return bfsList;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<BFSRes> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
+        public List<(long node, long parent)> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<EulerRes> EulerTour(long root)
+        public List<(long node, long parent, long direction)> EulerTour(long root)
         {
-            var eulerList = new List<EulerRes>();
+            var eulerList = new List<(long node, long parent, long direction)>();
             var s = new Stack<Tuple<int, int>>();
             var done = new bool[N];
             done[root] = true;
@@ -84,11 +73,11 @@ namespace Library
                     ad = false;
                     s.Push(Tuple.Create(i, w.Item1));
                 }
-                if (!ad || path[w.Item1].Count == 1) eulerList.Add(new EulerRes { node = w.Item1, parent = w.Item2, direction = 1 });
+                if (!ad || path[w.Item1].Count == 1) eulerList.Add((w.Item1, w.Item2, 1));
                 if (ad)
                 {
                     s.Pop();
-                    eulerList.Add(new EulerRes { node = w.Item1, parent = w.Item2, direction = -1 });
+                    eulerList.Add((w.Item1, w.Item2, -1));
                 }
             }
             return eulerList;

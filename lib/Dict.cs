@@ -22,8 +22,7 @@ namespace Library
         {
             get
             {
-                V v;
-                return TryGetValue(i, out v) ? v : base[i] = d(i);
+                return TryGetValue(i, out var v) ? v : base[i] = d(i);
             }
             set
             {
