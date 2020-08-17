@@ -13,26 +13,31 @@ namespace Library
     ////start
     class LIB_Common
     {
+        public struct RunLengthResult<T>
+        {
+            public int count;
+            public T value;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public List<(int count, T value)> RunLength<T>(IEnumerable<T> l)
+        static public List<RunLengthResult<T>> RunLength<T>(IEnumerable<T> l)
         {
             T before = default(T);
             var cnt = 0;
-            var ret = new List<(int count, T value)>();
+            var ret = new List<RunLengthResult<T>>();
             foreach (var item in l)
             {
                 if (!before.Equals(item))
                 {
                     if (cnt != 0)
                     {
-                        ret.Add((cnt, before));
+                        ret.Add(new RunLengthResult<T> { count = cnt, value = before });
                         cnt = 0;
                     }
                 }
                 before = item;
                 ++cnt;
             }
-            if (cnt != 0) ret.Add((cnt, before));
+            if (cnt != 0) ret.Add(new RunLengthResult<T> { count = cnt, value = before });
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
