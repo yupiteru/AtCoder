@@ -9,6 +9,10 @@ if(length $limit > 1 or !$limit =~ /[A-Z]/) {
 }
 my $baseFolder = "problems";
 
+if(! -e $baseFolder) {
+  mkdir $baseFolder;
+}
+
 opendir my $dh, "$baseFolder";
 while(my $file = readdir $dh) {
   if($file =~ /.*\.cs|.*\.txt/) {
