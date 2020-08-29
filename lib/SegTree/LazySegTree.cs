@@ -18,12 +18,12 @@ namespace Library
             public long s;
             public long c;
         }
-        static public LIB_LazySegTree<long, long> CreateRUQRmQ(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MaxValue, Math.Min, (x, y) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRAQRmQ(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, Math.Min, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRUQRMQ(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MinValue, Math.Max, (x, y) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRAQRMQ(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<SumEntity, long> CreateRUQRSQ(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
-        static public LIB_LazySegTree<SumEntity, long> CreateRAQRSQ(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, Math.Min, (x, y) => y, (x, y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, Math.Min, (x, y) => x + y, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, Math.Max, (x, y) => y, (x, y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y) => x + y, (x, y) => x + y);
+        static public LIB_LazySegTree<SumEntity, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
+        static public LIB_LazySegTree<SumEntity, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
