@@ -28,7 +28,7 @@ namespace Program
             public Printer(Stream stream, Encoding encoding) : base(stream, encoding) { base.AutoFlush = false; }
         }
         static LIB_FastIO fastio = new LIB_FastIODebug();
-        static public void Main(string[] args) { GC.TryStartNoGCRegion(134217728); if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } if (SAIKI) { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } else Solve(); Console.Out.Flush(); }
+        static public void Main(string[] args) { GC.TryStartNoGCRegion(134217728); if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } if (SAIKI) { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } else Solve(); Console.Out.Flush(); GC.EndNoGCRegion(); }
         static long NN => fastio.Long();
         static double ND => fastio.Double();
         static string NS => fastio.Scan();
