@@ -17,7 +17,6 @@ namespace Library
         Func<T, T, T> f;
         T ei;
         int n;
-        int dep = 1;
         List<EulerTourTree> ett;
         List<HashSet<int>[]> edges;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,10 +31,10 @@ namespace Library
             edges.Add(new HashSet<int>[n]);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Link(long s, long t)
+        public void Link(long s, long t)
         {
-            if (s == t) return false;
-            if (ett[0].Link((int)s, (int)t)) return true;
+            if (s == t) return;
+            if (ett[0].Link((int)s, (int)t)) return;
             var sEdges = edges[0][s];
             var tEdges = edges[0][t];
             if (sEdges == null) edges[0][s] = sEdges = new HashSet<int>();
@@ -44,19 +43,18 @@ namespace Library
             tEdges.Add((int)s);
             if (sEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)s, true);
             if (tEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)t, true);
-            return false;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSame(long s, long t) => ett[0].IsSame((int)s, (int)t);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Size(long s) => ett[0].Size((int)s);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T GetSum(long s) => ett[0].GetSum((int)s);
+        public T Query(long s) => ett[0].Query((int)s);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Cut(long s, long t)
         {
             if (s == t) return false;
-            for (var i = 0; i < dep; i++)
+            for (var i = 0; i < edges.Count; i++)
             {
                 var sEdges = edges[i][s];
                 var tEdges = edges[i][t];
@@ -67,13 +65,12 @@ namespace Library
                 if (sEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)s, false);
                 if (tEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)t, false);
             }
-            for (var i = dep - 1; i >= 0; i--)
+            for (var i = ett.Count - 1; i >= 0; i--)
             {
                 if (ett[i].Cut((int)s, (int)t))
                 {
-                    if (dep - 1 == i)
+                    if (ett.Count - 1 == i)
                     {
-                        ++dep;
                         ett.Add(new EulerTourTree(n, ei, f));
                         edges.Add(new HashSet<int>[n]);
                     }
@@ -89,30 +86,31 @@ namespace Library
             for (var i = k; i >= 0; i--)
             {
                 var etti = ett[i];
+                var etti1 = ett[i + 1];
+                var edgesi = edges[i];
+                var edgesi1 = edges[i + 1];
                 if (etti.Size(s) > etti.Size(t)) { var temp = s; s = t; t = temp; }
-                etti.EdgeUpdate(s, (ss, tt, idx) => ett[idx + 1].Link(ss, tt), i);
+                etti.EdgeUpdate(s, (ss, tt) => etti1.Link(ss, tt));
                 if (etti.TryReconnect(s, (x, idx) =>
                 {
-                    var xEdges = edges[idx][x];
-                    if (xEdges == null) edges[idx][x] = xEdges = new HashSet<int>();
+                    var xEdges = edgesi[x];
                     foreach (var y in xEdges.ToArray())
                     {
                         xEdges.Remove(y);
-                        var yEdges = edges[idx][y];
-                        if (yEdges == null) edges[idx][y] = yEdges = new HashSet<int>();
+                        var yEdges = edgesi[y];
                         yEdges.Remove(x);
-                        if (xEdges.Count == 0) ett[idx].EdgeConnectedUpdate(x, false);
-                        if (yEdges.Count == 0) ett[idx].EdgeConnectedUpdate(y, false);
-                        if (ett[idx].IsSame(x, y))
+                        if (xEdges.Count == 0) etti.EdgeConnectedUpdate(x, false);
+                        if (yEdges.Count == 0) etti.EdgeConnectedUpdate(y, false);
+                        if (etti.IsSame(x, y))
                         {
-                            var nextXEdges = edges[idx + 1][x];
-                            var nextYEdges = edges[idx + 1][y];
-                            if (nextXEdges == null) edges[idx + 1][x] = nextXEdges = new HashSet<int>();
-                            if (nextYEdges == null) edges[idx + 1][y] = nextYEdges = new HashSet<int>();
+                            var nextXEdges = edgesi1[x];
+                            var nextYEdges = edgesi1[y];
+                            if (nextXEdges == null) edgesi1[x] = nextXEdges = new HashSet<int>();
+                            if (nextYEdges == null) edgesi1[y] = nextYEdges = new HashSet<int>();
                             nextXEdges.Add(y);
                             nextYEdges.Add(x);
-                            if (nextXEdges.Count == 1) ett[idx + 1].EdgeConnectedUpdate(x, true);
-                            if (nextYEdges.Count == 1) ett[idx + 1].EdgeConnectedUpdate(y, true);
+                            if (nextXEdges.Count == 1) etti1.EdgeConnectedUpdate(x, true);
+                            if (nextYEdges.Count == 1) etti1.EdgeConnectedUpdate(y, true);
                         }
                         else
                         {
@@ -136,7 +134,8 @@ namespace Library
         {
             Func<T, T, T> f;
             T ei;
-            Dictionary<int, int>[] ptr;
+            Dictionary<(int, int), int> ptr;
+            int startNodeIndex;
             static int[] nodeChild = new int[32768];
             static int[] nodeParent = new int[16384];
             static int[] nodeL = new int[16384];
@@ -147,58 +146,52 @@ namespace Library
             static byte[] nodeFlags = new byte[16384];
             static int nodeCount = 1;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int NewNode()
+            static int NewNode(int l, int r)
             {
                 if (nodeCount == nodeParent.Length)
                 {
                     {
-                        var tmp = new int[nodeCount << 2];
-                        var cnt = nodeCount << 1;
-                        for (var i = 0; i < cnt; i++) tmp[i] = nodeChild[i];
+                        var tmp = new int[nodeChild.Length << 1];
+                        Array.Copy(nodeChild, tmp, nodeChild.Length);
                         nodeChild = tmp;
                     }
                     {
-                        var tmp = new int[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeParent[i];
+                        var tmp = new int[nodeParent.Length << 1];
+                        Array.Copy(nodeParent, tmp, nodeParent.Length);
                         nodeParent = tmp;
                     }
                     {
-                        var tmp = new int[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeL[i];
+                        var tmp = new int[nodeL.Length << 1];
+                        Array.Copy(nodeL, tmp, nodeL.Length);
                         nodeL = tmp;
                     }
                     {
-                        var tmp = new int[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeR[i];
+                        var tmp = new int[nodeR.Length << 1];
+                        Array.Copy(nodeR, tmp, nodeR.Length);
                         nodeR = tmp;
                     }
                     {
-                        var tmp = new int[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeSz[i];
+                        var tmp = new int[nodeSz.Length << 1];
+                        Array.Copy(nodeSz, tmp, nodeSz.Length);
                         nodeSz = tmp;
                     }
                     {
-                        var tmp = new T[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeVal[i];
+                        var tmp = new T[nodeVal.Length << 1];
+                        Array.Copy(nodeVal, tmp, nodeVal.Length);
                         nodeVal = tmp;
                     }
                     {
-                        var tmp = new T[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeSum[i];
+                        var tmp = new T[nodeSum.Length << 1];
+                        Array.Copy(nodeSum, tmp, nodeSum.Length);
                         nodeSum = tmp;
                     }
                     {
-                        var tmp = new byte[nodeCount << 1];
-                        for (var i = 0; i < nodeCount; i++) tmp[i] = nodeFlags[i];
+                        var tmp = new byte[nodeFlags.Length << 1];
+                        Array.Copy(nodeFlags, tmp, nodeFlags.Length);
                         nodeFlags = tmp;
                     }
                 }
-                return nodeCount++;
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int NewNode(int l, int r)
-            {
-                var id = NewNode();
+                var id = nodeCount++;
                 nodeL[id] = l;
                 nodeR[id] = r;
                 nodeSz[id] = l == r ? 1 : 0;
@@ -208,21 +201,15 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public EulerTourTree(int n, T ei, Func<T, T, T> f)
             {
-                this.ptr = new Dictionary<int, int>[n];
+                this.ptr = new Dictionary<(int, int), int>();
                 this.f = f;
                 this.ei = ei;
+                this.startNodeIndex = nodeCount;
                 for (var i = 0; i < n; i++)
                 {
-                    ptr[i] = new Dictionary<int, int>();
-                    var nodePoint = ptr[i][i] = NewNode(i, i);
+                    var nodePoint = NewNode(i, i);
                     nodeVal[nodePoint] = nodeSum[nodePoint] = ei;
                 }
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int GetNode(int l, int r)
-            {
-                if (!ptr[l].ContainsKey(r)) ptr[l][r] = NewNode(l, r);
-                return ptr[l][r];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             int Root(int t)
@@ -247,7 +234,6 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             (int, int) Split(int s)
             {
-                if (s == 0) return (0, 0);
                 Splay(s);
                 var t = nodeChild[s << 1];
                 nodeChild[s << 1] = nodeParent[t] = 0;
@@ -368,70 +354,69 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Size(int s)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
                 return nodeSz[t];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool IsSame(int s, int t) => IsSameNode(GetNode(s, s), GetNode(t, t));
+            public bool IsSame(int s, int t) => IsSameNode(startNodeIndex + s, startNodeIndex + t);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T Get(int s)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
                 return nodeVal[t];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Update(int s, T x)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
                 nodeVal[t] = x;
                 UpdateNode(t);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void EdgeUpdate(int s, Action<int, int, int> g, int idx)
+            public void EdgeUpdate(int s, Action<int, int> g)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
-                Action<int> dfs = null;
-                dfs = node =>
-                {
-                    if (nodeL[node] < nodeR[node] && (nodeFlags[node] & 8) != 0)
-                    {
-                        Splay(node);
-                        nodeFlags[node] &= 7;
-                        g(nodeL[node], nodeR[node], idx);
-                        return;
-                    }
-                    if ((nodeFlags[nodeChild[node << 1]] & 4) != 0) dfs(nodeChild[node << 1]);
-                    else dfs(nodeChild[(node << 1) | 1]);
-                };
                 while ((nodeFlags[t] & 4) != 0)
                 {
-                    dfs(t);
+                    var node = t;
+                    while (true)
+                    {
+                        if (nodeL[node] < nodeR[node] && (nodeFlags[node] & 8) != 0)
+                        {
+                            Splay(node);
+                            nodeFlags[node] &= 7;
+                            g(nodeL[node], nodeR[node]);
+                            break;
+                        }
+                        if ((nodeFlags[nodeChild[node << 1]] & 4) != 0) node = nodeChild[node << 1];
+                        else node = nodeChild[(node << 1) | 1];
+                    }
                     Splay(t);
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool TryReconnect(int s, Func<int, int, bool> f, int idx)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
-                Func<int, bool> dfs = null;
-                dfs = node =>
-                {
-                    if ((nodeFlags[node] & 2) != 0)
-                    {
-                        Splay(node);
-                        return f(nodeL[node], idx);
-                    }
-                    if ((nodeFlags[nodeChild[node << 1]] & 1) != 0) return dfs(nodeChild[node << 1]);
-                    else return dfs(nodeChild[(node << 1) | 1]);
-                };
                 while ((nodeFlags[t] & 1) != 0)
                 {
-                    if (dfs(t)) return true;
+                    var node = t;
+                    while (true)
+                    {
+                        if ((nodeFlags[node] & 2) != 0)
+                        {
+                            Splay(node);
+                            if (f(nodeL[node], idx)) return true;
+                            break;
+                        }
+                        if ((nodeFlags[nodeChild[node << 1]] & 1) != 0) node = nodeChild[node << 1];
+                        else node = nodeChild[(node << 1) | 1];
+                    }
                     Splay(t);
                 }
                 return false;
@@ -439,7 +424,7 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void EdgeConnectedUpdate(int s, bool b)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
                 if (b) nodeFlags[t] |= 2;
                 else nodeFlags[t] &= 13;
@@ -448,36 +433,48 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Link(int l, int r)
             {
-                if (IsSame(l, r)) return false;
-                Merge(Merge(Merge(ReRoot(GetNode(l, l)), GetNode(l, r)), ReRoot(GetNode(r, r))), GetNode(r, l));
+                if (l > r) { var t = l; l = r; r = t; }
+                if (IsSameNode(startNodeIndex + l, startNodeIndex + r)) return false;
+                var lv = ReRoot(startNodeIndex + l);
+                var rv = ReRoot(startNodeIndex + r);
+                int lrnode;
+                if (!ptr.TryGetValue((l, r), out lrnode))
+                {
+                    ptr[(l, r)] = lrnode = NewNode(l, r);
+                    NewNode(r, l);
+                }
+                nodeParent[lv] = nodeParent[rv] = lrnode;
+                nodeChild[lrnode << 1] = lv;
+                nodeChild[(lrnode << 1) | 1] = rv;
+                UpdateNode(lrnode);
+                Merge(lrnode, lrnode + 1);
                 return true;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Cut(int l, int r)
             {
-                if (!ptr[l].ContainsKey(r)) return false;
-                var s = Split(GetNode(l, r), GetNode(r, l));
+                if (l > r) { var t = l; l = r; r = t; }
+                if (!ptr.ContainsKey((l, r))) return false;
+                var p = ptr[(l, r)];
+                var s = Split(p, p + 1);
                 Merge(s.Item1, s.Item3);
-                var p = ptr[l][r];
-                var q = ptr[r][l];
-                ptr[l].Remove(r);
-                ptr[r].Remove(l);
+                ptr.Remove((l, r));
                 return true;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public T GetSum(int p, int v)
+            public T Query(int p, int v)
             {
                 Cut(p, v);
-                var t = GetNode(v, v);
+                var t = startNodeIndex + v;
                 Splay(t);
                 var res = nodeSum[t];
                 Link(p, v);
                 return res;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public T GetSum(int s)
+            public T Query(int s)
             {
-                var t = GetNode(s, s);
+                var t = startNodeIndex + s;
                 Splay(t);
                 return nodeSum[t];
             }
