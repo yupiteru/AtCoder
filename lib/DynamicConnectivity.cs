@@ -18,7 +18,7 @@ namespace Library
         T ei;
         int n;
         List<EulerTourTree> ett;
-        List<HashSet<int>[]> edges;
+        List<HashMap[]> edges;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_DynamicConnectivity(long n, T ei, Func<T, T, T> f)
         {
@@ -26,9 +26,9 @@ namespace Library
             this.f = f;
             this.ei = ei;
             ett = new List<EulerTourTree>();
-            edges = new List<HashSet<int>[]>();
+            edges = new List<HashMap[]>();
             ett.Add(new EulerTourTree(this.n, ei, f));
-            edges.Add(new HashSet<int>[n]);
+            edges.Add(new HashMap[n]);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Link(long s, long t)
@@ -37,10 +37,10 @@ namespace Library
             if (ett[0].Link((int)s, (int)t)) return;
             var sEdges = edges[0][s];
             var tEdges = edges[0][t];
-            if (sEdges == null) edges[0][s] = sEdges = new HashSet<int>();
-            if (tEdges == null) edges[0][t] = tEdges = new HashSet<int>();
-            sEdges.Add((int)t);
-            tEdges.Add((int)s);
+            if (sEdges == null) edges[0][s] = sEdges = new HashMap();
+            if (tEdges == null) edges[0][t] = tEdges = new HashMap();
+            sEdges.Add((ulong)t, 0);
+            tEdges.Add((ulong)s, 0);
             if (sEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)s, true);
             if (tEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)t, true);
         }
@@ -58,10 +58,10 @@ namespace Library
             {
                 var sEdges = edges[i][s];
                 var tEdges = edges[i][t];
-                if (sEdges == null) edges[i][s] = sEdges = new HashSet<int>();
-                if (tEdges == null) edges[i][t] = tEdges = new HashSet<int>();
-                sEdges.Remove((int)t);
-                tEdges.Remove((int)s);
+                if (sEdges == null) edges[i][s] = sEdges = new HashMap();
+                if (tEdges == null) edges[i][t] = tEdges = new HashMap();
+                sEdges.Remove((ulong)t);
+                tEdges.Remove((ulong)s);
                 if (sEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)s, false);
                 if (tEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)t, false);
             }
@@ -72,7 +72,7 @@ namespace Library
                     if (ett.Count - 1 == i)
                     {
                         ett.Add(new EulerTourTree(n, ei, f));
-                        edges.Add(new HashSet<int>[n]);
+                        edges.Add(new HashMap[n]);
                     }
                     return !TryReconnect((int)s, (int)t, i);
                 }
@@ -93,32 +93,29 @@ namespace Library
                 etti.EdgeUpdate(s, (ss, tt) => etti1.Link(ss, tt));
                 if (etti.TryReconnect(s, (x, idx) =>
                 {
-                    var xEdges = edgesi[x];
-                    foreach (var y in xEdges.ToArray())
+                    return edgesi[x].SearchAllKey((y, xidx) =>
                     {
-                        xEdges.Remove(y);
-                        var yEdges = edgesi[y];
-                        yEdges.Remove(x);
-                        if (xEdges.Count == 0) etti.EdgeConnectedUpdate(x, false);
-                        if (yEdges.Count == 0) etti.EdgeConnectedUpdate(y, false);
-                        if (etti.IsSame(x, y))
+                        if (edgesi[xidx].Count == 1) etti.EdgeConnectedUpdate(xidx, false);
+                        if (edgesi[y].Count == 1) etti.EdgeConnectedUpdate((int)y, false);
+                        edgesi[y].Remove((ulong)xidx);
+                        if (etti.IsSame(xidx, (int)y))
                         {
-                            var nextXEdges = edgesi1[x];
+                            var nextXEdges = edgesi1[xidx];
                             var nextYEdges = edgesi1[y];
-                            if (nextXEdges == null) edgesi1[x] = nextXEdges = new HashSet<int>();
-                            if (nextYEdges == null) edgesi1[y] = nextYEdges = new HashSet<int>();
-                            nextXEdges.Add(y);
-                            nextYEdges.Add(x);
-                            if (nextXEdges.Count == 1) etti1.EdgeConnectedUpdate(x, true);
-                            if (nextYEdges.Count == 1) etti1.EdgeConnectedUpdate(y, true);
+                            if (nextXEdges == null) edgesi1[xidx] = nextXEdges = new HashMap();
+                            if (nextYEdges == null) edgesi1[y] = nextYEdges = new HashMap();
+                            nextXEdges.Add(y, 0);
+                            nextYEdges.Add((ulong)xidx, 0);
+                            if (nextXEdges.Count == 1) etti1.EdgeConnectedUpdate(xidx, true);
+                            if (nextYEdges.Count == 1) etti1.EdgeConnectedUpdate((int)y, true);
                         }
                         else
                         {
-                            for (var j = 0; j <= idx; j++) ett[j].Link(x, y);
-                            return true;
+                            for (var j = 0; j <= idx; j++) ett[j].Link(xidx, (int)y);
+                            return 7;
                         }
-                    }
-                    return false;
+                        return 2;
+                    }, x);
                 }, i)) return true;
             }
             return false;
@@ -134,7 +131,7 @@ namespace Library
         {
             Func<T, T, T> f;
             T ei;
-            Dictionary<(int, int), int> ptr;
+            HashMap ptr;
             int startNodeIndex;
             static int[] nodeChild = new int[32768];
             static int[] nodeParent = new int[16384];
@@ -201,7 +198,7 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public EulerTourTree(int n, T ei, Func<T, T, T> f)
             {
-                this.ptr = new Dictionary<(int, int), int>();
+                this.ptr = new HashMap();
                 this.f = f;
                 this.ei = ei;
                 this.startNodeIndex = nodeCount;
@@ -437,12 +434,11 @@ namespace Library
                 if (IsSameNode(startNodeIndex + l, startNodeIndex + r)) return false;
                 var lv = ReRoot(startNodeIndex + l);
                 var rv = ReRoot(startNodeIndex + r);
-                int lrnode;
-                if (!ptr.TryGetValue((l, r), out lrnode))
+                var lrnode = ptr.GetOrInsert(((ulong)l << 32) | (uint)r, () =>
                 {
-                    ptr[(l, r)] = lrnode = NewNode(l, r);
-                    NewNode(r, l);
-                }
+                    NewNode(l, r);
+                    return NewNode(r, l) - 1;
+                });
                 nodeParent[lv] = nodeParent[rv] = lrnode;
                 nodeChild[lrnode << 1] = lv;
                 nodeChild[(lrnode << 1) | 1] = rv;
@@ -454,11 +450,10 @@ namespace Library
             public bool Cut(int l, int r)
             {
                 if (l > r) { var t = l; l = r; r = t; }
-                if (!ptr.ContainsKey((l, r))) return false;
-                var p = ptr[(l, r)];
+                if (!ptr.ContainsKey(((ulong)l << 32) | (uint)r)) return false;
+                var p = ptr.GetAndErase(((ulong)l << 32) | (uint)r);
                 var s = Split(p, p + 1);
                 Merge(s.Item1, s.Item3);
-                ptr.Remove((l, r));
                 return true;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -477,6 +472,197 @@ namespace Library
                 var t = startNodeIndex + s;
                 Splay(t);
                 return nodeSum[t];
+            }
+        }
+        class HashMap
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int Hash(ulong key)
+            {
+                unchecked
+                {
+                    key = (~key) + (key << 18);
+                    key = key ^ (key >> 31);
+                    key = key * 21;
+                    key = key ^ (key >> 11);
+                    key = key + (key << 6);
+                    key = key ^ (key >> 22);
+                    return (int)key;
+                }
+            }
+            int[] st;
+            (ulong, int)[] bck;
+            int mask;
+            int prode;
+            public int Count
+            {
+                get;
+                private set;
+            }
+            int minElem;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public HashMap()
+            {
+                prode = -1;
+                st = new int[0];
+                bck = new (ulong, int)[0];
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int FindEmpty(ulong key)
+            {
+                var h = Hash(key);
+                for (var delta = 0; ; ++delta)
+                {
+                    var i = (h + delta) & mask;
+                    if (st[i] != 2)
+                    {
+                        if (prode < delta) prode = delta;
+                        return i;
+                    }
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int FindFilled(ulong key)
+            {
+                if (Count == 0) return -1;
+                var h = Hash(key);
+                for (var delta = 0; delta <= prode; ++delta)
+                {
+                    var i = (h + delta) & mask;
+                    if (st[i] == 2)
+                    {
+                        if (bck[i].Item1 == key) return i;
+                    }
+                    else if (st[i] == 0) return -1;
+                }
+                return -1;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int FindOrAllocate(ulong key)
+            {
+                var h = Hash(key);
+                var hole = -1;
+                var delta = 0;
+                for (; delta <= prode; ++delta)
+                {
+                    var i = (h + delta) & mask;
+                    if (st[i] == 2)
+                    {
+                        if (bck[i].Item1 == key) return i;
+                    }
+                    else if (st[i] == 0) return i;
+                    else
+                    {
+                        if (hole == -1) hole = i;
+                    }
+                }
+                if (hole != -1) return hole;
+                for (; ; ++delta)
+                {
+                    var i = (h + delta) & mask;
+                    if (st[i] != 2)
+                    {
+                        prode = delta;
+                        return i;
+                    }
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Reserve(int nextCnt)
+            {
+                var requiredCnt = nextCnt + (nextCnt >> 1) + 1;
+                if (requiredCnt > bck.Length)
+                {
+                    nextCnt = 4;
+                    while (nextCnt < requiredCnt) nextCnt <<= 1;
+                }
+                else if (nextCnt <= bck.Length >> 2) nextCnt = Max(4, bck.Length >> 1);
+                else return;
+                var oldSt = new int[nextCnt];
+                var oldBck = new (ulong, int)[nextCnt];
+                { var t = oldSt; oldSt = st; st = t; }
+                { var t = oldBck; oldBck = bck; bck = t; }
+                mask = nextCnt - 1;
+                Count = 0;
+                prode = 0;
+                minElem = nextCnt - 1;
+                for (var pos = 0; pos < oldBck.Length; ++pos)
+                {
+                    if (oldSt[pos] == 2)
+                    {
+                        var i = FindEmpty(oldBck[pos].Item1);
+                        st[i] = 2;
+                        bck[i] = oldBck[pos];
+                        minElem = Min(minElem, i);
+                        ++Count;
+                    }
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Add(ulong key, int val)
+            {
+                Reserve(Count + 1);
+                var i = FindOrAllocate(key);
+                if (st[i] != 2)
+                {
+                    st[i] = 2;
+                    bck[i] = (key, val);
+                    minElem = Min(minElem, i);
+                    ++Count;
+                }
+                else bck[i] = (key, val);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Remove(ulong key)
+            {
+                var i = FindFilled(key);
+                if (i == -1) return false;
+                st[i] = 1;
+                --Count;
+                return true;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool ContainsKey(ulong key) => FindFilled(key) != -1;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetOrInsert(ulong key, Func<int> val)
+            {
+                Reserve(Count + 1);
+                var i = FindOrAllocate(key);
+                if (st[i] != 2)
+                {
+                    st[i] = 2;
+                    bck[i] = (key, val());
+                    minElem = Min(minElem, i);
+                    ++Count;
+                }
+                return bck[i].Item2;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetAndErase(ulong key)
+            {
+                var i = FindFilled(key);
+                st[i] = 1;
+                --Count;
+                return bck[i].Item2;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool SearchAllKey(Func<ulong, int, int> func, int idx)
+            {
+                for (var i = minElem; i < bck.Length; ++i)
+                {
+                    if (st[i] == 2)
+                    {
+                        minElem = i;
+                        var res = func(bck[i].Item1, idx);
+                        if ((res & 2) != 0)
+                        {
+                            st[i] = 1;
+                            --Count;
+                        }
+                        if ((res & 1) != 0) return (res & 4) != 0;
+                    }
+                }
+                return false;
             }
         }
     }
