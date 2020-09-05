@@ -93,14 +93,16 @@ namespace Library
                 etti.EdgeUpdate(s, (ss, tt) => etti1.Link(ss, tt));
                 if (etti.TryReconnect(s, (x, idx) =>
                 {
-                    return edgesi[x].SearchAllKey((y, xidx) =>
+                    var nextXEdges = edgesi1[x];
+                    var xEdges = edgesi[x];
+                    return xEdges.SearchAllKey((y, xidx) =>
                     {
-                        if (edgesi[xidx].Count == 1) etti.EdgeConnectedUpdate(xidx, false);
-                        if (edgesi[y].Count == 1) etti.EdgeConnectedUpdate((int)y, false);
-                        edgesi[y].Remove((ulong)xidx);
+                        var yEdges = edgesi[y];
+                        if (xEdges.Count == 1) etti.EdgeConnectedUpdate(xidx, false);
+                        if (yEdges.Count == 1) etti.EdgeConnectedUpdate((int)y, false);
+                        yEdges.Remove((ulong)xidx);
                         if (etti.IsSame(xidx, (int)y))
                         {
-                            var nextXEdges = edgesi1[xidx];
                             var nextYEdges = edgesi1[y];
                             if (nextXEdges == null) edgesi1[xidx] = nextXEdges = new HashMap();
                             if (nextYEdges == null) edgesi1[y] = nextYEdges = new HashMap();
@@ -648,7 +650,7 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool SearchAllKey(Func<ulong, int, int> func, int idx)
             {
-                for (var i = minElem; i < bck.Length; ++i)
+                for (var i = minElem; i < st.Length; ++i)
                 {
                     if (st[i] == 2)
                     {
