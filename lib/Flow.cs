@@ -15,6 +15,11 @@ namespace Library
     {
         LIB_Dict<int, long>[] path;
         int N;
+        public class FlowResult
+        {
+            public long maxflow;
+            public LIB_Dict<int, long>[] fromToCost;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Flow(long n)
         {
@@ -28,7 +33,7 @@ namespace Library
             path[b][(int)a] += 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long FordFulkerson(long s, long t)
+        public FlowResult FordFulkerson(long s, long t)
         {
             var f = Enumerable.Repeat(0, N).Select(_ => new LIB_Dict<int, long>()).ToArray();
             for (var i = 0; i < N; i++) foreach (var item in path[i]) f[i][item.Key] = item.Value;
@@ -53,10 +58,11 @@ namespace Library
             };
             var sum = 0L;
             for (long flow; (flow = dfs((int)s, long.MaxValue)) > 0; ++counter) sum += flow;
-            return sum;
+            for (var i = 0; i < path.Length; i++) foreach (var to in path[i]) f[i][to.Key] = to.Value - f[i][to.Key];
+            return new FlowResult { maxflow = sum, fromToCost = f };
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long Dinic(long s, long t)
+        public FlowResult Dinic(long s, long t)
         {
             var f = Enumerable.Repeat(0, N).Select(_ => new LIB_Dict<int, long>()).ToArray();
             for (var i = 0; i < N; i++) foreach (var item in path[i]) f[i][item.Key] = item.Value;
@@ -100,7 +106,8 @@ namespace Library
             };
             var sum = 0L;
             while (reset() && level[t] > 0) for (long flow; (flow = dfs((int)s, long.MaxValue)) > 0;) sum += flow;
-            return sum;
+            for (var i = 0; i < path.Length; i++) foreach (var to in path[i]) f[i][to.Key] = to.Value - f[i][to.Key];
+            return new FlowResult { maxflow = sum, fromToCost = f };
         }
     }
     ////end
