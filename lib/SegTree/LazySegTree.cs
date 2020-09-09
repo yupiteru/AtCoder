@@ -13,30 +13,26 @@ namespace Library
     ////start
     class LIB_LazySegTree
     {
-        public struct SumEntity
-        {
-            public long s;
-            public long c;
-        }
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, Math.Min, (x, y) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, Math.Min, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, Math.Max, (x, y) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<SumEntity, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
-        static public LIB_LazySegTree<SumEntity, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<SumEntity, long>(init.Select(e => new SumEntity { s = e, c = 1 }), new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, Math.Min, (x, y, c) => y, (x, y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, Math.Min, (x, y, c) => x + y, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, Math.Max, (x, y, c) => y, (x, y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y, c) => x + y, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (x, y) => x + y, (x, y, c) => y * c, (x, y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (x, y) => x + y, (x, y, c) => x + y * c, (x, y) => x + y);
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
         int n, height, sz;
+        int[] rangeSz;
         T ti;
         E ei;
         Func<T, T, T> f;
-        Func<T, E, T> g;
+        Func<T, E, int, T> g;
         Func<E, E, E> h;
         T[] dat;
         E[] laz;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h)
+        public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h)
         {
             n = 1; height = 0; sz = (int)_n;
             while (n < _n) { n <<= 1; ++height; }
@@ -47,17 +43,23 @@ namespace Library
             h = _h;
             dat = Enumerable.Repeat(ti, n << 1).ToArray();
             laz = Enumerable.Repeat(ei, n << 1).ToArray();
-            for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            rangeSz = Enumerable.Repeat(0, n << 1).ToArray();
+            for (var i = 0; i < sz; i++) rangeSz[n + i] = 1;
+            for (var i = n - 1; i > 0; i--)
+            {
+                rangeSz[i] = rangeSz[(i << 1) | 0] + rangeSz[(i << 1) | 1];
+                dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, T> _g, Func<E, E, E> _h) : this(l.Count(), _ti, _ei, _f, _g, _h)
+        public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h) : this(l.Count(), _ti, _ei, _f, _g, _h)
         {
             var idx = 0;
             foreach (var item in l) dat[n + idx++] = item;
             for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        T Reflect(long i) => laz[i].Equals(ei) ? dat[i] : g(dat[i], laz[i]);
+        T Reflect(long i) => laz[i].Equals(ei) ? dat[i] : g(dat[i], laz[i], rangeSz[i]);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Eval(long i)
         {
