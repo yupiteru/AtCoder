@@ -13,26 +13,29 @@ namespace Library
     ////start
     class LIB_LazySegTree
     {
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, Math.Min, (x, y, c) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, Math.Min, (x, y, c) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, Math.Max, (x, y, c) => y, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y, c) => x + y, (x, y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (x, y) => x + y, (x, y, c) => y * c, (x, y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (x, y) => x + y, (x, y, c) => x + y * c, (x, y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, (ref long x, ref long y) => Math.Min(x, y), (ref long x, ref long y, ref int c) => y, (ref long x, ref long y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, (ref long x, ref long y) => Math.Min(x, y), (ref long x, ref long y, ref int c) => x + y, (ref long x, ref long y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, (ref long x, ref long y) => Math.Max(x, y), (ref long x, ref long y, ref int c) => y, (ref long x, ref long y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, (ref long x, ref long y) => Math.Max(x, y), (ref long x, ref long y, ref int c) => x + y, (ref long x, ref long y) => x + y);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (ref long x, ref long y) => x + y, (ref long x, ref long y, ref int c) => y * c, (ref long x, ref long y) => y);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (ref long x, ref long y) => x + y, (ref long x, ref long y, ref int c) => x + y * c, (ref long x, ref long y) => x + y);
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
+        public delegate T F(ref T x, ref T y);
+        public delegate T G(ref T x, ref E y, ref int c);
+        public delegate E H(ref E x, ref E y);
         int n, height, sz;
         int[] rangeSz;
         T ti;
         E ei;
-        Func<T, T, T> f;
-        Func<T, E, int, T> g;
-        Func<E, E, E> h;
+        F f;
+        G g;
+        H h;
         T[] dat;
         E[] laz;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h)
+        public LIB_LazySegTree(long _n, T _ti, E _ei, F _f, G _g, H _h)
         {
             n = 1; height = 0; sz = (int)_n;
             while (n < _n) { n <<= 1; ++height; }
@@ -42,109 +45,106 @@ namespace Library
             g = _g;
             h = _h;
             dat = Enumerable.Repeat(ti, n << 1).ToArray();
-            laz = Enumerable.Repeat(ei, n << 1).ToArray();
-            rangeSz = Enumerable.Repeat(0, n << 1).ToArray();
+            laz = Enumerable.Repeat(ei, n).ToArray();
+            rangeSz = new int[n << 1];
             for (var i = 0; i < sz; i++) rangeSz[n + i] = 1;
             for (var i = n - 1; i > 0; i--)
             {
                 rangeSz[i] = rangeSz[(i << 1) | 0] + rangeSz[(i << 1) | 1];
-                dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+                dat[i] = f(ref dat[(i << 1) | 0], ref dat[(i << 1) | 1]);
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h) : this(l.Count(), _ti, _ei, _f, _g, _h)
+        public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, F _f, G _g, H _h) : this(l.Count(), _ti, _ei, _f, _g, _h)
         {
             var idx = 0;
             foreach (var item in l) dat[n + idx++] = item;
-            for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            for (var i = n - 1; i > 0; i--) dat[i] = f(ref dat[(i << 1) | 0], ref dat[(i << 1) | 1]);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        T Reflect(long i) => laz[i].Equals(ei) ? dat[i] : g(dat[i], laz[i], rangeSz[i]);
+        void Apply(long i, ref E v)
+        {
+            if (v.Equals(ei)) return;
+            dat[i] = g(ref dat[i], ref v, ref rangeSz[i]);
+            if (i < n) laz[i] = h(ref laz[i], ref v);
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Eval(long i)
+        void Up(long i) => dat[i] = f(ref dat[i << 1], ref dat[(i << 1) | 1]);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Down(long i)
         {
             if (laz[i].Equals(ei)) return;
-            laz[(i << 1) | 0] = h(laz[(i << 1) | 0], laz[i]);
-            laz[(i << 1) | 1] = h(laz[(i << 1) | 1], laz[i]);
-            dat[i] = Reflect(i);
+            var cl = i << 1;
+            var cr = cl + 1;
+            Apply(cl, ref laz[i]);
+            Apply(cr, ref laz[i]);
             laz[i] = ei;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Thrust(long i)
         {
-            for (var j = height; j > 0; j--) Eval(i >> j);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Thrust(long l, long r)
-        {
-            if (l == r) { Thrust(l); return; }
-            var xor = l ^ r;
-            var i = height;
-            for (; (xor >> i) != 0; --i) Eval(l >> i);
-            for (; i != 0; --i) { Eval(l >> i); Eval(r >> i); }
+            for (var j = height; j > 0; j--) Down(i >> j);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Recalc(long i)
         {
-            while ((i >>= 1) > 0) dat[i] = f(Reflect((i << 1) | 0), Reflect((i << 1) | 1));
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Recalc(long l, long r)
-        {
-            var xor = l ^ r;
-            while (xor > 1)
-            {
-                xor >>= 1; l >>= 1; r >>= 1;
-                dat[l] = f(Reflect((l << 1) | 0), Reflect((l << 1) | 1));
-                dat[r] = f(Reflect((r << 1) | 0), Reflect((r << 1) | 1));
-            }
-            while (l > 1)
-            {
-                l >>= 1;
-                dat[l] = f(Reflect((l << 1) | 0), Reflect((l << 1) | 1));
-            }
+            while ((i >>= 1) > 0) Up(i);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, E v)
         {
             if (l == r) return;
-            if (r < l) throw new Exception();
-            Thrust(l += n, r += n - 1);
-            for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
+            l += n;
+            r += n;
+            for (var i = height; i >= 1; --i)
             {
-                if ((li & 1) == 1) { laz[li] = h(laz[li], v); ++li; }
-                if ((ri & 1) == 1) { --ri; laz[ri] = h(laz[ri], v); }
+                if (((l >> i) << i) != l) Down(l >> i);
+                if (((r >> i) << i) != r) Down((r - 1) >> i);
             }
-            Recalc(l, r);
+            for (long li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
+            {
+                if ((li & 1) == 1) { Apply(li, ref v); ++li; }
+                if ((ri & 1) == 1) { --ri; Apply(ri, ref v); }
+            }
+            for (var i = 1; i <= height; ++i)
+            {
+                if (((l >> i) << i) != l) Up(l >> i);
+                if (((r >> i) << i) != r) Up((r - 1) >> i);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Query(long l, long r)
         {
             if (l == r) return ti;
-            if (r < l) throw new Exception();
-            Thrust(l += n, r += n - 1);
-            var vl = ti; var vr = ti;
-            for (long li = l, ri = r + 1; li < ri; li >>= 1, ri >>= 1)
+            l += n;
+            r += n;
+            for (var i = height; i >= 1; --i)
             {
-                if ((li & 1) == 1) vl = f(vl, Reflect(li++));
-                if ((ri & 1) == 1) vr = f(Reflect(--ri), vr);
+                if (((l >> i) << i) != l) Down(l >> i);
+                if (((r >> i) << i) != r) Down((r - 1) >> i);
             }
-            return f(vl, vr);
+            var vl = ti; var vr = ti;
+            for (long li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
+            {
+                if ((li & 1) == 1) vl = f(ref vl, ref dat[li++]);
+                if ((ri & 1) == 1) vr = f(ref dat[--ri], ref vr);
+            }
+            return f(ref vl, ref vr);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int FindToRight(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
         {
             if (l + 1 == r)
             {
-                acc = f(acc, Reflect(k));
+                acc = f(ref acc, ref dat[k]);
                 return check(acc) ? k - n : sz;
             }
-            Eval(k);
+            Down(k);
             int m = (l + r) >> 1;
             if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
-            if (st <= l && !check(f(acc, dat[k])))
+            if (st <= l && !check(f(ref acc, ref dat[k])))
             {
-                acc = f(acc, dat[k]);
+                acc = f(ref acc, ref dat[k]);
                 return sz;
             }
             int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
@@ -162,15 +162,15 @@ namespace Library
         {
             if (l + 1 == r)
             {
-                acc = f(Reflect(k), acc);
+                acc = f(ref dat[k], ref acc);
                 return check(acc) ? k - n : -1;
             }
-            Eval(k);
+            Down(k);
             int m = (l + r) >> 1;
             if (m > st) return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
-            if (st >= r - 1 && !check(f(dat[k], acc)))
+            if (st >= r - 1 && !check(f(ref dat[k], ref acc)))
             {
-                acc = f(dat[k], acc);
+                acc = f(ref dat[k], ref acc);
                 return -1;
             }
             int vr = FindToLeft(st, check, ref acc, (k << 1) | 1, m, r);
@@ -186,9 +186,9 @@ namespace Library
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { Thrust(idx += n); return Reflect(idx); }
+            get { Thrust(idx += n); return dat[idx]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { Thrust(idx += n); dat[idx] = value; laz[idx] = ei; Recalc(idx); }
+            set { Thrust(idx += n); dat[idx] = value; Recalc(idx); }
         }
     }
     ////end
