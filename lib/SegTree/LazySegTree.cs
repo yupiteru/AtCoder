@@ -11,15 +11,6 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_LazySegTree
-    {
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, (ref long x, ref long y) => Math.Min(x, y), (ref long x, ref long y, ref int c) => y, (ref long x, ref long y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, (ref long x, ref long y) => Math.Min(x, y), (ref long x, ref long y, ref int c) => x + y, (ref long x, ref long y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, (ref long x, ref long y) => Math.Max(x, y), (ref long x, ref long y, ref int c) => y, (ref long x, ref long y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, (ref long x, ref long y) => Math.Max(x, y), (ref long x, ref long y, ref int c) => x + y, (ref long x, ref long y) => x + y);
-        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (ref long x, ref long y) => x + y, (ref long x, ref long y, ref int c) => y * c, (ref long x, ref long y) => y);
-        static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (ref long x, ref long y) => x + y, (ref long x, ref long y, ref int c) => x + y * c, (ref long x, ref long y) => x + y);
-    }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
         public delegate T F(ref T x, ref T y);
@@ -190,6 +181,31 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set { Thrust(idx += n); dat[idx] = value; Recalc(idx); }
         }
+    }
+    class LIB_LazySegTree
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f1(ref long x, ref long y) => Math.Min(x, y);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f2(ref long x, ref long y, ref int c) => y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f3(ref long x, ref long y) => y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f4(ref long x, ref long y, ref int c) => x + y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f5(ref long x, ref long y) => x + y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f6(ref long x, ref long y) => Math.Max(x, y);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f7(ref long x, ref long y, ref int c) => y * c;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f8(ref long x, ref long y, ref int c) => x + y * c;
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, f1, f2, f3);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, f1, f4, f5);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, f6, f2, f3);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, f6, f4, f5);
+        static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, f5, f7, f3);
+        static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, f5, f8, f5);
     }
     ////end
 }
