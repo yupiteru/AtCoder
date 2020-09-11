@@ -11,22 +11,11 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_RedBlackTree
-    {
-        public struct SumEntity
-        {
-            public long s;
-            public long c;
-        }
-        static public LIB_RedBlackTree<long, long, long> CreateRangeUpdateRangeMin() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, long.MinValue + 100, Math.Min, (x, y) => y, (x, y) => y);
-        static public LIB_RedBlackTree<long, long, long> CreateRangeAddRangeMin() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, 0, Math.Min, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_RedBlackTree<long, long, long> CreateRangeUpdateRangeMax() => new LIB_RedBlackTree<long, long, long>(long.MinValue, long.MaxValue - 100, Math.Max, (x, y) => y, (x, y) => y);
-        static public LIB_RedBlackTree<long, long, long> CreateRangeAddRangeMax() => new LIB_RedBlackTree<long, long, long>(long.MinValue, 0, Math.Max, (x, y) => x + y, (x, y) => x + y);
-        static public LIB_RedBlackTree<long, SumEntity, long> CreateRangeUpdateRangeSum() => new LIB_RedBlackTree<long, SumEntity, long>(new SumEntity { c = 0, s = 0 }, long.MaxValue, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.c * y }, (x, y) => y);
-        static public LIB_RedBlackTree<long, SumEntity, long> CreateRangeAddRangeSum() => new LIB_RedBlackTree<long, SumEntity, long>(new SumEntity { c = 0, s = 0 }, 0, (x, y) => new SumEntity { c = x.c + y.c, s = x.s + y.s }, (x, y) => new SumEntity { c = x.c, s = x.s + x.c * y }, (x, y) => x + y);
-    }
     class LIB_RedBlackTree<Key, ValueT, ValueE> where ValueE : IEquatable<ValueE>
     {
+        public delegate ValueT F(ref ValueT x, ref ValueT y);
+        public delegate ValueT G(ref ValueT x, ref ValueE y, int c);
+        public delegate ValueE H(ref ValueE x, ref ValueE y);
         bool ope;
         class Node
         {
@@ -40,9 +29,9 @@ namespace Library
             public int cnt;
             public bool needRecalc;
         }
-        Func<ValueT, ValueT, ValueT> f;
-        Func<ValueT, ValueE, ValueT> g;
-        Func<ValueE, ValueE, ValueE> h;
+        F f;
+        G g;
+        H h;
         ValueT ti;
         ValueE ei;
         Comparison<Key> c;
@@ -50,7 +39,7 @@ namespace Library
         bool isNeedFix;
         Node lmax;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, ValueT> g, Func<ValueE, ValueE, ValueE> h, Comparison<Key> c, bool ope = true)
+        public LIB_RedBlackTree(ValueT ti, ValueE ei, F f, G g, H h, Comparison<Key> c, bool ope = true)
         {
             this.ti = ti;
             this.ei = ei;
@@ -61,7 +50,7 @@ namespace Library
             this.ope = ope;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, ValueT> g, Func<ValueE, ValueE, ValueE> h) : this(ti, ei, f, g, h, Comparer<Key>.Default.Compare) { }
+        public LIB_RedBlackTree(ValueT ti, ValueE ei, F f, G g, H h) : this(ti, ei, f, g, h, Comparer<Key>.Default.Compare) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsRed(Node n) => n != null && !n.isBlack;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,10 +61,10 @@ namespace Library
         void Eval(Node n)
         {
             if (n == null || ei.Equals(n.lazy)) return;
-            n.val = g(n.val, n.lazy);
-            if (!n.needRecalc) n.dat = g(n.dat, n.lazy);
-            if (n.left != null) n.left.lazy = h(n.left.lazy, n.lazy);
-            if (n.right != null) n.right.lazy = h(n.right.lazy, n.lazy);
+            n.val = g(ref n.val, ref n.lazy, 1);
+            if (!n.needRecalc) n.dat = g(ref n.dat, ref n.lazy, Cnt(n));
+            if (n.left != null) n.left.lazy = h(ref n.left.lazy, ref n.lazy);
+            if (n.right != null) n.right.lazy = h(ref n.right.lazy, ref n.lazy);
             n.lazy = ei;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,12 +78,12 @@ namespace Library
             if (n.left != null)
             {
                 Recalc(n.left);
-                n.dat = f(n.left.dat, n.dat);
+                n.dat = f(ref n.left.dat, ref n.dat);
             }
             if (n.right != null)
             {
                 Recalc(n.right);
-                n.dat = f(n.dat, n.right.dat);
+                n.dat = f(ref n.dat, ref n.right.dat);
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -384,7 +373,7 @@ namespace Library
             else if (l <= 0 && Cnt(n) <= r) n.lazy = val;
             else
             {
-                n.val = g(n.val, val);
+                n.val = g(ref n.val, ref val, 1);
                 if (l < lc) Update(n.left, l, lc, val);
                 if (lc + 1 < r) Update(n.right, 0, r - lc - 1, val);
             }
@@ -412,7 +401,8 @@ namespace Library
                 if (lc + 1 < r) v3 = Query(n.right, 0, r - lc - 1);
                 v2 = n.val;
             }
-            return f(f(v1, v2), v3);
+            var tmp = f(ref v1, ref v2);
+            return f(ref tmp, ref v3);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Any() => root != null;
@@ -432,7 +422,7 @@ namespace Library
     {
         LIB_RedBlackTree<Key, Value, int> tree;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(Comparison<Key> c) { tree = new LIB_RedBlackTree<Key, Value, int>(default(Value), 0, (x, y) => x, (x, y) => x, (x, y) => x, c, false); }
+        public LIB_RedBlackTree(Comparison<Key> c) { tree = new LIB_RedBlackTree<Key, Value, int>(default(Value), 0, null, null, null, c, false); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<Key>.Default.Compare) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -464,7 +454,7 @@ namespace Library
     {
         LIB_RedBlackTree<T, int, int> tree;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RedBlackTree(Comparison<T> c) { tree = new LIB_RedBlackTree<T, int, int>(0, 0, (x, y) => x, (x, y) => x, (x, y) => x, c, false); }
+        public LIB_RedBlackTree(Comparison<T> c) { tree = new LIB_RedBlackTree<T, int, int>(0, 0, null, null, null, c, false); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<T>.Default.Compare) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -491,6 +481,31 @@ namespace Library
         public long Count => tree.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<T> List() => tree.List().Select(e => e.Key);
+    }
+    class LIB_RedBlackTree
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f1(ref long x, ref long y) => Math.Min(x, y);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f2(ref long x, ref long y, int c) => y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f3(ref long x, ref long y) => y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f4(ref long x, ref long y, int c) => x + y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f5(ref long x, ref long y) => x + y;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f6(ref long x, ref long y) => Math.Max(x, y);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f7(ref long x, ref long y, int c) => y * c;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private long f8(ref long x, ref long y, int c) => x + y * c;
+        static public LIB_RedBlackTree<long, long, long> CreateRangeUpdateRangeMin() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, long.MinValue + 100, f1, f2, f3);
+        static public LIB_RedBlackTree<long, long, long> CreateRangeAddRangeMin() => new LIB_RedBlackTree<long, long, long>(long.MaxValue, 0, f1, f4, f5);
+        static public LIB_RedBlackTree<long, long, long> CreateRangeUpdateRangeMax() => new LIB_RedBlackTree<long, long, long>(long.MinValue, long.MaxValue - 100, f6, f2, f3);
+        static public LIB_RedBlackTree<long, long, long> CreateRangeAddRangeMax() => new LIB_RedBlackTree<long, long, long>(long.MinValue, 0, f6, f4, f5);
+        static public LIB_RedBlackTree<long, long, long> CreateRangeUpdateRangeSum() => new LIB_RedBlackTree<long, long, long>(0, long.MaxValue, f5, f7, f3);
+        static public LIB_RedBlackTree<long, long, long> CreateRangeAddRangeSum() => new LIB_RedBlackTree<long, long, long>(0, 0, f5, f8, f5);
     }
     ////end
 }

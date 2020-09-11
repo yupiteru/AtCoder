@@ -14,7 +14,7 @@ namespace Library
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
         public delegate T F(ref T x, ref T y);
-        public delegate T G(ref T x, ref E y, ref int c);
+        public delegate T G(ref T x, ref E y, int c);
         public delegate E H(ref E x, ref E y);
         int n, height, sz;
         int[] rangeSz;
@@ -56,7 +56,7 @@ namespace Library
         void Apply(long i, ref E v)
         {
             if (v.Equals(ei)) return;
-            dat[i] = g(ref dat[i], ref v, ref rangeSz[i]);
+            dat[i] = g(ref dat[i], ref v, rangeSz[i]);
             if (i < n) laz[i] = h(ref laz[i], ref v);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -187,19 +187,19 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private long f1(ref long x, ref long y) => Math.Min(x, y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static private long f2(ref long x, ref long y, ref int c) => y;
+        static private long f2(ref long x, ref long y, int c) => y;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private long f3(ref long x, ref long y) => y;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static private long f4(ref long x, ref long y, ref int c) => x + y;
+        static private long f4(ref long x, ref long y, int c) => x + y;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private long f5(ref long x, ref long y) => x + y;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private long f6(ref long x, ref long y) => Math.Max(x, y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static private long f7(ref long x, ref long y, ref int c) => y * c;
+        static private long f7(ref long x, ref long y, int c) => y * c;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static private long f8(ref long x, ref long y, ref int c) => x + y * c;
+        static private long f8(ref long x, ref long y, int c) => x + y * c;
         static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, long.MinValue + 100, f1, f2, f3);
         static public LIB_LazySegTree<long, long> CreateRangeAddRangeMin(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MaxValue, 0, f1, f4, f5);
         static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, long.MaxValue - 100, f6, f2, f3);
