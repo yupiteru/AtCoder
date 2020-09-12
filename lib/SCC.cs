@@ -25,13 +25,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddPath(long from, long to) => edges.Add((from << 30) | to);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        (int, int[]) SCCIDs()
+        protected (int, int[]) SCCIDs()
         {
             var start = new int[n + 1];
             var elist = new int[edges.Count];
             foreach (var e in edges) ++start[(e >> 30) + 1];
             for (var i = 1; i < start.Length; ++i) start[i] += start[i - 1];
-            var counter = new int[n + 1];
+            var counter = new int[start.Length];
             for (var i = 0; i < counter.Length; i++) counter[i] = start[i];
             foreach (var e in edges) elist[counter[e >> 30]++] = (int)(e & 1073741823);
             var nowOrd = -1;
