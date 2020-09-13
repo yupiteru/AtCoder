@@ -5,6 +5,13 @@ use Time::HiRes 'sleep';
 use utf8;
 binmode STDOUT, ':encoding(cp932)';
 
+open my $propertyFh, "setupContestProperty.txt";
+my $loginId = <$propertyFh>;
+my $password = <$propertyFh>;
+$loginId =~ s/[\r\n]+//g;
+$password =~ s/[\r\n]+//g;
+close $propertyFh;
+
 my $contestId = "notinput";
 if(@ARGV > 0) {
   $contestId = $ARGV[0];
@@ -17,6 +24,15 @@ $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
 
 my $mech = WWW::Mechanize->new( agent => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0 Waterfox/56.3') ;
 $mech->timeout(120);
+
+$mech->get("https://atcoder.jp/login");
+$mech->submit_form(
+  form_number => 2,
+  fields      => {
+    username    => $loginId,
+    password    => $password,
+  }
+);
 
 $mech->get("https://atcoder.jp/contests/$contestId");
 my $contestTime = "";
