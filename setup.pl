@@ -2,7 +2,13 @@ use strict;
 use warnings;
 use File::Path 'remove_tree';
 
-my $limit = uc <STDIN>;
+my $limit = 'A';
+if(@ARGV > 0) {
+  $limit = $ARGV[0];
+}else {
+  $limit = uc <STDIN>;
+}
+
 $limit =~ s/[\r\n]+//;
 if(length $limit > 1 or !$limit =~ /[A-Z]/) {
   $limit = "Z";
