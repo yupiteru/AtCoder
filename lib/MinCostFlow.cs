@@ -52,8 +52,9 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddEdge(long from, long to, long cap, long cost)
+        public int AddEdge(long from, long to, long cap, long cost)
         {
+            var ret = pos.Count;
             pos.Add(((ulong)from << SHIFT_SIZE) | (uint)gTo[from].Count);
             gTo[from].Add((int)to);
             gRev[from].Add(gRev[to].Count);
@@ -63,6 +64,7 @@ namespace Library
             gRev[to].Add(gRev[from].Count - 1);
             gCap[to].Add(0);
             gCost[to].Add(-cost);
+            return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Edge GetEdge(long i)
@@ -79,7 +81,7 @@ namespace Library
         public Edge[] GetAllEdge()
         {
             var res = new Edge[pos.Count];
-            for (var i = 0; i < res.Length; i++) res[i] = GetEdge(i);
+            for (var i = 0; i < res.Length; ++i) res[i] = GetEdge(i);
             return res;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
