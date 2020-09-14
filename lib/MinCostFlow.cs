@@ -108,7 +108,7 @@ namespace Library
                 for (var i = 0; i < pv.Length; ++i) pv[i] = -1;
                 for (var i = 0; i < pe.Length; ++i) pe[i] = -1;
                 var vis = new bool[N];
-                var que = new LIB_PriorityQueue<long, int>();
+                var que = new LIB_PriorityQueue();
                 dist[s] = 0;
                 que.Push(0, (int)s);
                 while (que.Count > 0)
