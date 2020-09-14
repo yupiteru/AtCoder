@@ -13,20 +13,24 @@ namespace Library
     ////start
     class LIB_PriorityQueue<T>
     {
-        List<T> heap;
+        T[] heap;
         Comparison<T> comp;
         public T Peek => heap[0];
-        public long Count => heap.Count;
+        public long Count
+        {
+            get;
+            private set;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(long cap, Comparison<T> cmp, bool asc = true)
         {
-            heap = new List<T>((int)cap);
+            heap = new T[cap];
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(Comparison<T> cmp, bool asc = true)
         {
-            heap = new List<T>();
+            heap = new T[16384];
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,8 +40,9 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(T val)
         {
-            var i = heap.Count;
-            heap.Add(val);
+            if (Count == heap.Length) Expand();
+            var i = Count++;
+            heap[i] = val;
             while (i > 0)
             {
                 var ni = (i - 1) / 2;
@@ -51,19 +56,25 @@ namespace Library
         public T Pop()
         {
             var ret = heap[0];
-            var val = heap[heap.Count - 1];
-            heap.RemoveAt(heap.Count - 1);
-            if (heap.Count == 0) return ret;
-            var i = 0; while ((i << 1) + 1 < heap.Count)
+            var val = heap[--Count];
+            if (Count == 0) return ret;
+            var i = 0; while ((i << 1) + 1 < Count)
             {
                 var i1 = (i << 1) + 1;
                 var i2 = (i << 1) + 2;
-                if (i2 < heap.Count && comp(heap[i1], heap[i2]) > 0) i1 = i2;
+                if (i2 < Count && comp(heap[i1], heap[i2]) > 0) i1 = i2;
                 if (comp(val, heap[i1]) <= 0) break;
                 heap[i] = heap[i1]; i = i1;
             }
             heap[i] = val;
             return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Expand()
+        {
+            var tmp = new T[Count << 1];
+            for (var i = 0; i < heap.Length; ++i) tmp[i] = heap[i];
+            heap = tmp;
         }
     }
     class LIB_PriorityQueue<TK, TV>
