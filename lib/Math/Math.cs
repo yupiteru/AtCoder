@@ -174,6 +174,90 @@ namespace Library
             }
             return true;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 未verify
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        static public (long, long) InvGCD(long a, long b)
+        {
+            a = (a + b) % b;
+            if (a == 0) return (b, 0);
+            var s = b;
+            var t = a;
+            var m0 = 0L;
+            var m1 = 1L;
+            while (t > 0)
+            {
+                var u = s / t; s -= t * u; m0 -= m1 * u;
+                var tmp = s; s = t; t = tmp;
+                tmp = m0; m0 = m1; m1 = tmp;
+            }
+            if (m0 < 0) m0 += b / s;
+            return (s, m0);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 未verify
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        static public (long, long) CRT(long[] r, long[] m)
+        {
+            var r0 = 0L;
+            var m0 = 1L;
+            for (var i = 0; i < m.Length; i++)
+            {
+                var m1 = m[i];
+                var r1 = (r[i] + m1) % m1;
+                if (m0 < m1)
+                {
+                    r0 ^= r1; r1 ^= r0; r0 ^= r1;
+                    m0 ^= m1; m1 ^= m0; m0 ^= m1;
+                }
+                if (m0 % m1 == 0)
+                {
+                    if (r0 % m1 != r1) return (0, 0);
+                    continue;
+                }
+                var gim = InvGCD(m0, m1);
+                var u1 = m1 / gim.Item1;
+                if ((r1 - r0) % gim.Item1 != 0) return (0, 0);
+                var x = (r1 - r0) / gim.Item1 % u1 * gim.Item2 % u1;
+                r0 += x * m0;
+                m0 *= u1;
+                if (r0 < 0) r0 += m0;
+            }
+            return (r0, m0);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long FloorSum(long n, long m, long a, long b)
+        {
+            var ans = 0L;
+            while (true)
+            {
+                if (a >= m)
+                {
+                    ans += (n - 1) * n * (a / m) / 2;
+                    a %= m;
+                }
+                if (b >= m)
+                {
+                    ans += n * (b / m);
+                    b %= m;
+                }
+                var ymax = (a * n + b) / m;
+                if (ymax == 0) return ans;
+                var xmax = ymax * m - b;
+                ans += (n - (xmax + a - 1) / a) * ymax;
+                n = ymax;
+                a ^= m; m ^= a; a ^= m;
+                b = (m - xmax % m) % m;
+            }
+        }
     }
     ////end
 }
