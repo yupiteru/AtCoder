@@ -175,12 +175,6 @@ namespace Library
             return true;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        /// <summary>
-        /// 未verify
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
         static public (long, long) InvGCD(long a, long b)
         {
             a = (a + b) % b;
@@ -199,12 +193,6 @@ namespace Library
             return (s, m0);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        /// <summary>
-        /// 未verify
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="m"></param>
-        /// <returns></returns>
         static public (long, long) CRT(long[] r, long[] m)
         {
             var r0 = 0L;
