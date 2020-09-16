@@ -53,6 +53,33 @@ namespace Library
             return bfsList;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long[] GetDistanceFrom(long root)
+        {
+            var ret = new long[N];
+            foreach (var item in BFSFromRoot(root))
+            {
+                if (item.parent == -1) continue;
+                ret[item.node] = ret[item.parent] + 1;
+            }
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long GetTyokkei()
+        {
+            var dist1 = GetDistanceFrom(0);
+            var maxPos = 0;
+            var maxDist = 0L;
+            for (var i = 0; i < N; i++)
+            {
+                if (maxDist < dist1[i])
+                {
+                    maxDist = dist1[i];
+                    maxPos = i;
+                }
+            }
+            return GetDistanceFrom(maxPos).Max();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<(long node, long parent)> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<(long node, long parent, long direction)> EulerTour(long root)
