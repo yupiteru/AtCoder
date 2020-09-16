@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_TwoSAT : LIB_SCC
+    class LIB_TwoSAT : LIB_StronglyConnectedComponents
     {
         // use LIB_SCC
         public LIB_Bitset Answer

@@ -12,12 +12,12 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_SCC
+    class LIB_StronglyConnectedComponents
     {
         int n;
         List<long> edges;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_SCC(long n)
+        public LIB_StronglyConnectedComponents(long n)
         {
             this.n = (int)n;
             edges = new List<long>();
