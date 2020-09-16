@@ -31,6 +31,7 @@ namespace Library
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
+                    if (u == v) return u;
                     if (depth[u] > depth[v])
                     {
                         var t = u; u = v; v = t;
@@ -55,6 +56,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LCAResult LIB_LCA(long root)
         {
+            if (N == 1) return new LCAResult(null, 0, null);
             var depth = new int[N];
             var l = 0;
             while (N > (1 << l)) l++;
