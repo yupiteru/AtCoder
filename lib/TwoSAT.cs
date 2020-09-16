@@ -14,7 +14,7 @@ namespace Library
     ////start
     class LIB_TwoSAT : LIB_StronglyConnectedComponents
     {
-        // use LIB_SCC
+        // use LIB_StronglyConnectedComponents
         public LIB_Bitset Answer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
