@@ -19,12 +19,6 @@ namespace Library
             public int to;
             public long cap;
             public long flow;
-            public long cost;
-        }
-        public struct CapCost
-        {
-            public long cap;
-            public long cost;
         }
         const int SHIFT_SIZE = 30;
         const int MASK = 1073741823;
@@ -104,16 +98,16 @@ namespace Library
                 var gToV = gTo[v];
                 var gCapV = gCap[v];
                 var gRevV = gRev[v];
-                for (ref int i = ref iter[v]; i < gToV.Count; ++i)
+                for (; iter[v] < gToV.Count; ++iter[v])
                 {
-                    var gToVi = gToV[i];
-                    var gRevVi = gRevV[i];
+                    var gToVi = gToV[iter[v]];
+                    var gRevVi = gRevV[iter[v]];
                     var gcap = gCap[gToVi][gRevVi];
                     if (levelv <= level[gToVi] || gcap == 0) continue;
                     var param = Math.Min(up - res, gcap);
                     var d = gToVi == s ? param : dfs(gToVi, param);
                     if (d <= 0) continue;
-                    gCapV[i] += d;
+                    gCapV[iter[v]] += d;
                     gCap[gToVi][gRevVi] -= d;
                     res += d;
                     if (res == up) break;
