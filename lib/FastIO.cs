@@ -16,24 +16,16 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FastIO() { str = Console.OpenStandardInput(); }
         readonly Stream str;
-        readonly byte[] buf = new byte[1024];
+        readonly byte[] buf = new byte[2048];
         int len, ptr;
-        public bool isEof = false;
-        public bool IsEndOfStream
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return isEof; }
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         byte read()
         {
-            if (isEof) throw new EndOfStreamException();
             if (ptr >= len)
             {
                 ptr = 0;
-                if ((len = str.Read(buf, 0, 1024)) <= 0)
+                if ((len = str.Read(buf, 0, 2048)) <= 0)
                 {
-                    isEof = true;
                     return 0;
                 }
             }
@@ -66,7 +58,7 @@ namespace Library
             {
                 if (b < '0' || '9' < b)
                     return ng ? -ret : ret;
-                else ret = ret * 10 + b - '0';
+                else ret = (ret << 3) + (ret << 1) + b - '0';
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
