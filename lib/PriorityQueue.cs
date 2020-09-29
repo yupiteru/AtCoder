@@ -15,6 +15,7 @@ namespace Library
     {
         long[] heap;
         int[] dat;
+        public (long, int) Peek => (heap[0], dat[0]);
         public long Count
         {
             get;
@@ -23,8 +24,8 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue()
         {
-            heap = new long[128];
-            dat = new int[128];
+            heap = new long[8];
+            dat = new int[8];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(long key, int val)
@@ -95,7 +96,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(Comparison<T> cmp, bool asc = true)
         {
-            heap = new T[128];
+            heap = new T[8];
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
