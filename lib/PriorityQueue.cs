@@ -23,8 +23,8 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue()
         {
-            heap = new long[16384];
-            dat = new int[16384];
+            heap = new long[128];
+            dat = new int[128];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(long key, int val)
@@ -95,7 +95,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(Comparison<T> cmp, bool asc = true)
         {
-            heap = new T[16384];
+            heap = new T[128];
             comp = asc ? cmp : (x, y) => cmp(y, x);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
