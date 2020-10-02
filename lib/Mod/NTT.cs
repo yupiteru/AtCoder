@@ -46,32 +46,52 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint inverse4(uint x) { long b = mod4, r = 1, u = 0, t = 0, x2 = x; while (b > 0) { var q = x2 / b; t = u; u = r - q * u; r = t; t = b; b = x2 - q * b; x2 = t; } return (uint)(r < 0 ? r + mod4 : r); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void ntt1(ref uint[] a, bool rev = false) { if (a.Length == 1) return; var halfn = (uint)a.Length >> 1; var b = new uint[a.Length]; var s = pow1(root1, rev ? (mod1 - 1 - (mod1 - 1) / (uint)a.Length) : (mod1 - 1) / (uint)a.Length); uint i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul1(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { for (k = 0, s = kp[i * j]; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod1; b[kr + r + i] = (uint)(((ulong)(a[kr] + mod1 - a[krhalfn]) * s) % mod1); } } var t = a; a = b; b = t; } if (rev) { s = inverse1((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul1(a[i], s); } }
+        static void ntt1(ref Span<uint> a, bool rev = false) { if (a.Length == 1) return; var halfn = a.Length >> 1; Span<uint> b = new uint[a.Length]; var s = pow1(root1, rev ? (mod1 - 1 - (mod1 - 1) / (uint)a.Length) : (mod1 - 1) / (uint)a.Length); int i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; var regLength = System.Numerics.Vector<int>.Count; Span<uint> mods = stackalloc uint[regLength]; mods.Fill(mod1); var modV = new System.Numerics.Vector<uint>(mods); for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul1(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { s = kp[i * j]; var ten = i - regLength; var rshift = (r << 1); var rshifti = rshift + i; for (k = 0; k < ten; k += regLength) { var u = new System.Numerics.Vector<uint>(a.Slice(k + r)); var v = new System.Numerics.Vector<uint>(a.Slice(k + r + halfn)); var add = u + v; var sub = modV + u - v; var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV); add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add); add.CopyTo(b.Slice(k + rshift)); sub.CopyTo(b.Slice(k + rshifti)); } for (k = 0; k < ten; ++k) b[k + rshifti] = mul1(b[k + rshifti], s); for (; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod1; b[kr + r + i] = mul1(a[kr] + mod1 - a[krhalfn], s); } } var t = a; a = b; b = t; } if (rev) { s = inverse1((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul1(a[i], s); } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void ntt2(ref uint[] a, bool rev = false) { if (a.Length == 1) return; var halfn = (uint)a.Length >> 1; var b = new uint[a.Length]; var s = pow2(root2, rev ? (mod2 - 1 - (mod2 - 1) / (uint)a.Length) : (mod2 - 1) / (uint)a.Length); uint i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul2(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { for (k = 0, s = kp[i * j]; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod2; b[kr + r + i] = (uint)(((ulong)(a[kr] + mod2 - a[krhalfn]) * s) % mod2); } } var t = a; a = b; b = t; } if (rev) { s = inverse2((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul2(a[i], s); } }
+        static void ntt2(ref Span<uint> a, bool rev = false) { if (a.Length == 1) return; var halfn = a.Length >> 1; Span<uint> b = new uint[a.Length]; var s = pow2(root2, rev ? (mod2 - 1 - (mod2 - 1) / (uint)a.Length) : (mod2 - 1) / (uint)a.Length); int i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; var regLength = System.Numerics.Vector<int>.Count; Span<uint> mods = stackalloc uint[regLength]; mods.Fill(mod2); var modV = new System.Numerics.Vector<uint>(mods); for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul2(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { s = kp[i * j]; var ten = i - regLength; var rshift = (r << 1); var rshifti = rshift + i; for (k = 0; k < ten; k += regLength) { var u = new System.Numerics.Vector<uint>(a.Slice(k + r)); var v = new System.Numerics.Vector<uint>(a.Slice(k + r + halfn)); var add = u + v; var sub = modV + u - v; var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV); add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add); add.CopyTo(b.Slice(k + rshift)); sub.CopyTo(b.Slice(k + rshifti)); } for (k = 0; k < ten; ++k) b[k + rshifti] = mul2(b[k + rshifti], s); for (; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod2; b[kr + r + i] = mul2(a[kr] + mod2 - a[krhalfn], s); } } var t = a; a = b; b = t; } if (rev) { s = inverse2((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul2(a[i], s); } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void ntt3(ref uint[] a, bool rev = false) { if (a.Length == 1) return; var halfn = (uint)a.Length >> 1; var b = new uint[a.Length]; var s = pow3(root3, rev ? (mod3 - 1 - (mod3 - 1) / (uint)a.Length) : (mod3 - 1) / (uint)a.Length); uint i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul3(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { for (k = 0, s = kp[i * j]; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod3; b[kr + r + i] = (uint)(((ulong)(a[kr] + mod3 - a[krhalfn]) * s) % mod3); } } var t = a; a = b; b = t; } if (rev) { s = inverse3((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul3(a[i], s); } }
+        static void ntt3(ref Span<uint> a, bool rev = false) { if (a.Length == 1) return; var halfn = a.Length >> 1; Span<uint> b = new uint[a.Length]; var s = pow3(root3, rev ? (mod3 - 1 - (mod3 - 1) / (uint)a.Length) : (mod3 - 1) / (uint)a.Length); int i, j, k, l, r; var kp = new uint[halfn + 1]; kp[0] = 1; var regLength = System.Numerics.Vector<int>.Count; Span<uint> mods = stackalloc uint[regLength]; mods.Fill(mod3); var modV = new System.Numerics.Vector<uint>(mods); for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul3(kp[i], s); for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { s = kp[i * j]; var ten = i - regLength; var rshift = (r << 1); var rshifti = rshift + i; for (k = 0; k < ten; k += regLength) { var u = new System.Numerics.Vector<uint>(a.Slice(k + r)); var v = new System.Numerics.Vector<uint>(a.Slice(k + r + halfn)); var add = u + v; var sub = modV + u - v; var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV); add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add); add.CopyTo(b.Slice(k + rshift)); sub.CopyTo(b.Slice(k + rshifti)); } for (k = 0; k < ten; ++k) b[k + rshifti] = mul3(b[k + rshifti], s); for (; k < i; ++k) { var kr = k + r; var krhalfn = kr + halfn; b[kr + r] = (a[kr] + a[krhalfn]) % mod3; b[kr + r + i] = mul3(a[kr] + mod3 - a[krhalfn], s); } } var t = a; a = b; b = t; } if (rev) { s = inverse3((uint)a.Length); for (i = 0; i < a.Length; ++i) a[i] = mul3(a[i], s); } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void ntt4(ref uint[] a, bool rev = false)
+        static void ntt4(ref Span<uint> a, bool rev = false)
         {
             if (a.Length == 1) return;
-            var halfn = (uint)a.Length >> 1;
-            var b = new uint[a.Length];
+            var halfn = a.Length >> 1;
+            Span<uint> b = new uint[a.Length];
             var s = pow4(root4, rev ? (mod4 - 1 - (mod4 - 1) / (uint)a.Length) : (mod4 - 1) / (uint)a.Length);
-            uint i, j, k, l, r;
+            int i, j, k, l, r;
             var kp = new uint[halfn + 1];
             kp[0] = 1;
+            var regLength = System.Numerics.Vector<int>.Count;
+            Span<uint> mods = stackalloc uint[regLength];
+            mods.Fill(mod4);
+            var modV = new System.Numerics.Vector<uint>(mods);
             for (i = 0; i < kp.Length - 1; ++i) kp[i + 1] = mul4(kp[i], s);
             for (i = 1, l = halfn; i < a.Length; i <<= 1, l >>= 1)
             {
                 for (j = 0, r = 0; j < l; ++j, r += i)
                 {
-                    for (k = 0, s = kp[i * j]; k < i; ++k)
+                    s = kp[i * j];
+                    var ten = i - regLength;
+                    var rshift = (r << 1);
+                    var rshifti = rshift + i;
+                    for (k = 0; k < ten; k += regLength)
+                    {
+                        var u = new System.Numerics.Vector<uint>(a.Slice(k + r));
+                        var v = new System.Numerics.Vector<uint>(a.Slice(k + r + halfn));
+                        var add = u + v;
+                        var sub = modV + u - v;
+                        var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV);
+                        add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add);
+                        add.CopyTo(b.Slice(k + rshift));
+                        sub.CopyTo(b.Slice(k + rshifti));
+                    }
+                    for (k = 0; k < ten; ++k) b[k + rshifti] = mul4(b[k + rshifti], s);
+                    for (; k < i; ++k)
                     {
                         var kr = k + r;
                         var krhalfn = kr + halfn;
                         b[kr + r] = (a[kr] + a[krhalfn]) % mod4;
-                        b[kr + r + i] = (uint)(((ulong)(a[kr] + mod4 - a[krhalfn]) * s) % mod4);
+                        b[kr + r + i] = mul4(a[kr] + mod4 - a[krhalfn], s);
                     }
                 }
                 var t = a; a = b; b = t;
@@ -83,26 +103,28 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static uint[] Multiply1(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; var na = new uint[t]; var nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt1(ref na); ntt1(ref nb); for (var i = 0; i < t; ++i) na[i] = mul1(na[i], nb[i]); ntt1(ref na, true); return na.Take(n).ToArray(); }
+        static uint[] Multiply1(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt1(ref na); ntt1(ref nb); for (var i = 0; i < t; ++i) na[i] = mul1(na[i], nb[i]); ntt1(ref na, true); var ret = new uint[n]; for (var i = 0; i < n; ++i) ret[i] = na[i]; return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static uint[] Multiply2(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; var na = new uint[t]; var nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt2(ref na); ntt2(ref nb); for (var i = 0; i < t; ++i) na[i] = mul2(na[i], nb[i]); ntt2(ref na, true); return na.Take(n).ToArray(); }
+        static uint[] Multiply2(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt2(ref na); ntt2(ref nb); for (var i = 0; i < t; ++i) na[i] = mul2(na[i], nb[i]); ntt2(ref na, true); var ret = new uint[n]; for (var i = 0; i < n; ++i) ret[i] = na[i]; return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static uint[] Multiply3(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; var na = new uint[t]; var nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt3(ref na); ntt3(ref nb); for (var i = 0; i < t; ++i) na[i] = mul3(na[i], nb[i]); ntt3(ref na, true); return na.Take(n).ToArray(); }
+        static uint[] Multiply3(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; for (var i = 0; i < a.Length; ++i) na[i] = a[i]; for (var i = 0; i < b.Length; ++i) nb[i] = b[i]; ntt3(ref na); ntt3(ref nb); for (var i = 0; i < t; ++i) na[i] = mul3(na[i], nb[i]); ntt3(ref na, true); var ret = new uint[n]; for (var i = 0; i < n; ++i) ret[i] = na[i]; return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] Multiply(long[] a, long[] b)
         {
             var n = a.Length + b.Length - 1;
             var t = 1;
             while (t < n) t <<= 1;
-            var na = new uint[t];
-            var nb = new uint[t];
+            Span<uint> na = new uint[t];
+            Span<uint> nb = new uint[t];
             for (var i = 0; i < a.Length; ++i) na[i] = (uint)a[i];
             for (var i = 0; i < b.Length; ++i) nb[i] = (uint)b[i];
             ntt4(ref na);
             ntt4(ref nb);
             for (var i = 0; i < t; ++i) na[i] = mul4(na[i], nb[i]);
             ntt4(ref na, true);
-            return na.Take(n).Select(e => (long)e).ToArray();
+            var ret = new long[n];
+            for (var i = 0; i < n; ++i) ret[i] = na[i];
+            return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] Multiply(long[] a, long[] b, long mod)
@@ -121,7 +143,7 @@ namespace Library
             {
                 var v1 = mul2(y[i] + (mod2 << 1) - x[i], m1_inv_m2);
                 var v2 = mul3(z[i] + (mod3 << 1) - x[i] + mod3 - mul3(mod1, v1), m12_inv_m3);
-                ret[i] = (x[i] + ((long)mod1 * v1 % mod) + ((long)m12_mod * v2 % mod)) % mod;
+                ret[i] = (x[i] + ((long)mod1 * v1 % mod) + (m12_mod * v2 % mod)) % mod;
             }
             return ret;
         }
