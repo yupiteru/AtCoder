@@ -31,49 +31,57 @@ namespace Library
         public void Push(long key, int val)
         {
             if (Count == heap.Length) Expand();
-            var i = Count++;
-            heap[i] = key;
-            dat[i] = val;
+            var i = (int)Count++;
+            ref long heapref = ref heap[0];
+            ref int datref = ref dat[0];
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
             while (i > 0)
             {
                 var ni = (i - 1) / 2;
-                if (key >= heap[ni]) break;
-                heap[i] = heap[ni];
-                dat[i] = dat[ni];
+                var heapni = Unsafe.Add<long>(ref heapref, ni);
+                if (key >= heapni) break;
+                Unsafe.Add<long>(ref heapref, i) = heapni;
+                Unsafe.Add<int>(ref datref, i) = Unsafe.Add<int>(ref datref, ni);
                 i = ni;
             }
-            heap[i] = key;
-            dat[i] = val;
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<long, int> Pop()
         {
-            var ret = new KeyValuePair<long, int>(heap[0], dat[0]);
-            var key = heap[--Count];
-            var val = dat[Count];
-            if (Count == 0) return ret;
-            var i = 0; while ((i << 1) + 1 < Count)
+            ref long heapref = ref heap[0];
+            ref int datref = ref dat[0];
+            var ret = new KeyValuePair<long, int>(heapref, datref);
+            var cnt = (int)(--Count);
+            var key = Unsafe.Add<long>(ref heapref, cnt);
+            var val = Unsafe.Add<int>(ref datref, cnt);
+            if (cnt == 0) return ret;
+            var i = 0; while ((i << 1) + 1 < cnt)
             {
                 var i1 = (i << 1) + 1;
                 var i2 = (i << 1) + 2;
-                if (i2 < Count && heap[i1] > heap[i2]) i1 = i2;
-                if (key <= heap[i1]) break;
-                heap[i] = heap[i1];
-                dat[i] = dat[i1];
+                if (i2 < cnt && Unsafe.Add<long>(ref heapref, i1) > Unsafe.Add<long>(ref heapref, i2)) i1 = i2;
+                var heapi1 = Unsafe.Add<long>(ref heapref, i1);
+                if (key <= heapi1) break;
+                Unsafe.Add<long>(ref heapref, i) = heapi1;
+                Unsafe.Add<int>(ref datref, i) = Unsafe.Add<int>(ref datref, i1);
                 i = i1;
             }
-            heap[i] = key;
-            dat[i] = val;
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Expand()
         {
-            var tmp = new long[Count << 1];
-            for (var i = 0; i < heap.Length; ++i) tmp[i] = heap[i];
+            var len = heap.Length;
+            var tmp = new long[len << 1];
+            var tmp2 = new int[len << 1];
+            Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmp[0]), ref Unsafe.As<long, byte>(ref heap[0]), (uint)(8 * len));
+            Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp2[0]), ref Unsafe.As<int, byte>(ref dat[0]), (uint)(4 * len));
             heap = tmp;
-            var tmp2 = new int[Count << 1];
-            for (var i = 0; i < dat.Length; ++i) tmp2[i] = dat[i];
             dat = tmp2;
         }
     }
