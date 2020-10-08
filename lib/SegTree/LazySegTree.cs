@@ -44,87 +44,107 @@ namespace Library
             dat = Enumerable.Repeat(ti, n << 1).ToArray();
             laz = Enumerable.Repeat(ei, n).ToArray();
             rangeSz = new int[n << 1];
-            for (var i = 0; i < sz; i++) rangeSz[n + i] = 1;
+            ref T datref = ref dat[0];
+            ref int rangeSzref = ref rangeSz[0];
+            for (var i = 0; i < sz; i++) Unsafe.Add(ref rangeSzref, n + i) = 1;
             for (var i = n - 1; i > 0; i--)
             {
-                rangeSz[i] = rangeSz[(i << 1) | 0] + rangeSz[(i << 1) | 1];
-                dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+                Unsafe.Add(ref rangeSzref, i) = Unsafe.Add(ref rangeSzref, i << 1) + Unsafe.Add(ref rangeSzref, (i << 1) | 1);
+                Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h) : this(l.Count(), _ti, _ei, _f, _g, _h)
         {
             var idx = 0;
-            foreach (var item in l) dat[n + idx++] = item;
-            for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            ref T datref = ref dat[0];
+            foreach (var item in l) Unsafe.Add(ref datref, n + idx++) = item;
+            for (var i = n - 1; i > 0; i--) Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Apply(long i, ref E v)
+        void Apply(int i, ref T datref, ref E lazref, ref E v)
         {
             if (v.Equals(ei)) return;
-            dat[i] = g(dat[i], v, rangeSz[i]);
-            if (i < n) laz[i] = h(laz[i], v);
+            ref T dati = ref Unsafe.Add(ref datref, i);
+            dati = g(dati, v, rangeSz[i]);
+            if (i < n)
+            {
+                ref E lazi = ref Unsafe.Add(ref lazref, i);
+                lazi = h(lazi, v);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Up(long i) => dat[i] = f(dat[i << 1], dat[(i << 1) | 1]);
+        void Up(ref T datref, int i) => Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Down(long i)
+        void Down(ref T datref, ref E lazref, int i)
         {
-            if (laz[i].Equals(ei)) return;
+            ref E lazi = ref Unsafe.Add(ref lazref, i);
+            if (lazi.Equals(ei)) return;
             var cl = i << 1;
             var cr = cl + 1;
-            Apply(cl, ref laz[i]);
-            Apply(cr, ref laz[i]);
-            laz[i] = ei;
+            Apply(cl, ref datref, ref lazref, ref lazi);
+            Apply(cr, ref datref, ref lazref, ref lazi);
+            lazi = ei;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Thrust(long i)
+        void Thrust(int i)
         {
-            for (var j = height; j > 0; j--) Down(i >> j);
+            ref T datref = ref dat[0];
+            ref E lazref = ref laz[0];
+            for (var j = height; j > 0; j--) Down(ref datref, ref lazref, i >> j);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Recalc(long i)
+        void Recalc(int i)
         {
-            while ((i >>= 1) > 0) Up(i);
+            ref T datref = ref dat[0];
+            while ((i >>= 1) > 0) Up(ref datref, i);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Update(long l, long r, E v)
+        public void Update(long left, long right, E v)
         {
+            var l = (int)left;
+            var r = (int)right;
             if (l == r) return;
+            ref T datref = ref dat[0];
+            ref E lazref = ref laz[0];
             l += n;
             r += n;
             for (var i = height; i >= 1; --i)
             {
-                if (((l >> i) << i) != l) Down(l >> i);
-                if (((r >> i) << i) != r) Down((r - 1) >> i);
+                if (((l >> i) << i) != l) Down(ref datref, ref lazref, l >> i);
+                if (((r >> i) << i) != r) Down(ref datref, ref lazref, (r - 1) >> i);
             }
-            for (long li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
+            for (int li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
             {
-                if ((li & 1) == 1) { Apply(li, ref v); ++li; }
-                if ((ri & 1) == 1) { --ri; Apply(ri, ref v); }
+                if ((li & 1) == 1) { Apply(li, ref datref, ref lazref, ref v); ++li; }
+                if ((ri & 1) == 1) { --ri; Apply(ri, ref datref, ref lazref, ref v); }
             }
             for (var i = 1; i <= height; ++i)
             {
-                if (((l >> i) << i) != l) Up(l >> i);
-                if (((r >> i) << i) != r) Up((r - 1) >> i);
+                if (((l >> i) << i) != l) Up(ref datref, l >> i);
+                if (((r >> i) << i) != r) Up(ref datref, (r - 1) >> i);
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Query(long l, long r)
+        public T Query(long left, long right)
         {
+            var l = (int)left;
+            var r = (int)right;
             if (l == r) return ti;
+            ref T datref = ref dat[0];
+            ref E lazref = ref laz[0];
             l += n;
             r += n;
             for (var i = height; i >= 1; --i)
             {
-                if (((l >> i) << i) != l) Down(l >> i);
-                if (((r >> i) << i) != r) Down((r - 1) >> i);
+                if (((l >> i) << i) != l) Down(ref datref, ref lazref, l >> i);
+                if (((r >> i) << i) != r) Down(ref datref, ref lazref, (r - 1) >> i);
             }
             var vl = ti; var vr = ti;
-            for (long li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
+            for (int li = l, ri = r; li < ri; li >>= 1, ri >>= 1)
             {
-                if ((li & 1) == 1) vl = f(vl, dat[li++]);
-                if ((ri & 1) == 1) vr = f(dat[--ri], vr);
+                if ((li & 1) == 1) vl = f(vl, Unsafe.Add(ref datref, li++));
+                if ((ri & 1) == 1) vr = f(Unsafe.Add(ref datref, --ri), vr);
             }
             return f(vl, vr);
         }
@@ -136,7 +156,7 @@ namespace Library
                 acc = f(acc, dat[k]);
                 return check(acc) ? k - n : sz;
             }
-            Down(k);
+            Down(ref dat[0], ref laz[0], k);
             int m = (l + r) >> 1;
             if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
             if (st <= l && !check(f(acc, dat[k])))
@@ -162,7 +182,7 @@ namespace Library
                 acc = f(dat[k], acc);
                 return check(acc) ? k - n : -1;
             }
-            Down(k);
+            Down(ref dat[0], ref laz[0], k);
             int m = (l + r) >> 1;
             if (m > st) return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
             if (st >= r - 1 && !check(f(dat[k], acc)))
@@ -183,9 +203,9 @@ namespace Library
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { Thrust(idx += n); return dat[idx]; }
+            get { Thrust((int)(idx += n)); return dat[idx]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { Thrust(idx += n); dat[idx] = value; Recalc(idx); }
+            set { Thrust((int)(idx += n)); dat[idx] = value; Recalc((int)idx); }
         }
     }
     ////end
