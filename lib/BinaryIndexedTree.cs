@@ -13,12 +13,12 @@ namespace Library
     ////start
     class LIB_BinaryIndexedTree
     {
-        long n;
+        int n;
         long[] dat;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_BinaryIndexedTree(long size)
         {
-            n = size;
+            n = (int)size;
             dat = new long[n + 1];
         }
         public long this[long idx]
@@ -32,10 +32,11 @@ namespace Library
         public long Sum(long idx)
         {
             var ret = 0L;
-            var i = (int)idx;
+            var i = (int)idx + 1;
+            ref long datref = ref dat[0];
             while (i > 0)
             {
-                ret += dat[i];
+                ret += Unsafe.Add(ref datref, i);
                 i -= i & -i;
             }
             return ret;
@@ -43,11 +44,11 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(long idx, long value)
         {
-            var i = (int)idx;
-            if (i <= 0) throw new Exception("1-indexed");
+            var i = (int)idx + 1;
+            ref long datref = ref dat[0];
             while (i <= n)
             {
-                dat[i] += value;
+                Unsafe.Add(ref datref, i) += value;
                 i += i & -i;
             }
         }
