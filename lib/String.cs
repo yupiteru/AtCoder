@@ -31,7 +31,7 @@ namespace Library
             }
             return ret;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         static int[] SAIS(int[] s, int upper)
         {
             var n = s.Length;
@@ -42,113 +42,147 @@ namespace Library
                 if (s[0] < s[1]) return new[] { 0, 1 };
                 return new[] { 1, 0 };
             }
+            ref int sref = ref s[0];
             var ls = new bool[n];
+            ref bool lsref = ref ls[0];
+            var befores = Unsafe.Add(ref sref, n - 1);
+            var beforels = Unsafe.Add(ref lsref, n - 1);
             for (var i = n - 2; i >= 0; --i)
             {
-                ls[i] = s[i] == s[i + 1] ? ls[i + 1] : s[i] < s[i + 1];
+                var siref = Unsafe.Add(ref sref, i);
+                beforels = Unsafe.Add(ref lsref, i) = siref == befores ? beforels : siref < befores;
+                befores = siref;
             }
             var suml = new int[upper + 1];
             var sums = new int[upper + 1];
+            ref int sumlref = ref suml[0];
+            ref int sumsref = ref sums[0];
             for (var i = 0; i < n; ++i)
             {
-                if (!ls[i]) ++sums[s[i]];
-                else ++suml[s[i] + 1];
+                if (!Unsafe.Add(ref lsref, i)) ++Unsafe.Add(ref sumsref, Unsafe.Add(ref sref, i));
+                else ++Unsafe.Add(ref sumlref, Unsafe.Add(ref sref, i) + 1);
             }
             for (var i = 0; i <= upper; ++i)
             {
-                sums[i] += suml[i];
-                if (i < upper) suml[i + 1] += sums[i];
+                ref int sumsiref = ref Unsafe.Add(ref sumsref, i);
+                sumsiref += Unsafe.Add(ref sumlref, i);
+                if (i < upper) Unsafe.Add(ref sumlref, i + 1) += sumsiref;
             }
             var sa = new int[n];
-            Action<int[], int> induce = (plms, len) =>
+            ref int saref = ref sa[0];
+            void induce(ref int plmsref, int len, ref int sref, ref bool lsref, ref int sumsref, ref int sumlref, ref int saref)
             {
-                for (var i = 0; i < sa.Length; i++) sa[i] = -1;
-                var buf = sums.ToArray();
-                for (var i = 0; i < len; i++)
+                Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref saref), 255, (uint)(4 * n));
+                var buf = new int[upper + 1];
+                ref int bufref = ref buf[0];
+                Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref bufref), ref Unsafe.As<int, byte>(ref sumsref), (uint)(4 * (upper + 1)));
+                for (var i = 0; i < len; ++i)
                 {
-                    var d = plms[i];
+                    var d = Unsafe.Add(ref plmsref, i);
                     if (d == n) continue;
-                    sa[buf[s[d]]++] = d;
+                    Unsafe.Add(ref saref, Unsafe.Add(ref bufref, Unsafe.Add(ref sref, d))++) = d;
                 }
-                for (var i = 0; i < buf.Length; i++) buf[i] = suml[i];
-                sa[buf[s[n - 1]]++] = n - 1;
+                Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref bufref), ref Unsafe.As<int, byte>(ref sumlref), (uint)(4 * (upper + 1)));
+                Unsafe.Add(ref saref, Unsafe.Add(ref bufref, Unsafe.Add(ref sref, n - 1))++) = n - 1;
                 for (var i = 0; i < n; ++i)
                 {
-                    var v = sa[i];
-                    if (v >= 1 && !ls[v - 1]) sa[buf[s[v - 1]]++] = v - 1;
+                    var v = Unsafe.Add(ref saref, i);
+                    if (v >= 1 && !Unsafe.Add(ref lsref, v - 1)) Unsafe.Add(ref saref, Unsafe.Add(ref bufref, Unsafe.Add(ref sref, v - 1))++) = v - 1;
                 }
-                for (var i = 0; i < buf.Length; i++) buf[i] = suml[i];
+                Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref bufref), ref Unsafe.As<int, byte>(ref sumlref), (uint)(4 * (upper + 1)));
                 for (var i = n - 1; i >= 0; --i)
                 {
-                    var v = sa[i];
-                    if (v >= 1 && ls[v - 1]) sa[--buf[s[v - 1] + 1]] = v - 1;
+                    var v = Unsafe.Add(ref saref, i);
+                    if (v >= 1 && Unsafe.Add(ref lsref, v - 1)) Unsafe.Add(ref saref, --Unsafe.Add(ref bufref, Unsafe.Add(ref sref, v - 1) + 1)) = v - 1;
                 }
-            };
-            var lmsMap = new int[n + 1];
-            lmsMap[0] = lmsMap[n] = -1;
-            var m = 0;
-            for (var i = 1; i < n; i++)
-            {
-                if (!ls[i - 1] && ls[i]) lmsMap[i] = m++;
-                else lmsMap[i] = -1;
             }
-            var lms = new int[m];
-            var lmsIdx = -1;
+            var lmsMap = new int[n + 1];
+            ref int lmsMapref = ref lmsMap[0];
+            Unsafe.Add(ref lmsMapref, 0) = Unsafe.Add(ref lmsMapref, n) = -1;
+            var m = 0;
+            var beforelsi = Unsafe.Add(ref lsref, 0);
             for (var i = 1; i < n; ++i)
             {
-                if (!ls[i - 1] && ls[i]) lms[++lmsIdx] = i;
+                var lsi = Unsafe.Add(ref lsref, i);
+                if (!beforelsi && lsi) Unsafe.Add(ref lmsMapref, i) = m++;
+                else Unsafe.Add(ref lmsMapref, i) = -1;
+                beforelsi = lsi;
             }
-            induce(lms, lmsIdx + 1);
-            if (m > 0)
+            if (m == 0) induce(ref lmsMapref, 0, ref sref, ref lsref, ref sumsref, ref sumlref, ref saref);
+            else
             {
-                var sortedLms = new int[m];
-                var sortedLmsIdx = -1;
-                foreach (var v in sa)
+                var lms = new int[m];
+                ref int lmsref = ref lms[0];
+                var lmsIdx = -1;
+                beforelsi = Unsafe.Add(ref lsref, 0);
+                for (var i = 1; i < n; ++i)
                 {
-                    if (lmsMap[v] != -1) sortedLms[++sortedLmsIdx] = v;
+                    var lsi = Unsafe.Add(ref lsref, i);
+                    if (!beforelsi && lsi) Unsafe.Add(ref lmsref, ++lmsIdx) = i;
+                    beforelsi = lsi;
+                }
+                induce(ref lmsref, lmsIdx + 1, ref sref, ref lsref, ref sumsref, ref sumlref, ref saref);
+                var sortedLms = new int[m];
+                ref int sortedLmsref = ref sortedLms[0];
+                var sortedLmsIdx = -1;
+                for (var i = 0; i < n; ++i)
+                {
+                    var v = Unsafe.Add(ref saref, i);
+                    if (Unsafe.Add(ref lmsMapref, v) != -1) Unsafe.Add(ref sortedLmsref, ++sortedLmsIdx) = v;
                 }
                 var recs = new int[m];
+                ref int recsref = ref recs[0];
                 var recUpper = 0;
-                recs[lmsMap[sortedLms[0]]] = 0;
+                var beforeSortedLms = sortedLmsref;
                 for (var i = 1; i < m; ++i)
                 {
-                    var l = sortedLms[i - 1];
-                    var r = sortedLms[i];
-                    var endl = lmsMap[l] + 1 < m ? lms[lmsMap[l] + 1] : n;
-                    var endr = lmsMap[r] + 1 < m ? lms[lmsMap[r] + 1] : n;
+                    var l = beforeSortedLms;
+                    var sortedLmsi = Unsafe.Add(ref sortedLmsref, i);
+                    var r = sortedLmsi;
+                    var lmsMapl = Unsafe.Add(ref lmsMapref, l);
+                    var lmsMapr = Unsafe.Add(ref lmsMapref, r);
+                    var endl = lmsMapl + 1 < m ? Unsafe.Add(ref lmsref, lmsMapl + 1) : n;
+                    var endr = lmsMapr + 1 < m ? Unsafe.Add(ref lmsref, lmsMapr + 1) : n;
                     var same = true;
                     if (endl - l != endr - r) same = false;
                     else
                     {
                         while (l < endl)
                         {
-                            if (s[l] != s[r]) break;
+                            if (Unsafe.Add(ref sref, l) != Unsafe.Add(ref sref, r)) break;
                             ++l; ++r;
                         }
-                        if (l == n || s[l] != s[r]) same = false;
+                        if (l == n || Unsafe.Add(ref sref, l) != Unsafe.Add(ref sref, r)) same = false;
                     }
                     if (!same) ++recUpper;
-                    recs[lmsMap[sortedLms[i]]] = recUpper;
+                    Unsafe.Add(ref recsref, Unsafe.Add(ref lmsMapref, sortedLmsi)) = recUpper;
+                    beforeSortedLms = sortedLmsi;
                 }
-
                 var recsa = SAIS(recs, recUpper);
-                for (var i = 0; i < m; ++i) sortedLms[i] = lms[recsa[i]];
-                induce(sortedLms, sortedLmsIdx + 1);
+                ref int recsaref = ref recsa[0];
+                for (var i = 0; i < m; ++i) Unsafe.Add(ref sortedLmsref, i) = Unsafe.Add(ref lmsref, Unsafe.Add(ref recsaref, i));
+                induce(ref sortedLmsref, sortedLmsIdx + 1, ref sref, ref lsref, ref sumsref, ref sumlref, ref saref);
             }
             return sa;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int[] SuffixArray(long[] ary)
         {
-            var idx = new int[ary.Length];
-            var s2 = new int[ary.Length];
-            for (var i = 0; i < idx.Length; i++) idx[i] = i;
+            var len = ary.Length;
+            if (len == 0) return new int[0];
+            var idx = new int[len];
+            var s2 = new int[len];
+            ref int idxref = ref idx[0];
+            ref long aryref = ref ary[0];
+            for (var i = 0; i < len; ++i) Unsafe.Add(ref idxref, i) = i;
             Array.Sort(idx, (x, y) => ary[x].CompareTo(ary[y]));
             var now = 0;
-            s2[idx[0]] = now;
-            for (var i = 1; i < idx.Length; ++i)
+            s2[idxref] = now;
+            for (var i = 1; i < len; ++i)
             {
-                if (ary[idx[i - 1]] != ary[idx[i]]) ++now;
+                ref int thisref = ref Unsafe.Add(ref idxref, i);
+                if (Unsafe.Add(ref aryref, thisref) != Unsafe.Add(ref aryref, idxref)) ++now;
+                idxref = ref thisref;
             }
             return SAIS(s2, now);
         }
@@ -156,26 +190,33 @@ namespace Library
         public static int[] SuffixArray(string s)
         {
             var s2 = new int[s.Length];
-            for (var i = 0; i < s.Length; i++) s2[i] = (int)s[i];
+            for (var i = 0; i < s.Length; ++i) s2[i] = (int)s[i];
             return SAIS(s2, 255);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static long[] LCPArray(int[] ary, int[] sa)
         {
-            var rnk = new int[ary.Length];
-            for (var i = 0; i < rnk.Length; ++i) rnk[sa[i]] = i;
-            var lcp = new long[ary.Length - 1];
+            var len = ary.Length;
+            if (len == 0) return new long[0];
+            ref int aryref = ref ary[0];
+            Span<int> rnk = stackalloc int[len];
+            ref int rnkref = ref rnk[0];
+            ref int saref = ref sa[0];
+            for (var i = 0; i < len; ++i) Unsafe.Add(ref rnkref, Unsafe.Add(ref saref, i)) = i;
+            var lcp = new long[len - 1];
+            ref long lcpref = ref lcp[0];
             var h = 0;
-            for (var i = 0; i < rnk.Length; ++i)
+            for (var i = 0; i < len; ++i)
             {
                 if (h > 0) --h;
-                if (rnk[i] == 0) continue;
-                var j = sa[rnk[i] - 1];
-                for (; j + h < ary.Length && i + h < ary.Length; ++h)
+                var rnki = Unsafe.Add(ref rnkref, i);
+                if (rnki == 0) continue;
+                var j = Unsafe.Add(ref saref, rnki - 1);
+                for (int ih = i + h, jh = j + h; jh < len && ih < len; ++ih, ++jh, ++h)
                 {
-                    if (ary[j + h] != ary[i + h]) break;
+                    if (Unsafe.Add(ref aryref, jh) != Unsafe.Add(ref aryref, ih)) break;
                 }
-                lcp[rnk[i] - 1] = h;
+                Unsafe.Add(ref lcpref, rnki - 1) = h;
             }
             return lcp;
         }
@@ -187,14 +228,14 @@ namespace Library
         public static long[] LCPArray(string s, int[] suffixArray)
         {
             var s2 = new int[s.Length];
-            for (var i = 0; i < s.Length; i++) s2[i] = (int)s[i];
+            for (var i = 0; i < s.Length; ++i) s2[i] = (int)s[i];
             return LCPArray(s2, suffixArray);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long[] LCPArray(string s)
         {
             var s2 = new int[s.Length];
-            for (var i = 0; i < s.Length; i++) s2[i] = (int)s[i];
+            for (var i = 0; i < s.Length; ++i) s2[i] = (int)s[i];
             var sa = SAIS(s2, 255);
             return LCPArray(s2, sa);
         }
@@ -219,7 +260,7 @@ namespace Library
             }
             var state = new LIB_Bitset(s.Length);
             var ret = new List<int>();
-            for (var i = 0; i < s.Length; i++)
+            for (var i = 0; i < s.Length; ++i)
             {
                 state = ((state << 1) | 1) & mask[s[i]];
                 if ((state & finish) == finish) ret.Add(i - t.Length + 1);
