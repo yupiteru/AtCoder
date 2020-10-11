@@ -15,77 +15,129 @@ namespace Library
     class LIB_StronglyConnectedComponents
     {
         int n;
-        List<long> edges;
+        long[] edges;
+        int edgeCnt;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_StronglyConnectedComponents(long n)
         {
             this.n = (int)n;
-            edges = new List<long>();
+            edges = new long[8];
+            edgeCnt = 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddPath(long from, long to) => edges.Add((from << 30) | to);
+        public void AddPath(long from, long to)
+        {
+            ref long edgesref = ref edges[0];
+            Unsafe.Add(ref edgesref, edgeCnt) = (from << 30) | to;
+            if (++edgeCnt == edges.Length)
+            {
+                var tmp = new long[edgeCnt << 1];
+                ref long tmpref = ref tmp[0];
+                Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmpref), ref Unsafe.As<long, byte>(ref edgesref), (uint)(8 * edgeCnt));
+                edges = tmp;
+            }
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected (int, int[]) SCCIDs()
         {
-            var start = new int[n + 1];
-            var elist = new int[edges.Count];
-            foreach (var e in edges) ++start[(e >> 30) + 1];
-            for (var i = 1; i < start.Length; ++i) start[i] += start[i - 1];
-            var counter = new int[start.Length];
-            for (var i = 0; i < counter.Length; i++) counter[i] = start[i];
-            foreach (var e in edges) elist[counter[e >> 30]++] = (int)(e & 1073741823);
+            if (edgeCnt == 0) return (0, new int[0]);
+            Span<int> start = stackalloc int[n + 1];
+            ref int startref = ref start[0];
+            Span<int> elist = stackalloc int[edgeCnt];
+            ref int elistref = ref elist[0];
+            ref long edgesref = ref edges[0];
+            for (var i = 0; i < edgeCnt; ++i)
+            {
+                ++Unsafe.Add(ref startref, (int)((Unsafe.Add(ref edgesref, i) >> 30) + 1));
+            }
+            var beforeStart = startref;
+            for (var i = 1; i <= n; ++i)
+            {
+                ref int thisStartRef = ref Unsafe.Add(ref startref, i);
+                thisStartRef += beforeStart;
+                beforeStart = thisStartRef;
+            }
+            var counter = new int[n + 1];
+            ref int counterref = ref counter[0];
+            Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref counterref), ref Unsafe.As<int, byte>(ref startref), (uint)(4 * (n + 1)));
+            for (var i = 0; i < edgeCnt; ++i)
+            {
+                var e = Unsafe.Add(ref edgesref, i);
+                Unsafe.Add(ref elistref, Unsafe.Add(ref counterref, (int)(e >> 30))++) = (int)(e & 1073741823);
+            }
             var nowOrd = -1;
             var groupNum = 0;
             var visitedIdx = -1;
-            var visited = new int[n];
-            var low = new int[n];
-            var ord = new int[n];
+            Span<int> visited = stackalloc int[n];
+            ref int visitedref = ref visited[0];
+            Span<int> low = stackalloc int[n];
+            ref int lowref = ref low[0];
+            Span<int> ord = stackalloc int[n];
+            ref int ordref = ref ord[0];
             var ids = new int[n];
-            for (var i = 0; i < ord.Length; i++) ord[i] = -1;
-            Action<int> dfs = null;
-            dfs = v =>
+            ref int idsref = ref ids[0];
+            Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref ordref), 255, (uint)(4 * n));
+            void dfs(int v, ref int lowref, ref int ordref, ref int visitedref, ref int startref, ref int elistref, ref int idsref)
             {
-                low[v] = ord[v] = ++nowOrd;
-                visited[++visitedIdx] = v;
-                for (var i = start[v]; i < start[v + 1]; ++i)
+                ref int lowv = ref Unsafe.Add(ref lowref, v);
+                lowv = Unsafe.Add(ref ordref, v) = ++nowOrd;
+                Unsafe.Add(ref visitedref, ++visitedIdx) = v;
+                var endv = Unsafe.Add(ref startref, v + 1);
+                for (var i = Unsafe.Add(ref startref, v); i < endv; ++i)
                 {
-                    var to = elist[i];
-                    if (ord[to] == -1)
+                    var to = Unsafe.Add(ref elistref, i);
+                    ref int ordto = ref Unsafe.Add(ref ordref, to);
+                    if (ordto == -1)
                     {
-                        dfs(to);
-                        low[v] = Math.Min(low[v], low[to]);
+                        dfs(to, ref lowref, ref ordref, ref visitedref, ref startref, ref elistref, ref idsref);
+                        lowv = Math.Min(lowv, Unsafe.Add(ref lowref, to));
                     }
-                    else low[v] = Math.Min(low[v], ord[to]);
+                    else lowv = Math.Min(lowv, ordto);
                 }
-                if (low[v] == ord[v])
+                if (lowv == Unsafe.Add(ref ordref, v))
                 {
                     while (true)
                     {
-                        var u = visited[visitedIdx];
+                        var u = Unsafe.Add(ref visitedref, visitedIdx);
                         --visitedIdx;
-                        ord[u] = n;
-                        ids[u] = groupNum;
+                        Unsafe.Add(ref ordref, u) = n;
+                        Unsafe.Add(ref idsref, u) = groupNum;
                         if (u == v) break;
                     }
                     ++groupNum;
                 }
-            };
-            for (var i = 0; i < ord.Length; ++i)
-            {
-                if (ord[i] == -1) dfs(i);
             }
-            for (var i = 0; i < ids.Length; i++) ids[i] = groupNum - 1 - ids[i];
+            for (var i = 0; i < n; ++i)
+            {
+                if (Unsafe.Add(ref ordref, i) == -1) dfs(i, ref lowref, ref ordref, ref visitedref, ref startref, ref elistref, ref idsref);
+            }
+            for (var i = 0; i < n; i++)
+            {
+                ref int idsi = ref Unsafe.Add(ref idsref, i);
+                idsi = groupNum - 1 - idsi;
+            }
             return (groupNum, ids);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[][] SCC()
         {
             var ids = SCCIDs();
-            var counts = new int[ids.Item1];
-            var groups = new int[ids.Item1][];
-            foreach (var x in ids.Item2) ++counts[x];
-            for (var i = 0; i < groups.Length; ++i) groups[i] = new int[counts[i]];
-            for (var i = 0; i < ids.Item2.Length; i++) groups[ids.Item2[i]][--counts[ids.Item2[i]]] = i;
+            var idsItem1 = ids.Item1;
+            if (idsItem1 == 0) return new int[0][];
+            Span<int> counts = stackalloc int[idsItem1];
+            ref int countsref = ref counts[0];
+            var groups = new int[idsItem1][];
+            ref int[] groupsref = ref groups[0];
+            var sz = Unsafe.SizeOf<int[]>();
+            ref int idsItem2Ref = ref ids.Item2[0];
+            var idsItem2Cnt = ids.Item2.Length;
+            for (var i = 0; i < idsItem2Cnt; ++i) ++Unsafe.Add(ref countsref, Unsafe.Add(ref idsItem2Ref, i));
+            for (var i = 0; i < idsItem1; ++i) Unsafe.Add(ref groupsref, i) = new int[Unsafe.Add(ref countsref, i)];
+            for (var i = 0; i < idsItem2Cnt; ++i)
+            {
+                var v = Unsafe.Add(ref idsItem2Ref, i);
+                Unsafe.Add(ref groupsref, v)[--Unsafe.Add(ref countsref, v)] = i;
+            }
             return groups;
         }
     }

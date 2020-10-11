@@ -36,10 +36,15 @@ namespace Library
         public bool Satisfiable()
         {
             var id = SCCIDs().Item2;
-            for (var i = 0; i < id.Length; i += 2)
+            var idlen = id.Length;
+            if (idlen == 0) return true;
+            ref int idref = ref id[0];
+            for (var i = 0; i < idlen; i += 2)
             {
-                if (id[i] == id[i + 1]) return false;
-                Answer[i >> 1] = id[i] < id[i + 1];
+                var idi = Unsafe.Add(ref idref, i);
+                var idi1 = Unsafe.Add(ref idref, i + 1);
+                if (idi == idi1) return false;
+                Answer[i >> 1] = idi < idi1;
             }
             return true;
         }
