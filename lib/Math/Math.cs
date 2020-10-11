@@ -221,7 +221,7 @@ namespace Library
             }
             return (r0, m0);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         static public long FloorSum(long n, long m, long a, long b)
         {
             var ans = 0L;
