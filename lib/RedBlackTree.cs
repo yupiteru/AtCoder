@@ -66,7 +66,6 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Eval(Node n)
         {
-            if (n == null || ei.Equals(n.lazy)) return;
             n.val = g(n.val, n.lazy, 1);
             if (!n.needRecalc) n.dat = g(n.dat, n.lazy, Cnt(n));
             if (n.left != null) n.left.lazy = h(n.left.lazy, n.lazy);
@@ -76,8 +75,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Recalc(Node n)
         {
-            if (n == null) return;
-            Eval(n);
+            if (!ei.Equals(n.lazy)) Eval(n);
             if (!n.needRecalc) return;
             n.needRecalc = false;
             n.dat = n.val;
@@ -95,7 +93,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RotateL(Node n)
         {
-            if (ope) { Eval(n); Eval(n.right); }
+            if (ope && n != null) { if (!ei.Equals(n.lazy)) Eval(n); if (n.right != null && !ei.Equals(n.right.lazy)) Eval(n.right); }
             Node m = n.right, t = m.left;
             m.left = n; n.right = t;
             n.cnt -= m.cnt - Cnt(t);
@@ -106,7 +104,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RotateR(Node n)
         {
-            if (ope) { Eval(n); Eval(n.left); }
+            if (ope && n != null) { if (!ei.Equals(n.lazy)) Eval(n); if (n.left != null && !ei.Equals(n.left.lazy)) Eval(n.left); }
             Node m = n.left, t = m.right;
             m.right = n; n.left = t;
             n.cnt -= m.cnt - Cnt(t);
@@ -140,7 +138,7 @@ namespace Library
                 isNeedFix = true;
                 return new Node() { key = key, val = val, dat = val, lazy = ei, cnt = 1 };
             }
-            if (ope) Eval(n);
+            if (ope && !ei.Equals(n.lazy)) Eval(n);
             if (c(key, n.key) < 0) n.left = Add(n.left, key, val);
             else n.right = Add(n.right, key, val);
             n.needRecalc = true;
@@ -183,7 +181,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node Remove(Node n, Key key)
         {
-            if (ope) Eval(n);
+            if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
             --n.cnt;
             var r = c(key, n.key);
             if (r < 0)
@@ -212,7 +210,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node RemoveMax(Node n)
         {
-            if (ope) Eval(n);
+            if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
             --n.cnt;
             if (n.right != null)
             {
@@ -305,7 +303,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         KeyValuePair<Key, ValueT> At(Node n, long i)
         {
-            if (ope) Eval(n);
+            if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
             if (n.left == null)
             {
                 if (i == 0) return new KeyValuePair<Key, ValueT>(n.key, n.val);
@@ -322,24 +320,22 @@ namespace Library
             return t < Cnt(root) && c(At(root, t).Key, key) == 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long UpperBound(Key key) => UpperBound(root, key);
+        public long UpperBound(Key key) => root == null ? 0 : UpperBound(root, key);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         long UpperBound(Node n, Key key)
         {
-            if (n == null) return 0;
             var r = c(key, n.key);
-            if (r < 0) return UpperBound(n.left, key);
-            return Cnt(n.left) + 1 + UpperBound(n.right, key);
+            if (r < 0) return n.left == null ? 0 : UpperBound(n.left, key);
+            return Cnt(n.left) + 1 + (n.right == null ? 0 : UpperBound(n.right, key));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long LowerBound(Key key) => LowerBound(root, key);
+        public long LowerBound(Key key) => root == null ? 0 : LowerBound(root, key);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         long LowerBound(Node n, Key key)
         {
-            if (n == null) return 0;
             var r = c(key, n.key);
-            if (r <= 0) return LowerBound(n.left, key);
-            return Cnt(n.left) + 1 + LowerBound(n.right, key);
+            if (r <= 0) return n.left == null ? 0 : LowerBound(n.left, key);
+            return Cnt(n.left) + 1 + (n.right == null ? 0 : LowerBound(n.right, key));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Min()
@@ -348,7 +344,7 @@ namespace Library
             while (n != null)
             {
                 p = n;
-                if (ope) Eval(p);
+                if (ope && p != null && !ei.Equals(p.lazy)) Eval(p);
                 n = n.left;
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
@@ -360,7 +356,7 @@ namespace Library
             while (n != null)
             {
                 p = n;
-                if (ope) Eval(p);
+                if (ope && p != null && !ei.Equals(p.lazy)) Eval(p);
                 n = n.right;
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
@@ -371,7 +367,7 @@ namespace Library
         void Update(Node n, long l, long r, ValueE val)
         {
             if (n == null) return;
-            Eval(n);
+            if (!ei.Equals(n.lazy)) Eval(n);
             n.needRecalc = true;
             var lc = Cnt(n.left);
             if (lc < l) Update(n.right, l - lc - 1, r - lc - 1, val);
@@ -383,19 +379,17 @@ namespace Library
                 if (l < lc) Update(n.left, l, lc, val);
                 if (lc + 1 < r) Update(n.right, 0, r - lc - 1, val);
             }
-            return;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ValueT Query(long l, long r) => Query(root, l, r);
+        public ValueT Query(long l, long r) => root == null ? ti : Query(root, l, r);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         ValueT Query(Node n, long l, long r)
         {
             var v1 = ti; var v2 = ti; var v3 = ti;
-            if (n == null) return ti;
-            Eval(n);
+            if (!ei.Equals(n.lazy)) Eval(n);
             var lc = Cnt(n.left);
-            if (lc < l) v3 = Query(n.right, l - lc - 1, r - lc - 1);
-            else if (r <= lc) v1 = Query(n.left, l, r);
+            if (lc < l) v3 = n.right == null ? ti : Query(n.right, l - lc - 1, r - lc - 1);
+            else if (r <= lc) v1 = n.left == null ? ti : Query(n.left, l, r);
             else if (l <= 0 && Cnt(n) <= r)
             {
                 Recalc(n);
@@ -403,8 +397,8 @@ namespace Library
             }
             else
             {
-                if (l < lc) v1 = Query(n.left, l, lc);
-                if (lc + 1 < r) v3 = Query(n.right, 0, r - lc - 1);
+                if (l < lc) v1 = n.left == null ? ti : Query(n.left, l, lc);
+                if (lc + 1 < r) v3 = n.right == null ? ti : Query(n.right, 0, r - lc - 1);
                 v2 = n.val;
             }
             return f(f(v1, v2), v3);
