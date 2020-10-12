@@ -320,22 +320,36 @@ namespace Library
             return t < Cnt(root) && c(At(root, t).Key, key) == 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long UpperBound(Key key) => root == null ? 0 : UpperBound(root, key);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        long UpperBound(Node n, Key key)
+        public long UpperBound(Key key)
         {
-            var r = c(key, n.key);
-            if (r < 0) return n.left == null ? 0 : UpperBound(n.left, key);
-            return Cnt(n.left) + 1 + (n.right == null ? 0 : UpperBound(n.right, key));
+            var n = root;
+            var ret = 0L;
+            while (true)
+            {
+                if (n == null) return ret;
+                if (c(key, n.key) < 0) n = n.left;
+                else
+                {
+                    ret += Cnt(n.left) + 1;
+                    n = n.right;
+                }
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long LowerBound(Key key) => root == null ? 0 : LowerBound(root, key);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        long LowerBound(Node n, Key key)
+        public long LowerBound(Key key)
         {
-            var r = c(key, n.key);
-            if (r <= 0) return n.left == null ? 0 : LowerBound(n.left, key);
-            return Cnt(n.left) + 1 + (n.right == null ? 0 : LowerBound(n.right, key));
+            var n = root;
+            var ret = 0L;
+            while (true)
+            {
+                if (n == null) return ret;
+                if (c(key, n.key) <= 0) n = n.left;
+                else
+                {
+                    ret += Cnt(n.left) + 1;
+                    n = n.right;
+                }
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Min()
