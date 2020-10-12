@@ -303,15 +303,26 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         KeyValuePair<Key, ValueT> At(Node n, long i)
         {
-            if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
-            if (n.left == null)
+            while (true)
             {
-                if (i == 0) return new KeyValuePair<Key, ValueT>(n.key, n.val);
-                else return At(n.right, i - 1);
+                if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
+                if (n.left == null)
+                {
+                    if (i == 0) return new KeyValuePair<Key, ValueT>(n.key, n.val);
+                    else
+                    {
+                        n = n.right;
+                        --i;
+                    }
+                }
+                else if (n.left.cnt == i) return new KeyValuePair<Key, ValueT>(n.key, n.val);
+                else if (n.left.cnt > i) n = n.left;
+                else
+                {
+                    i = i - n.left.cnt - 1;
+                    n = n.right;
+                }
             }
-            if (n.left.cnt == i) return new KeyValuePair<Key, ValueT>(n.key, n.val);
-            if (n.left.cnt > i) return At(n.left, i);
-            return At(n.right, i - n.left.cnt - 1);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(Key key)
