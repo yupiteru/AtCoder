@@ -34,75 +34,85 @@ namespace Library
             foreach (var item in l) dat[n + idx++] = item;
             for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public void Update(long i, T v)
         {
-            dat[i += n] = v;
-            while ((i >>= 1) > 0) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
+            ref T datref = ref dat[0];
+            Unsafe.Add(ref datref, (int)(i += n)) = v;
+            while ((i >>= 1) > 0) Unsafe.Add(ref datref, (int)i) = f(Unsafe.Add(ref datref, (int)i << 1), Unsafe.Add(ref datref, (int)(i << 1) | 1));
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public T Query(long l, long r)
         {
             if (l == r) return ti;
-            if (r < l) throw new Exception();
             var vl = ti;
             var vr = ti;
+            ref T datref = ref dat[0];
             for (long li = n + l, ri = n + r; li < ri; li >>= 1, ri >>= 1)
             {
-                if ((li & 1) == 1) vl = f(vl, dat[li++]);
-                if ((ri & 1) == 1) vr = f(dat[--ri], vr);
+                if ((li & 1) == 1) vl = f(vl, Unsafe.Add(ref datref, (int)(li++)));
+                if ((ri & 1) == 1) vr = f(Unsafe.Add(ref datref, (int)(--ri)), vr);
             }
             return f(vl, vr);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int FindToRight(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public long FindToRight(long st, Func<T, bool> check)
         {
-            if (l + 1 == r)
-            {
-                acc = f(acc, dat[k]);
-                return check(acc) ? k - n : sz;
-            }
-            int m = (l + r) >> 1;
-            if (m <= st) return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
-            if (st <= l && !check(f(acc, dat[k])))
-            {
-                acc = f(acc, dat[k]);
-                return sz;
-            }
-            int vl = FindToRight(st, check, ref acc, (k << 1) | 0, l, m);
-            if (vl != sz) return vl;
-            return FindToRight(st, check, ref acc, (k << 1) | 1, m, r);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int FindToRight(int st, Func<T, bool> check)
-        {
+            if (st == sz) return sz;
             T acc = ti;
-            return FindToRight(st, check, ref acc, 1, 0, n);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int FindToLeft(int st, Func<T, bool> check, ref T acc, int k, int l, int r)
-        {
-            if (l + 1 == r)
+            st += n;
+            ref T datref = ref dat[0];
+            do
             {
-                acc = f(dat[k], acc);
-                return check(acc) ? k - n : -1;
-            }
-            int m = (l + r) >> 1;
-            if (m > st) return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
-            if (st >= r - 1 && !check(f(dat[k], acc)))
-            {
-                acc = f(dat[k], acc);
-                return -1;
-            }
-            int vr = FindToLeft(st, check, ref acc, (k << 1) | 1, m, r);
-            if (vr != -1) return vr;
-            return FindToLeft(st, check, ref acc, (k << 1) | 0, l, m);
+                while ((st & 1) == 0) st >>= 1;
+                var ch = f(acc, Unsafe.Add(ref datref, (int)st));
+                if (check(ch))
+                {
+                    while (st < n)
+                    {
+                        ch = f(acc, Unsafe.Add(ref datref, (int)(st <<= 1)));
+                        if (!check(ch))
+                        {
+                            acc = ch;
+                            ++st;
+                        }
+                    }
+                    return Min(st - n, sz);
+                }
+                acc = ch;
+                ++st;
+            } while ((st & -st) != st);
+            return sz;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int FindToLeft(int st, Func<T, bool> check)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public long FindToLeft(long st, Func<T, bool> check)
         {
+            if (st < 0) return -1;
+            ++st;
             T acc = ti;
-            return FindToLeft(st, check, ref acc, 1, 0, n);
+            st += n;
+            ref T datref = ref dat[0];
+            do
+            {
+                --st;
+                while (st > 1 && (st & 1) == 1) st >>= 1;
+                var ch = f(Unsafe.Add(ref datref, (int)st), acc);
+                if (check(ch))
+                {
+                    while (st < n)
+                    {
+                        ch = f(Unsafe.Add(ref datref, (int)(st = (st << 1) | 1)), acc);
+                        if (!check(ch))
+                        {
+                            acc = ch;
+                            --st;
+                        }
+                    }
+                    return st - n;
+                }
+                acc = ch;
+            } while ((st & -st) != st);
+            return -1;
         }
         public T this[long idx]
         {
