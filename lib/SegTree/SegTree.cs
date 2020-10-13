@@ -59,27 +59,27 @@ namespace Library
         public long FindToRight(long st, Func<T, bool> check)
         {
             if (st == sz) return sz;
-            T acc = ti;
             st += n;
             ref T datref = ref dat[0];
+            datref = ti;
             do
             {
                 while ((st & 1) == 0) st >>= 1;
-                var ch = f(acc, Unsafe.Add(ref datref, (int)st));
+                var ch = f(datref, Unsafe.Add(ref datref, (int)st));
                 if (check(ch))
                 {
                     while (st < n)
                     {
-                        ch = f(acc, Unsafe.Add(ref datref, (int)(st <<= 1)));
+                        ch = f(datref, Unsafe.Add(ref datref, (int)(st <<= 1)));
                         if (!check(ch))
                         {
-                            acc = ch;
+                            datref = ch;
                             ++st;
                         }
                     }
                     return Min(st - n, sz);
                 }
-                acc = ch;
+                datref = ch;
                 ++st;
             } while ((st & -st) != st);
             return sz;
@@ -89,28 +89,28 @@ namespace Library
         {
             if (st < 0) return -1;
             ++st;
-            T acc = ti;
             st += n;
             ref T datref = ref dat[0];
+            datref = ti;
             do
             {
                 --st;
                 while (st > 1 && (st & 1) == 1) st >>= 1;
-                var ch = f(Unsafe.Add(ref datref, (int)st), acc);
+                var ch = f(Unsafe.Add(ref datref, (int)st), datref);
                 if (check(ch))
                 {
                     while (st < n)
                     {
-                        ch = f(Unsafe.Add(ref datref, (int)(st = (st << 1) | 1)), acc);
+                        ch = f(Unsafe.Add(ref datref, (int)(st = (st << 1) | 1)), datref);
                         if (!check(ch))
                         {
-                            acc = ch;
+                            datref = ch;
                             --st;
                         }
                     }
                     return st - n;
                 }
-                acc = ch;
+                datref = ch;
             } while ((st & -st) != st);
             return -1;
         }
