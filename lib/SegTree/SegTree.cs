@@ -34,14 +34,14 @@ namespace Library
             foreach (var item in l) dat[n + idx++] = item;
             for (var i = n - 1; i > 0; i--) dat[i] = f(dat[(i << 1) | 0], dat[(i << 1) | 1]);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long i, T v)
         {
             ref T datref = ref dat[0];
             Unsafe.Add(ref datref, (int)(i += n)) = v;
             while ((i >>= 1) > 0) Unsafe.Add(ref datref, (int)i) = f(Unsafe.Add(ref datref, (int)i << 1), Unsafe.Add(ref datref, (int)(i << 1) | 1));
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Query(long l, long r)
         {
             if (l == r) return ti;
