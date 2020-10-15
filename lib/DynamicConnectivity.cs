@@ -134,62 +134,20 @@ namespace Library
             Func<T, T, T> f;
             T ei;
             HashMap ptr;
+            static int Tsz = Unsafe.SizeOf<T>();
             int startNodeIndex;
-            static int[] nodeChild = new int[32768];
-            static int[] nodeParent = new int[16384];
-            static int[] nodeL = new int[16384];
-            static int[] nodeR = new int[16384];
-            static int[] nodeSz = new int[16384];
-            static T[] nodeVal = new T[16384];
-            static T[] nodeSum = new T[16384];
-            static byte[] nodeFlags = new byte[16384];
+            static int[] nodeChild = new int[6000000];
+            static int[] nodeParent = new int[3000000];
+            static int[] nodeL = new int[3000000];
+            static int[] nodeR = new int[3000000];
+            static int[] nodeSz = new int[3000000];
+            static T[] nodeVal = new T[3000000];
+            static T[] nodeSum = new T[3000000];
+            static byte[] nodeFlags = new byte[3000000];
             static int nodeCount = 1;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static int NewNode(int l, int r)
             {
-                if (nodeCount == nodeParent.Length)
-                {
-                    {
-                        var tmp = new int[nodeChild.Length << 1];
-                        Array.Copy(nodeChild, tmp, nodeChild.Length);
-                        nodeChild = tmp;
-                    }
-                    {
-                        var tmp = new int[nodeParent.Length << 1];
-                        Array.Copy(nodeParent, tmp, nodeParent.Length);
-                        nodeParent = tmp;
-                    }
-                    {
-                        var tmp = new int[nodeL.Length << 1];
-                        Array.Copy(nodeL, tmp, nodeL.Length);
-                        nodeL = tmp;
-                    }
-                    {
-                        var tmp = new int[nodeR.Length << 1];
-                        Array.Copy(nodeR, tmp, nodeR.Length);
-                        nodeR = tmp;
-                    }
-                    {
-                        var tmp = new int[nodeSz.Length << 1];
-                        Array.Copy(nodeSz, tmp, nodeSz.Length);
-                        nodeSz = tmp;
-                    }
-                    {
-                        var tmp = new T[nodeVal.Length << 1];
-                        Array.Copy(nodeVal, tmp, nodeVal.Length);
-                        nodeVal = tmp;
-                    }
-                    {
-                        var tmp = new T[nodeSum.Length << 1];
-                        Array.Copy(nodeSum, tmp, nodeSum.Length);
-                        nodeSum = tmp;
-                    }
-                    {
-                        var tmp = new byte[nodeFlags.Length << 1];
-                        Array.Copy(nodeFlags, tmp, nodeFlags.Length);
-                        nodeFlags = tmp;
-                    }
-                }
                 var id = nodeCount++;
                 nodeL[id] = l;
                 nodeR[id] = r;
@@ -204,74 +162,81 @@ namespace Library
                 this.f = f;
                 this.ei = ei;
                 this.startNodeIndex = nodeCount;
+                ref T nodeValref = ref nodeVal[0];
+                ref T nodeSumref = ref nodeSum[0];
                 for (var i = 0; i < n; i++)
                 {
                     var nodePoint = NewNode(i, i);
-                    nodeVal[nodePoint] = nodeSum[nodePoint] = ei;
+                    Unsafe.Add(ref nodeValref, nodePoint) = Unsafe.Add(ref nodeSumref, nodePoint) = ei;
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int Root(int t)
+            int Root(int t, ref int nodeParentRef)
             {
-                while (nodeParent[t] != 0) t = nodeParent[t];
+                var t2 = nodeParentRef;
+                while ((t2 = Unsafe.Add(ref nodeParentRef, t)) != 0) t = t2;
                 return t;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            bool IsSameNode(int s, int t)
+            bool IsSameNode(int s, int t, ref int nodeChildRef, ref int nodeParentRef)
             {
-                Splay(s);
-                Splay(t);
-                return Root(s) == Root(t);
+                Splay(s, ref nodeChildRef, ref nodeParentRef);
+                Splay(t, ref nodeChildRef, ref nodeParentRef);
+                return Root(s, ref nodeParentRef) == Root(t, ref nodeParentRef);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int ReRoot(int t)
+            int ReRoot(int t, ref int nodeChildRef, ref int nodeParentRef)
             {
                 if (t == 0) return 0;
-                var s = Split(t);
-                return Merge(s.Item2, s.Item1);
+                var s = Split(t, ref nodeChildRef, ref nodeParentRef);
+                return Merge(s.Item2, s.Item1, ref nodeChildRef, ref nodeParentRef);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            (int, int) Split(int s)
+            (int, int) Split(int s, ref int nodeChildRef, ref int nodeParentRef)
             {
-                Splay(s);
-                var t = nodeChild[s << 1];
-                nodeChild[s << 1] = nodeParent[t] = 0;
+                Splay(s, ref nodeChildRef, ref nodeParentRef);
+                ref int ncs = ref Unsafe.Add(ref nodeChildRef, s << 1);
+                var t = ncs;
+                ncs = Unsafe.Add(ref nodeParentRef, t) = 0;
                 return (t, UpdateNode(s));
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            (int, int) Split2(int s)
+            (int, int) Split2(int s, ref int nodeChildRef, ref int nodeParentRef)
             {
                 if (s == 0) return (0, 0);
-                Splay(s);
-                var t = nodeChild[s << 1];
-                var u = nodeChild[(s << 1) | 1];
-                nodeChild[s << 1] = nodeParent[t] = nodeChild[(s << 1) | 1] = nodeParent[u] = 0;
+                Splay(s, ref nodeChildRef, ref nodeParentRef);
+                var ss = s << 1;
+                ref int ncss = ref Unsafe.Add(ref nodeChildRef, ss);
+                ref int ncss1 = ref Unsafe.Add(ref nodeChildRef, ss | 1);
+                var t = ncss;
+                var u = ncss1;
+                ncss = Unsafe.Add(ref nodeParentRef, t) = ncss1 = Unsafe.Add(ref nodeParentRef, u) = 0;
                 return (t, u);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            (int, int, int) Split(int s, int t)
+            (int, int, int) Split(int s, int t, ref int nodeChildRef, ref int nodeParentRef)
             {
-                var u = Split2(s);
-                if (IsSameNode(u.Item1, t))
+                var u = Split2(s, ref nodeChildRef, ref nodeParentRef);
+                if (IsSameNode(u.Item1, t, ref nodeChildRef, ref nodeParentRef))
                 {
-                    var r = Split2(t);
+                    var r = Split2(t, ref nodeChildRef, ref nodeParentRef);
                     return (r.Item1, r.Item2, u.Item2);
                 }
                 else
                 {
-                    var r = Split2(t);
+                    var r = Split2(t, ref nodeChildRef, ref nodeParentRef);
                     return (u.Item1, r.Item1, r.Item2);
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int Merge(int s, int t)
+            int Merge(int s, int t, ref int nodeChildRef, ref int nodeParentRef)
             {
                 if (s == 0) return t;
                 if (t == 0) return s;
-                while (nodeChild[(s << 1) | 1] != 0) s = nodeChild[(s << 1) | 1];
-                Splay(s);
-                nodeChild[(s << 1) | 1] = t;
-                if (t != 0) nodeParent[t] = s;
+                while (Unsafe.Add(ref nodeChildRef, (s << 1) | 1) != 0) s = Unsafe.Add(ref nodeChildRef, (s << 1) | 1);
+                Splay(s, ref nodeChildRef, ref nodeParentRef);
+                Unsafe.Add(ref nodeChildRef, (s << 1) | 1) = t;
+                if (t != 0) Unsafe.Add(ref nodeParentRef, t) = s;
                 return UpdateNode(s);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -286,66 +251,74 @@ namespace Library
                 if (rightChild != 0) sum = f(sum, nodeSum[rightChild]);
                 nodeSum[t] = sum;
                 nodeSz[t] = nodeSz[leftChild] + (nodeL[t] == nodeR[t] ? 1 : 0) + nodeSz[rightChild];
-                var flag = nodeFlags[leftChild] | (nodeFlags[t] >> 1) | nodeFlags[rightChild];
-                if ((flag & 1) != 0) nodeFlags[t] |= 1;
-                else nodeFlags[t] &= 14;
-                if ((flag & 4) != 0) nodeFlags[t] |= 4;
-                else nodeFlags[t] &= 11;
+                ref byte fl = ref nodeFlags[t];
+                var flag = nodeFlags[leftChild] | (fl >> 1) | nodeFlags[rightChild];
+                if ((flag & 1) != 0) fl |= 1;
+                else fl &= 14;
+                if ((flag & 4) != 0) fl |= 4;
+                else fl &= 11;
                 return t;
             }
+            //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+            //void Push(int t)
+            //{
+            //    // todo
+            //}
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void Push(int t)
-            {
-                // todo
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void Rot(int t, int b)
+            void Rot(int t, int b, ref int nodeChildRef, ref int nodeParentRef)
             {
                 if (t == 0) return;
-                var x = nodeParent[t];
-                var y = nodeParent[x];
-                if ((nodeChild[(x << 1) | (1 - b)] = nodeChild[(t << 1) | b]) != 0) nodeParent[nodeChild[(t << 1) | b]] = x;
-                nodeChild[(t << 1) | b] = x;
-                nodeParent[x] = t;
+                ref int npt = ref Unsafe.Add(ref nodeParentRef, t);
+                var x = npt;
+                ref int npx = ref Unsafe.Add(ref nodeParentRef, x);
+                var y = npx;
+                ref int nctsb = ref Unsafe.Add(ref nodeChildRef, (t << 1) | b);
+                if ((Unsafe.Add(ref nodeChildRef, (x << 1) | (1 - b)) = nctsb) != 0) Unsafe.Add(ref nodeParentRef, nctsb) = x;
+                nctsb = x;
+                npx = t;
                 UpdateNode(x);
                 UpdateNode(t);
-                if ((nodeParent[t] = y) != 0)
+                if ((npt = y) != 0)
                 {
-                    if (nodeChild[y << 1] == x) nodeChild[y << 1] = t;
-                    if (nodeChild[(y << 1) | 1] == x) nodeChild[(y << 1) | 1] = t;
+                    ref int nodeChildys = ref Unsafe.Add(ref nodeChildRef, y << 1);
+                    ref int nodeChildys1 = ref Unsafe.Add(ref nodeChildRef, (y << 1) | 1);
+                    if (nodeChildys == x) nodeChildys = t;
+                    if (nodeChildys1 == x) nodeChildys1 = t;
                     UpdateNode(y);
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void Splay(int t)
+            void Splay(int t, ref int nodeChildRef, ref int nodeParentRef)
             {
                 if (t == 0) return;
-                Push(t);
-                while (nodeParent[t] != 0)
+                //Push(t);
+                ref int npt = ref Unsafe.Add(ref nodeParentRef, t);
+                while (npt != 0)
                 {
-                    var q = nodeParent[t];
-                    if (nodeParent[q] == 0)
+                    var q = npt;
+                    ref int npq = ref Unsafe.Add(ref nodeParentRef, q);
+                    if (npq == 0)
                     {
-                        Push(q);
-                        Push(t);
-                        Rot(t, nodeChild[q << 1] == t ? 1 : 0);
+                        //Push(q);
+                        //Push(t);
+                        Rot(t, Unsafe.Add(ref nodeChildRef, q << 1) == t ? 1 : 0, ref nodeChildRef, ref nodeParentRef);
                     }
                     else
                     {
-                        var r = nodeParent[q];
-                        Push(r);
-                        Push(q);
-                        Push(t);
-                        var b = nodeChild[r << 1] == q ? 1 : 0;
-                        if (nodeChild[(q << 1) | (1 - b)] == t)
+                        var r = npq;
+                        //Push(r);
+                        //Push(q);
+                        //Push(t);
+                        var b = Unsafe.Add(ref nodeChildRef, r << 1) == q ? 1 : 0;
+                        if (Unsafe.Add(ref nodeChildRef, (q << 1) | (1 - b)) == t)
                         {
-                            Rot(q, b);
-                            Rot(t, b);
+                            Rot(q, b, ref nodeChildRef, ref nodeParentRef);
+                            Rot(t, b, ref nodeChildRef, ref nodeParentRef);
                         }
                         else
                         {
-                            Rot(t, 1 - b);
-                            Rot(t, b);
+                            Rot(t, 1 - b, ref nodeChildRef, ref nodeParentRef);
+                            Rot(t, b, ref nodeChildRef, ref nodeParentRef);
                         }
                     }
                 }
@@ -354,23 +327,23 @@ namespace Library
             public int Size(int s)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 return nodeSz[t];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool IsSame(int s, int t) => IsSameNode(startNodeIndex + s, startNodeIndex + t);
+            public bool IsSame(int s, int t) => IsSameNode(startNodeIndex + s, startNodeIndex + t, ref nodeChild[0], ref nodeParent[0]);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T Get(int s)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 return nodeVal[t];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Update(int s, T x)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 nodeVal[t] = x;
                 UpdateNode(t);
             }
@@ -378,45 +351,61 @@ namespace Library
             public void EdgeUpdate(int s, Action<int, int> g)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
-                while ((nodeFlags[t] & 4) != 0)
+                ref int nodeChildRef = ref nodeChild[0];
+                ref int nodeParentRef = ref nodeParent[0];
+                ref int nodeLRef = ref nodeL[0];
+                ref int nodeRRef = ref nodeR[0];
+                ref byte nodeFlagsRef = ref nodeFlags[0];
+                Splay(t, ref nodeChildRef, ref nodeParentRef);
+                while ((Unsafe.Add(ref nodeFlagsRef, t) & 4) != 0)
                 {
                     var node = t;
                     while (true)
                     {
-                        if (nodeL[node] < nodeR[node] && (nodeFlags[node] & 8) != 0)
+                        ref byte nodeFlagsNode = ref Unsafe.Add(ref nodeFlagsRef, node);
+                        var nodeLNode = Unsafe.Add(ref nodeLRef, node);
+                        var nodeRNode = Unsafe.Add(ref nodeRRef, node);
+                        if (nodeLNode < nodeRNode && (nodeFlagsNode & 8) != 0)
                         {
-                            Splay(node);
-                            nodeFlags[node] &= 7;
-                            g(nodeL[node], nodeR[node]);
+                            Splay(node, ref nodeChildRef, ref nodeParentRef);
+                            nodeFlagsNode &= 7;
+                            g(nodeLNode, nodeRNode);
                             break;
                         }
-                        if ((nodeFlags[nodeChild[node << 1]] & 4) != 0) node = nodeChild[node << 1];
-                        else node = nodeChild[(node << 1) | 1];
+                        var ns = node << 1;
+                        var ncns = Unsafe.Add(ref nodeChildRef, ns);
+                        if ((Unsafe.Add(ref nodeFlagsRef, ncns) & 4) != 0) node = ncns;
+                        else node = Unsafe.Add(ref nodeChildRef, ns | 1);
                     }
-                    Splay(t);
+                    Splay(t, ref nodeChildRef, ref nodeParentRef);
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool TryReconnect(int s, Func<int, int, bool> f, int idx)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
-                while ((nodeFlags[t] & 1) != 0)
+                ref int nodeChildRef = ref nodeChild[0];
+                ref int nodeParentRef = ref nodeParent[0];
+                ref int nodeLRef = ref nodeL[0];
+                ref byte nodeFlagsRef = ref nodeFlags[0];
+                Splay(t, ref nodeChildRef, ref nodeParentRef);
+                while ((Unsafe.Add(ref nodeFlagsRef, t) & 1) != 0)
                 {
                     var node = t;
                     while (true)
                     {
-                        if ((nodeFlags[node] & 2) != 0)
+                        if ((Unsafe.Add(ref nodeFlagsRef, node) & 2) != 0)
                         {
-                            Splay(node);
-                            if (f(nodeL[node], idx)) return true;
+                            Splay(node, ref nodeChildRef, ref nodeParentRef);
+                            if (f(Unsafe.Add(ref nodeLRef, node), idx)) return true;
                             break;
                         }
-                        if ((nodeFlags[nodeChild[node << 1]] & 1) != 0) node = nodeChild[node << 1];
-                        else node = nodeChild[(node << 1) | 1];
+                        var ns = node << 1;
+                        var ncns = Unsafe.Add(ref nodeChildRef, ns);
+                        if ((Unsafe.Add(ref nodeFlagsRef, ncns) & 1) != 0) node = ncns;
+                        else node = Unsafe.Add(ref nodeChildRef, ns | 1);
                     }
-                    Splay(t);
+                    Splay(t, ref nodeChildRef, ref nodeParentRef);
                 }
                 return false;
             }
@@ -424,7 +413,7 @@ namespace Library
             public void EdgeConnectedUpdate(int s, bool b)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 if (b) nodeFlags[t] |= 2;
                 else nodeFlags[t] &= 13;
                 UpdateNode(t);
@@ -432,20 +421,23 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Link(int l, int r)
             {
+                ref int nodeChildRef = ref nodeChild[0];
+                ref int nodeParentRef = ref nodeParent[0];
                 if (l > r) { var t = l; l = r; r = t; }
-                if (IsSameNode(startNodeIndex + l, startNodeIndex + r)) return false;
-                var lv = ReRoot(startNodeIndex + l);
-                var rv = ReRoot(startNodeIndex + r);
+                if (IsSameNode(startNodeIndex + l, startNodeIndex + r, ref nodeChildRef, ref nodeParentRef)) return false;
+                var lv = ReRoot(startNodeIndex + l, ref nodeChildRef, ref nodeParentRef);
+                var rv = ReRoot(startNodeIndex + r, ref nodeChildRef, ref nodeParentRef);
                 var lrnode = ptr.GetOrInsert(((ulong)l << 32) | (uint)r, () =>
                 {
                     NewNode(l, r);
                     return NewNode(r, l) - 1;
                 });
-                nodeParent[lv] = nodeParent[rv] = lrnode;
-                nodeChild[lrnode << 1] = lv;
-                nodeChild[(lrnode << 1) | 1] = rv;
+                Unsafe.Add(ref nodeParentRef, lv) = Unsafe.Add(ref nodeParentRef, rv) = lrnode;
+                var lrnodes = lrnode << 1;
+                Unsafe.Add(ref nodeChildRef, lrnodes) = lv;
+                Unsafe.Add(ref nodeChildRef, lrnodes | 1) = rv;
                 UpdateNode(lrnode);
-                Merge(lrnode, lrnode + 1);
+                Merge(lrnode, lrnode + 1, ref nodeChildRef, ref nodeParentRef);
                 return true;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -453,9 +445,11 @@ namespace Library
             {
                 if (l > r) { var t = l; l = r; r = t; }
                 if (!ptr.ContainsKey(((ulong)l << 32) | (uint)r)) return false;
+                ref int nodeChildRef = ref nodeChild[0];
+                ref int nodeParentRef = ref nodeParent[0];
                 var p = ptr.GetAndErase(((ulong)l << 32) | (uint)r);
-                var s = Split(p, p + 1);
-                Merge(s.Item1, s.Item3);
+                var s = Split(p, p + 1, ref nodeChildRef, ref nodeParentRef);
+                Merge(s.Item1, s.Item3, ref nodeChildRef, ref nodeParentRef);
                 return true;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -463,7 +457,7 @@ namespace Library
             {
                 Cut(p, v);
                 var t = startNodeIndex + v;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 var res = nodeSum[t];
                 Link(p, v);
                 return res;
@@ -472,7 +466,7 @@ namespace Library
             public T Query(int s)
             {
                 var t = startNodeIndex + s;
-                Splay(t);
+                Splay(t, ref nodeChild[0], ref nodeParent[0]);
                 return nodeSum[t];
             }
         }
@@ -513,10 +507,11 @@ namespace Library
             int FindEmpty(ulong key)
             {
                 var h = Hash(key);
+                ref int stref = ref st[0];
                 for (var delta = 0; ; ++delta)
                 {
                     var i = (h + delta) & mask;
-                    if (st[i] != 2)
+                    if (Unsafe.Add(ref stref, i) != 2)
                     {
                         if (prode < delta) prode = delta;
                         return i;
@@ -528,14 +523,17 @@ namespace Library
             {
                 if (Count == 0) return -1;
                 var h = Hash(key);
+                ref int stref = ref st[0];
+                ref (ulong, int) bckref = ref bck[0];
                 for (var delta = 0; delta <= prode; ++delta)
                 {
                     var i = (h + delta) & mask;
-                    if (st[i] == 2)
+                    var sti = Unsafe.Add(ref stref, i);
+                    if (sti == 2)
                     {
-                        if (bck[i].Item1 == key) return i;
+                        if (Unsafe.Add(ref bckref, i).Item1 == key) return i;
                     }
-                    else if (st[i] == 0) return -1;
+                    else if (sti == 0) return -1;
                 }
                 return -1;
             }
@@ -545,14 +543,17 @@ namespace Library
                 var h = Hash(key);
                 var hole = -1;
                 var delta = 0;
+                ref int stref = ref st[0];
+                ref (ulong, int) bckref = ref bck[0];
                 for (; delta <= prode; ++delta)
                 {
                     var i = (h + delta) & mask;
-                    if (st[i] == 2)
+                    var sti = Unsafe.Add(ref stref, i);
+                    if (sti == 2)
                     {
-                        if (bck[i].Item1 == key) return i;
+                        if (Unsafe.Add(ref bckref, i).Item1 == key) return i;
                     }
-                    else if (st[i] == 0) return i;
+                    else if (sti == 0) return i;
                     else
                     {
                         if (hole == -1) hole = i;
@@ -562,7 +563,7 @@ namespace Library
                 for (; ; ++delta)
                 {
                     var i = (h + delta) & mask;
-                    if (st[i] != 2)
+                    if (Unsafe.Add(ref stref, i) != 2)
                     {
                         prode = delta;
                         return i;
@@ -573,12 +574,13 @@ namespace Library
             void Reserve(int nextCnt)
             {
                 var requiredCnt = nextCnt + (nextCnt >> 1) + 1;
-                if (requiredCnt > bck.Length)
+                var nowlen = bck.Length;
+                if (requiredCnt > nowlen)
                 {
                     nextCnt = 4;
                     while (nextCnt < requiredCnt) nextCnt <<= 1;
                 }
-                else if (nextCnt <= bck.Length >> 2) nextCnt = Max(4, bck.Length >> 1);
+                else if (nextCnt <= nowlen >> 2) nextCnt = Max(4, nowlen >> 1);
                 else return;
                 var oldSt = new int[nextCnt];
                 var oldBck = new (ulong, int)[nextCnt];
@@ -588,13 +590,19 @@ namespace Library
                 Count = 0;
                 prode = 0;
                 minElem = nextCnt - 1;
-                for (var pos = 0; pos < oldBck.Length; ++pos)
+                if (nowlen == 0) return;
+                ref int stref = ref st[0];
+                ref (ulong, int) bckref = ref bck[0];
+                ref int oldstref = ref oldSt[0];
+                ref (ulong, int) oldbckref = ref oldBck[0];
+                for (var pos = 0; pos < nowlen; ++pos)
                 {
-                    if (oldSt[pos] == 2)
+                    if (Unsafe.Add(ref oldstref, pos) == 2)
                     {
-                        var i = FindEmpty(oldBck[pos].Item1);
-                        st[i] = 2;
-                        bck[i] = oldBck[pos];
+                        ref (ulong, int) oldbckpos = ref Unsafe.Add(ref oldbckref, pos);
+                        var i = FindEmpty(oldbckpos.Item1);
+                        Unsafe.Add(ref stref, i) = 2;
+                        Unsafe.Add(ref bckref, i) = oldbckpos;
                         minElem = Min(minElem, i);
                         ++Count;
                     }
@@ -650,15 +658,19 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool SearchAllKey(Func<ulong, int, int> func, int idx)
             {
-                for (var i = minElem; i < st.Length; ++i)
+                ref int stref = ref st[0];
+                ref (ulong, int) bckref = ref bck[0];
+                var stlen = st.Length;
+                for (var i = minElem; i < stlen; ++i)
                 {
-                    if (st[i] == 2)
+                    ref int sti = ref Unsafe.Add(ref stref, i);
+                    if (sti == 2)
                     {
                         minElem = i;
-                        var res = func(bck[i].Item1, idx);
+                        var res = func(Unsafe.Add(ref bckref, i).Item1, idx);
                         if ((res & 2) != 0)
                         {
-                            st[i] = 1;
+                            sti = 1;
                             --Count;
                         }
                         if ((res & 1) != 0) return (res & 4) != 0;
