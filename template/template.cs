@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Library;
 
 namespace Program
@@ -53,5 +54,9 @@ namespace Program
         static IEnumerator<uint> _xsc() { uint x = 123456789, y = 362436069, z = 521288629, w = (uint)(DateTime.Now.Ticks & 0xffffffff); while (true) { var t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)); yield return w; } }
         static bool Chmax<T>(this ref T lhs, T rhs) where T : struct, IComparable<T> { if (lhs.CompareTo(rhs) < 0) { lhs = rhs; return true; } return false; }
         static bool Chmin<T>(this ref T lhs, T rhs) where T : struct, IComparable<T> { if (lhs.CompareTo(rhs) > 0) { lhs = rhs; return true; } return false; }
+        static void Fill<T>(this T[] array, T value) => array.AsSpan().Fill(value);
+        static void Fill<T>(this T[,] array, T value) => MemoryMarshal.CreateSpan(ref array[0, 0], array.Length).Fill(value);
+        static void Fill<T>(this T[,,] array, T value) => MemoryMarshal.CreateSpan(ref array[0, 0, 0], array.Length).Fill(value);
+        static void Fill<T>(this T[,,,] array, T value) => MemoryMarshal.CreateSpan(ref array[0, 0, 0, 0], array.Length).Fill(value);
     }
 }
