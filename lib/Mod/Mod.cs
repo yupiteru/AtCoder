@@ -120,6 +120,19 @@ namespace Library
             return a;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long[] LogBuild(long a)
+        {
+            var ret = new long[_mod];
+            ret[1] = 0;
+            for (var i = 1; i < _mod; i++)
+            {
+                ret[a] = i;
+                a *= 2;
+                a %= _mod;
+            }
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long Log(long a, long b)
         {
             var g = 1L;
