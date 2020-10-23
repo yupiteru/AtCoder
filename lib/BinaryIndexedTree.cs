@@ -76,6 +76,27 @@ namespace Library
             }
             return x;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long UpperBound(long value)
+        {
+            if (value < 0) return -1;
+            var x = 0;
+            ref long datref = ref dat[0];
+            for (var k = beki; k > 0; k >>= 1)
+            {
+                var xk = x + k;
+                if (xk <= n)
+                {
+                    var v = Unsafe.Add(ref datref, xk);
+                    if (v <= value)
+                    {
+                        value -= v;
+                        x = xk;
+                    }
+                }
+            }
+            return x;
+        }
     }
     ////end
 }
