@@ -173,6 +173,41 @@ namespace Library
             return n;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveAt(long index)
+        {
+            root = RemoveAt(root, index);
+            if (root != null) root.isBlack = true;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        Node RemoveAt(Node n, long index)
+        {
+            if (ope && n != null && !ei.Equals(n.lazy)) Eval(n);
+            --n.cnt;
+            var r = index.CompareTo(Cnt(n?.left));
+            if (r < 0)
+            {
+                n.left = RemoveAt(n.left, index);
+                n.needRecalc = true;
+                return BalanceL(n);
+            }
+            if (r > 0)
+            {
+                n.right = RemoveAt(n.right, index - Cnt(n?.left) - 1);
+                n.needRecalc = true;
+                return BalanceR(n);
+            }
+            if (n.left == null)
+            {
+                isNeedFix = n.isBlack;
+                return n.right;
+            }
+            n.left = RemoveMax(n.left);
+            n.key = lmax.key;
+            n.val = lmax.val;
+            n.needRecalc = true;
+            return BalanceL(n);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Key key)
         {
             root = Remove(root, key);
@@ -453,6 +488,8 @@ namespace Library
         public void Add(Key key, Value val) => tree.Add(key, val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Key key) => tree.Remove(key);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveAt(long index) => tree.RemoveAt(index);
         public KeyValuePair<Key, Value> this[long i]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -485,6 +522,8 @@ namespace Library
         public void Add(T val) => tree.Add(val, 0);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(T val) => tree.Remove(val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveAt(long index) => tree.RemoveAt(index);
         public T this[long i]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
