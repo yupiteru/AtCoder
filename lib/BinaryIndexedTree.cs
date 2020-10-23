@@ -14,11 +14,14 @@ namespace Library
     class LIB_BinaryIndexedTree
     {
         int n;
+        int beki;
         long[] dat;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_BinaryIndexedTree(long size)
         {
             n = (int)size;
+            beki = 1;
+            while ((beki << 1) <= n) beki <<= 1;
             dat = new long[n + 1];
         }
         public long this[long idx]
@@ -51,6 +54,27 @@ namespace Library
                 Unsafe.Add(ref datref, i) += value;
                 i += i & -i;
             }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long LowerBound(long value)
+        {
+            if (value <= 0) return -1;
+            var x = 0;
+            ref long datref = ref dat[0];
+            for (var k = beki; k > 0; k >>= 1)
+            {
+                var xk = x + k;
+                if (xk <= n)
+                {
+                    var v = Unsafe.Add(ref datref, xk);
+                    if (v < value)
+                    {
+                        value -= v;
+                        x = xk;
+                    }
+                }
+            }
+            return x;
         }
     }
     ////end
