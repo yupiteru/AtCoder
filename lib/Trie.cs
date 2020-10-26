@@ -31,6 +31,21 @@ namespace Library
             root = new TrieNode();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(IEnumerable<T> str)
+        {
+            var id = root.Count;
+            var node = root;
+            foreach (var item in str)
+            {
+                ++node.Count;
+                TrieNode nextNode;
+                if (!node.Next.TryGetValue(item, out nextNode)) nextNode = node.Next[item] = new TrieNode();
+                node = nextNode;
+            }
+            ++node.Count;
+            node.Accept.Add(id);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(ReadOnlySpan<T> str)
         {
             var id = root.Count;
@@ -44,6 +59,21 @@ namespace Library
             }
             ++node.Count;
             node.Accept.Add(id);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public List<int> Query(IEnumerable<T> str)
+        {
+            var ret = new List<int>();
+            var node = root;
+            foreach (var item in str)
+            {
+                foreach (var item2 in node.Accept) ret.Add(item2);
+                TrieNode nextNode;
+                if (!node.Next.TryGetValue(item, out nextNode)) return ret;
+                node = nextNode;
+            }
+            foreach (var item in node.Accept) ret.Add(item);
+            return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<int> Query(ReadOnlySpan<T> str)
@@ -61,7 +91,43 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int[] Find(IEnumerable<T> str)
+        {
+            var node = root;
+            foreach (var item in str)
+            {
+                TrieNode nextNode;
+                if (!node.Next.TryGetValue(item, out nextNode)) return new int[0];
+                node = nextNode;
+            }
+            return node.Accept.ToArray();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int[] Find(ReadOnlySpan<T> str)
+        {
+            var node = root;
+            foreach (var item in str)
+            {
+                TrieNode nextNode;
+                if (!node.Next.TryGetValue(item, out nextNode)) return new int[0];
+                node = nextNode;
+            }
+            return node.Accept.ToArray();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Count() => root.Count;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Count(IEnumerable<T> prefix)
+        {
+            var node = root;
+            foreach (var item in prefix)
+            {
+                TrieNode nextNode;
+                if (!node.Next.TryGetValue(item, out nextNode)) return 0;
+                node = nextNode;
+            }
+            return node.Count;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Count(ReadOnlySpan<T> prefix)
         {
