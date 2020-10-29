@@ -66,18 +66,23 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long LIS<T>(T[] array, bool strict)
+        static public List<T> LIS<T>(IEnumerable<T> array, bool strict) where T : IComparable
         {
             var l = new List<T>();
             foreach (var e in array)
             {
-                var i = l.BinarySearch(e);
-                if (i < 0) i = ~i;
-                else if (!strict) ++i;
-                if (i == l.Count) l.Add(e);
-                else l[i] = e;
+                var left = -1;
+                var right = l.Count;
+                while (right - left > 1)
+                {
+                    var mid = (right + left) / 2;
+                    if (l[mid].CompareTo(e) < 0 || !strict && l[mid].CompareTo(e) == 0) left = mid;
+                    else right = mid;
+                }
+                if (right == l.Count) l.Add(e);
+                else l[right] = e;
             }
-            return l.Count;
+            return l;
         }
     }
     ////end

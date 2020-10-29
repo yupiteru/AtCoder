@@ -15,7 +15,7 @@ namespace Library
     {
         long[] heap;
         int[] dat;
-        public (long, int) Peek => (heap[0], dat[0]);
+        public (long Key, int Value) Peek => (heap[0], dat[0]);
         public long Count
         {
             get;
@@ -27,6 +27,8 @@ namespace Library
             heap = new long[8];
             dat = new int[8];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Push(long key) => Push(key, 0);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(long key, int val)
         {
@@ -49,11 +51,11 @@ namespace Library
             Unsafe.Add<int>(ref datref, i) = val;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public KeyValuePair<long, int> Pop()
+        public (long Key, int Value) Pop()
         {
             ref long heapref = ref heap[0];
             ref int datref = ref dat[0];
-            var ret = new KeyValuePair<long, int>(heapref, datref);
+            var ret = (heapref, datref);
             var cnt = (int)(--Count);
             var key = Unsafe.Add<long>(ref heapref, cnt);
             var val = Unsafe.Add<int>(ref datref, cnt);
