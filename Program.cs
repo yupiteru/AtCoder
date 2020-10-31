@@ -66,6 +66,7 @@ namespace AtCoder
                 }
                 foreach (var kv in testCases)
                 {
+                    Library.LIB_Mod._mod = 1000000007;
                     var result = new StringWriter();
                     var oldIn = Console.In;
                     var oldOut = Console.Out;
