@@ -11,9 +11,9 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_Geo2D
+    static class LIB_Geo2D
     {
-        static readonly public double EPS = 1e-10;
+        static readonly public double EPS = 1E-10;
         public struct Vec
         {
             public double x;
@@ -62,20 +62,30 @@ namespace Library
             }
         }
         /// <summary>
-        /// 点と点の距離の2乗を求める
+        /// 点と点の距離を求める
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public double Distance(Vec p1, Vec p2) => Norm(p2 - p1);
+        static public double Distance(this Vec p1, Vec p2) => Sqrt(Norm(p2 - p1));
         /// <summary>
-        /// 点と円の距離の2乗を求める。負の場合は円の内側にいる（絶対値は一番近い円の縁までの距離）
+        /// 点と円の距離を求める。負の場合は円の内側にいる（絶対値は一番近い円の縁までの距離）
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public double Distance(Vec p, Circle c) => Norm(p - c.p) - c.r2;
+        static public double Distance(this Vec p, Circle c) => Sqrt(Norm(p - c.p)) - c.r;
         /// <summary>
-        /// 点と円の距離の2乗を求める。負の場合は円の内側にいる（絶対値は一番近い円の縁までの距離）
+        /// 点と円の距離を求める。負の場合は円の内側にいる（絶対値は一番近い円の縁までの距離）
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public double Distance(Circle c, Vec p) => Norm(p - c.p) - c.r2;
+        static public double Distance(this Circle c, Vec p) => Sqrt(Norm(p - c.p)) - c.r;
+        /// <summary>
+        /// 円が点を内包するか
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public bool Contains(this Circle c, Vec p, bool open = false)
+        {
+            var d = Norm(p - c.p);
+            if (Abs(d - c.r2) / Max(d, c.r2) < EPS) return !open;
+            return d < c.r2;
+        }
         /// <summary>
         /// 円と直線の交点を求める
         /// </summary>
@@ -141,12 +151,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public Circle GetCircleFrom3Vec(Vec p1, Vec p2, Vec p3)
         {
-            var A = Distance(p2, p3);
-            var B = Distance(p1, p3);
-            var C = Distance(p1, p2);
+            var A = Norm(p2 - p3);
+            var B = Norm(p1 - p3);
+            var C = Norm(p1 - p2);
             var S = Abs(Cross(p2 - p1, p3 - p1));
             var p = (A * (B + C - A) * p1 + B * (C + A - B) * p2 + C * (A + B - C) * p3) / (4 * S * S);
-            var r = Distance(p, p1);
+            var r = Norm(p - p1);
             return new Circle() { p = p, r2 = r };
         }
         /// <summary>
@@ -156,45 +166,41 @@ namespace Library
         static public Circle GetCircleFrom2Vec(Vec p1, Vec p2)
         {
             var c = (p1 + p2) / 2;
-            return new Circle() { p = c, r2 = Distance(p1, c) };
+            return new Circle() { p = c, r2 = Norm(p1 - c) };
         }
         /// <summary>
         /// 最小包含円を返す
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public Circle GetEncloseCircle(IEnumerable<Vec> pointList)
+        static public Circle GetEncloseCircle(IEnumerable<Vec> pointList, bool open = false)
         {
             var pList = pointList.ToArray();
             if (pList.Length < 2) throw new Exception();
             var rnd = new Random();
             var list = pList.OrderBy(_ => rnd.Next()).ToArray();
-            Func<Vec, Circle, bool> inCircle = null;
-            inCircle = (p, c) => Distance(p, c) < EPS;
+            var c = GetCircleFrom2Vec(list[0], list[1]);
+            for (var i = 2; i < list.Length; i++)
             {
-                var c = GetCircleFrom2Vec(list[0], list[1]);
-                for (var i = 2; i < list.Length; i++)
+                if (!c.Contains(list[i], open))
                 {
-                    if (!inCircle(list[i], c))
+                    c = GetCircleFrom2Vec(list[0], list[i]);
+                    for (var j = 1; j < i; j++)
                     {
-                        c = GetCircleFrom2Vec(list[0], list[i]);
-                        for (var j = 1; j < i; j++)
+                        if (!c.Contains(list[j], open))
                         {
-                            if (!inCircle(list[j], c))
+                            c = GetCircleFrom2Vec(list[i], list[j]);
+                            for (var k = 0; k < j; k++)
                             {
-                                c = GetCircleFrom2Vec(list[i], list[j]);
-                                for (var k = 0; k < j; k++)
+                                if (!c.Contains(list[k], open))
                                 {
-                                    if (!inCircle(list[k], c))
-                                    {
-                                        c = GetCircleFrom3Vec(list[i], list[j], list[k]);
-                                    }
+                                    c = GetCircleFrom3Vec(list[i], list[j], list[k]);
                                 }
                             }
                         }
                     }
                 }
-                return c;
             }
+            return c;
         }
     }
     ////end
