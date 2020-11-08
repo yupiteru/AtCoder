@@ -36,7 +36,7 @@ $mech->submit_form(
 
 $mech->get("https://atcoder.jp/contests/$contestId");
 my $contestTime = "";
-if($mech->content() =~ /<time class='fixtime fixtime-full'>\d+-\d+-\d+ (.+)\+.+<\/time><\/a> ~/s) {
+if($mech->content() =~ /<time class='fixtime fixtime-full'>\d+-\d+-\d+ (.+?)\+.+<\/time><\/a>/s) {
   $contestTime = $1;
 }
 
