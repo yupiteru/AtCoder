@@ -42,6 +42,20 @@ namespace Library
         static public bool IsSet(ulong value, int idx) => (value & BitMask[idx]) != 0;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public bool IsSet(long value, int idx) => IsSet((ulong)value, idx);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public T[] BitZentansaku<T>(long bitlen, T e, Func<int, T, T> f)
+        {
+            var retlen = 1 << (int)bitlen;
+            var ret = new T[retlen];
+            var idx = 0;
+            ret[0] = e;
+            for (var i = 1; i < retlen; ++i)
+            {
+                if (i == (1 << (idx + 1))) ++idx;
+                ret[i] = f(idx, ret[i & (~(1 << idx))]);
+            }
+            return ret;
+        }
     }
     ////end
 }
