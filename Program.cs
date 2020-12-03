@@ -64,6 +64,8 @@ namespace AtCoder
                         }
                     }
                 }
+                var outputStrings = new List<string>();
+                var isValidProgram = false;
                 foreach (var kv in testCases)
                 {
                     Library.LIB_Mod._mod = 1000000007;
@@ -106,21 +108,24 @@ namespace AtCoder
                             }
                         }
                     }
-                    Console.WriteLine(className + "." + kv.Key + (ok ? ": ok" : ": wrong"));
+                    outputStrings.Add(className + "." + kv.Key + (ok ? ": ok" : ": wrong"));
                     if (!ok)
                     {
                         foreach (var item2 in expect)
                         {
                             if (item2 == "") continue;
-                            Console.WriteLine("    expected: " + item2);
+                            outputStrings.Add("    expected: " + item2);
                         }
                         foreach (var item2 in actual)
                         {
                             if (item2 == "") continue;
-                            Console.WriteLine("    actually: " + item2);
+                            outputStrings.Add("    actually: " + item2);
                         }
                     }
+                    if (actual.Length > 1 || actual[0] != "") isValidProgram = true;
                 }
+                if (!isValidProgram) continue;
+                outputStrings.ForEach(Console.WriteLine);
                 if (item.GetField("numberOfRandomCases") != null && item.GetMethod("MakeTestCase") != null)
                 {
                     var numberOfRandomCases = (int)item.GetField("numberOfRandomCases").GetValue(null);
@@ -195,6 +200,7 @@ namespace AtCoder
                     }
                 }
             }
+            Console.WriteLine("End.");
             Console.ReadLine();
         }
     }
