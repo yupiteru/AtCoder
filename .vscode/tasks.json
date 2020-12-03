@@ -41,5 +41,14 @@
             ],
             "problemMatcher": []
         },
+        {
+            "label": "submit",
+            "command": "echo",
+            "type": "shell",
+            "args": [
+                "${file}>>submit.txt"
+            ],
+            "problemMatcher": []
+        },
     ]
 }
