@@ -7,6 +7,7 @@ use utf8;
 use Time::HiRes qw( usleep gettimeofday );
 use Socket;
 use IO::Handle;
+use Encode qw/decode/;
 binmode STDOUT, ':encoding(cp932)';
 
 open my $propertyFh, "setupContestProperty.txt";
@@ -120,7 +121,7 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
           form_number => 2,
           fields      => {
             'data.LanguageId' => '4010',
-            'sourceCode'      => Win32::Clipboard()->Get(),
+            'sourceCode'      => decode('Shift_JIS', Win32::Clipboard()->Get()),
           }
         );
         $mech->get("https://atcoder.jp$url");
