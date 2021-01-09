@@ -222,6 +222,11 @@ namespace Library
             return (r0, m0);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        /// <summary>
+        /// a*i + b
+        /// i=0...n-1
+        /// 格子高さm
+        /// </summary>
         static public long FloorSum(long n, long m, long a, long b)
         {
             var ans = 0L;
