@@ -22,38 +22,88 @@ namespace Library
         }
         const int SHIFT_SIZE = 30;
         const int MASK = 1073741823;
-        List<ulong> pos;
-        List<int>[] gTo;
-        List<int>[] gRev;
-        List<long>[] gCap;
+        ulong[] pos;
+        int posCnt;
+        int[][] gTo;
+        int[] gToCnt;
+        int[][] gRev;
+        int[] gRevCnt;
+        long[][] gCap;
+        int[] gCapCnt;
         int N;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_MaxFlow(long n)
         {
             N = (int)n;
-            pos = new List<ulong>();
-            gTo = new List<int>[n];
-            gRev = new List<int>[n];
-            gCap = new List<long>[n];
+            pos = new ulong[16];
+            gTo = new int[n][];
+            gRev = new int[n][];
+            gCap = new long[n][];
+            gToCnt = new int[n];
+            gRevCnt = new int[n];
+            gCapCnt = new int[n];
+            ref var gToref = ref gTo[0];
+            ref var gRevref = ref gRev[0];
+            ref var gCapref = ref gCap[0];
             for (var i = 0; i < n; i++)
             {
-                gTo[i] = new List<int>();
-                gRev[i] = new List<int>();
-                gCap[i] = new List<long>();
+                Unsafe.Add(ref gToref, i) = new int[16];
+                Unsafe.Add(ref gRevref, i) = new int[16];
+                Unsafe.Add(ref gCapref, i) = new long[16];
             }
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int AddEdge(long from, long to, long cap)
         {
-            var ret = pos.Count;
-            pos.Add(((ulong)from << SHIFT_SIZE) | (uint)gTo[from].Count);
-            gTo[from].Add((int)to);
-            gRev[from].Add(gRev[to].Count);
-            gCap[from].Add(cap);
-            gTo[to].Add((int)from);
-            gRev[to].Add(gRev[from].Count - 1);
-            gCap[to].Add(0);
-            return ret;
+            pos[posCnt++] = ((ulong)from << SHIFT_SIZE) | (uint)gToCnt[from];
+            gTo[from][gToCnt[from]++] = (int)to;
+            gRev[from][gRevCnt[from]++] = gRevCnt[to];
+            gCap[from][gCapCnt[from]++] = cap;
+            gTo[to][gToCnt[to]++] = (int)from;
+            gRev[to][gRevCnt[to]++] = gRevCnt[from] - 1;
+            gCap[to][gCapCnt[to]++] = 0;
+            if (posCnt == pos.Length)
+            {
+                var tmp = new ulong[posCnt << 1];
+                Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref tmp[0]), ref Unsafe.As<ulong, byte>(ref pos[0]), (uint)(8 * posCnt));
+                pos = tmp;
+            }
+            if (gToCnt[from] == gTo[from].Length)
+            {
+                {
+                    var tmp = new int[gToCnt[from] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp[0]), ref Unsafe.As<int, byte>(ref gTo[from][0]), (uint)(4 * gToCnt[from]));
+                    gTo[from] = tmp;
+                }
+                {
+                    var tmp = new int[gRevCnt[from] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp[0]), ref Unsafe.As<int, byte>(ref gRev[from][0]), (uint)(4 * gRevCnt[from]));
+                    gRev[from] = tmp;
+                }
+                {
+                    var tmp = new long[gCapCnt[from] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmp[0]), ref Unsafe.As<long, byte>(ref gCap[from][0]), (uint)(8 * gCapCnt[from]));
+                    gCap[from] = tmp;
+                }
+            }
+            if (gToCnt[to] == gTo[to].Length)
+            {
+                {
+                    var tmp = new int[gToCnt[to] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp[0]), ref Unsafe.As<int, byte>(ref gTo[to][0]), (uint)(4 * gToCnt[to]));
+                    gTo[to] = tmp;
+                }
+                {
+                    var tmp = new int[gRevCnt[to] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp[0]), ref Unsafe.As<int, byte>(ref gRev[to][0]), (uint)(4 * gRevCnt[to]));
+                    gRev[to] = tmp;
+                }
+                {
+                    var tmp = new long[gCapCnt[to] << 1];
+                    Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmp[0]), ref Unsafe.As<long, byte>(ref gCap[to][0]), (uint)(8 * gCapCnt[to]));
+                    gCap[to] = tmp;
+                }
+            }
+            return posCnt - 1;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Edge GetEdge(long i)
@@ -69,7 +119,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Edge[] GetAllEdge()
         {
-            var res = new Edge[pos.Count];
+            var res = new Edge[posCnt];
             for (var i = 0; i < res.Length; ++i) res[i] = GetEdge(i);
             return res;
         }
@@ -84,54 +134,62 @@ namespace Library
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Flow(long s, long t) => Flow(s, t, long.MaxValue >> 2);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public long Flow(long s, long t, long flowLimit)
         {
+            int si = (int)s;
+            int ti = (int)t;
             var level = new int[N];
             var iter = new int[N];
-            var que = new Queue<int>();
+            ref var iterref = ref iter[0];
             Func<int, long, long> dfs = null;
             dfs = (v, up) =>
             {
                 var res = 0L;
-                var levelv = level[v];
-                var gToV = gTo[v];
-                var gCapV = gCap[v];
-                var gRevV = gRev[v];
-                for (; iter[v] < gToV.Count; ++iter[v])
+                ref var levelref = ref level[0];
+                ref var gToVref = ref gTo[v][0];
+                ref var gCapref = ref gCap[0];
+                ref var gCapVref = ref gCap[v][0];
+                ref var gRevVref = ref gRev[v][0];
+                var levelv = Unsafe.Add(ref levelref, v);
+                ref var iterv = ref iter[v];
+                var gToCntV = gToCnt[v];
+                for (; iterv < gToCntV; ++iterv)
                 {
-                    var gToVi = gToV[iter[v]];
-                    var gRevVi = gRevV[iter[v]];
-                    var gcap = gCap[gToVi][gRevVi];
-                    if (levelv <= level[gToVi] || gcap == 0) continue;
+                    var gToVi = Unsafe.Add(ref gToVref, iterv);
+                    var gRevVi = Unsafe.Add(ref gRevVref, iterv);
+                    var gcap = Unsafe.Add(ref gCapref, gToVi)[gRevVi];
+                    if (levelv <= Unsafe.Add(ref levelref, gToVi) || gcap == 0) continue;
                     var param = Math.Min(up - res, gcap);
-                    var d = gToVi == s ? param : dfs(gToVi, param);
+                    var d = gToVi == si ? param : dfs(gToVi, param);
                     if (d <= 0) continue;
-                    gCapV[iter[v]] += d;
-                    gCap[gToVi][gRevVi] -= d;
+                    Unsafe.Add(ref gCapVref, iterv) += d;
+                    Unsafe.Add(ref gCapref, gToVi)[gRevVi] -= d;
                     res += d;
                     if (res == up) break;
                 }
                 return res;
             };
             var flow = 0L;
+            ref var levelref = ref level[0];
+            var que = new Queue<int>();
             while (flow < flowLimit)
             {
-                for (var i = 0; i < level.Length; ++i) level[i] = -1;
-                level[s] = 0;
-                que.Enqueue((int)s);
+                Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref levelref), 255, (uint)N << 2);
+                Unsafe.Add(ref levelref, si) = 0;
+                que.Enqueue(si);
                 while (que.Count > 0)
                 {
                     var v = que.Dequeue();
-                    var gToV = gTo[v];
-                    var gCapV = gCap[v];
-                    var levelv = level[v] + 1;
-                    for (var i = 0; i < gToV.Count; ++i)
+                    ref var gToVref = ref gTo[v][0];
+                    ref var gCapVref = ref gCap[v][0];
+                    var levelv = Unsafe.Add(ref levelref, v) + 1;
+                    for (var i = 0; i < gToCnt[v]; ++i)
                     {
-                        var gToVi = gToV[i];
-                        if (gCapV[i] == 0 || level[gToVi] >= 0) continue;
-                        level[gToVi] = levelv;
-                        if (gToVi == t)
+                        var gToVi = Unsafe.Add(ref gToVref, i);
+                        if (Unsafe.Add(ref gCapVref, i) == 0 || Unsafe.Add(ref levelref, gToVi) >= 0) continue;
+                        Unsafe.Add(ref levelref, gToVi) = levelv;
+                        if (gToVi == ti)
                         {
                             que.Clear();
                             break;
@@ -139,18 +197,18 @@ namespace Library
                         que.Enqueue(gToVi);
                     }
                 }
-                if (level[t] == -1) break;
-                iter = new int[N];
+                if (Unsafe.Add(ref levelref, ti) == -1) break;
+                Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref iterref), 0, (uint)N << 2);
                 while (flow < flowLimit)
                 {
-                    var f = t == s ? (flowLimit - flow) : dfs((int)t, flowLimit - flow);
+                    var f = ti == si ? (flowLimit - flow) : dfs(ti, flowLimit - flow);
                     if (f == 0) break;
                     flow += f;
                 }
             }
             return flow;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool[] MinCut(long s)
         {
             var visited = new bool[N];
@@ -162,7 +220,7 @@ namespace Library
                 visited[p] = true;
                 var gToP = gTo[p];
                 var gCapP = gCap[p];
-                for (var i = 0; i < gToP.Count; ++i)
+                for (var i = 0; i < gToCnt[p]; ++i)
                 {
                     var gToPi = gToP[i];
                     if (gCapP[i] > 0 && !visited[gToPi])
