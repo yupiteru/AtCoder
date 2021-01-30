@@ -267,6 +267,30 @@ namespace Library
             }
             return ret;
         }
+        /// <summary>
+        /// 編集距離。レーベンシュタイン距離。
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long EditLength(string s, string t) => EditLength(s.Select(e => (long)e).ToArray(), t.Select(e => (long)e).ToArray());
+        /// <summary>
+        /// 編集距離。レーベンシュタイン距離。
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long EditLength(long[] s, long[] t)
+        {
+            var dp = new long[s.Length + 1, t.Length + 1];
+            for (var i = 1; i <= s.Length; ++i) dp[i, 0] = i;
+            for (var j = 1; j <= t.Length; ++j) dp[0, j] = j;
+            for (var i = 1; i <= s.Length; ++i)
+            {
+                for (var j = 1; j <= t.Length; ++j)
+                {
+                    dp[i, j] = Min(dp[i - 1, j], Min(dp[i, j - 1], dp[i - 1, j - 1])) + 1;
+                    if (s[i - 1] == t[j - 1]) dp[i, j] = Min(dp[i, j], dp[i - 1, j - 1]);
+                }
+            }
+            return dp[s.Length, t.Length];
+        }
     }
     ////end
 }
