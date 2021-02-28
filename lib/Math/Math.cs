@@ -229,26 +229,47 @@ namespace Library
         /// </summary>
         static public long FloorSum(long n, long m, long a, long b)
         {
-            var ans = 0L;
-            while (true)
+            unchecked
             {
-                if (a >= m)
+                var ans = 0UL;
+                var un = (ulong)n;
+                var um = (ulong)m;
+                var ua = (ulong)a;
+                var ub = (ulong)b;
+                if (a < 0)
                 {
-                    ans += (n - 1) * n * (a / m) / 2;
-                    a %= m;
+                    var am = a % m;
+                    if (am < 0) am += m;
+                    var a2 = (ulong)am;
+                    ans -= un * (un - 1) / 2 * ((a2 + (ulong)(-a)) / um);
+                    ua = a2;
                 }
-                if (b >= m)
+                if (b < 0)
                 {
-                    ans += n * (b / m);
-                    b %= m;
+                    var bm = b % m;
+                    if (bm < 0) bm += m;
+                    var b2 = (ulong)bm;
+                    ans -= un * ((b2 + (ulong)(-b)) / um);
+                    ub = b2;
                 }
-                var ymax = (a * n + b) / m;
-                if (ymax == 0) return ans;
-                var xmax = ymax * m - b;
-                ans += (n - (xmax + a - 1) / a) * ymax;
-                n = ymax;
-                a ^= m; m ^= a; a ^= m;
-                b = (m - xmax % m) % m;
+                while (true)
+                {
+                    if (ua >= um)
+                    {
+                        ans += (un - 1) * un / 2 * (ua / um);
+                        ua %= um;
+                    }
+                    if (ub >= um)
+                    {
+                        ans += un * (ub / um);
+                        ub %= um;
+                    }
+                    var ymax = ua * un + ub;
+                    if (ymax < um) return (long)ans;
+                    un = ymax / um;
+                    ub = ymax % um;
+                    um ^= ua; ua ^= um; um ^= ua;
+                }
             }
         }
     }
