@@ -454,7 +454,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         void Update(Node n, long l, long r, ValueE val)
         {
-            if (n == null || val.Equals(ei)) return;
+            if (n == null) return;
             Eval(n);
             n.needRecalc = true;
             var lc = Cnt(n.left);
