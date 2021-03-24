@@ -73,7 +73,7 @@ namespace Library
             if (n.right != null) n.right.lazy = h(n.right.lazy, n.lazy);
             n.lazy = ei;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         void Recalc(Node n)
         {
             Eval(n);
@@ -131,7 +131,7 @@ namespace Library
             root = Add(root, key, val);
             root.isBlack = true;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node Add(Node n, Key key, ValueT val)
         {
             if (n == null)
@@ -146,7 +146,7 @@ namespace Library
             ++n.cnt;
             return Balance(n);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node Balance(Node n)
         {
             if (!isNeedFix || !IsBlack(n)) return n;
@@ -179,7 +179,7 @@ namespace Library
             root = RemoveAt(root, index);
             if (root != null) root.isBlack = true;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node RemoveAt(Node n, long index)
         {
             if (ope) Eval(n);
@@ -214,7 +214,7 @@ namespace Library
             root = Remove(root, key);
             if (root != null) root.isBlack = true;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node Remove(Node n, Key key)
         {
             if (ope) Eval(n);
@@ -243,7 +243,7 @@ namespace Library
             n.needRecalc = true;
             return BalanceL(n);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node RemoveMax(Node n)
         {
             if (ope) Eval(n);
@@ -258,7 +258,7 @@ namespace Library
             isNeedFix = n.isBlack;
             return n.left;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node BalanceL(Node n)
         {
             if (!isNeedFix) return n;
@@ -295,7 +295,7 @@ namespace Library
             }
             return n;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         Node BalanceR(Node n)
         {
             if (!isNeedFix) return n;
@@ -336,7 +336,34 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return At(root, i); }
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public void ChangeValue(long i, ValueT v)
+        {
+            var n = root;
+            while (true)
+            {
+                if (ope) Eval(n);
+                if (n.left == null)
+                {
+                    if (i == 0) break;
+                    else
+                    {
+                        n = n.right;
+                        --i;
+                    }
+                }
+                else if (n.left.cnt == i) break;
+                else if (n.left.cnt > i) n = n.left;
+                else
+                {
+                    i = i - n.left.cnt - 1;
+                    n = n.right;
+                }
+            }
+            n.needRecalc = true;
+            n.val = v;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         KeyValuePair<Key, ValueT> At(Node n, long i)
         {
             while (true)
@@ -366,7 +393,7 @@ namespace Library
             var t = LowerBound(key);
             return t < Cnt(root) && c(At(root, t).Key, key) == 0;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public long UpperBound(Key key)
         {
             var n = root;
@@ -382,7 +409,7 @@ namespace Library
                 }
             }
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public long LowerBound(Key key)
         {
             var n = root;
@@ -398,7 +425,7 @@ namespace Library
                 }
             }
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public KeyValuePair<Key, ValueT> Min()
         {
             Node n = root.left, p = root;
@@ -410,7 +437,7 @@ namespace Library
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public KeyValuePair<Key, ValueT> Max()
         {
             Node n = root.right, p = root;
@@ -424,10 +451,10 @@ namespace Library
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, ValueE val) => Update(root, l, r, val);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         void Update(Node n, long l, long r, ValueE val)
         {
-            if (n == null) return;
+            if (n == null || val.Equals(ei)) return;
             Eval(n);
             n.needRecalc = true;
             var lc = Cnt(n.left);
@@ -443,7 +470,7 @@ namespace Library
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueT Query(long l, long r) => root == null ? ti : Query(root, l, r);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         ValueT Query(Node n, long l, long r)
         {
             var v1 = ti; var v2 = ti; var v3 = ti;
@@ -469,7 +496,6 @@ namespace Library
         public long Count => Cnt(root);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<KeyValuePair<Key, ValueT>> List() => L(root);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         IEnumerable<KeyValuePair<Key, ValueT>> L(Node n)
         {
             if (n == null) yield break;

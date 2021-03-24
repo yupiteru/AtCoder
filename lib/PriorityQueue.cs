@@ -86,6 +86,18 @@ namespace Library
             heap = tmp;
             dat = tmp2;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public (long Key, int Value)[] NoSortList()
+        {
+            var ret = new (long Key, int Value)[Count];
+            ref long heapref = ref heap[0];
+            ref int datref = ref dat[0];
+            for (var i = 0; i < Count; ++i)
+            {
+                ret[i] = (Unsafe.Add<long>(ref heapref, i), Unsafe.Add<int>(ref datref, i));
+            }
+            return ret;
+        }
     }
     class LIB_PriorityQueue<T>
     {
@@ -152,6 +164,16 @@ namespace Library
             for (var i = 0; i < heap.Length; ++i) tmp[i] = heap[i];
             heap = tmp;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T[] NoSortList()
+        {
+            var ret = new List<T>();
+            for (var i = 0; i < Count; ++i)
+            {
+                ret.Add(heap[i]);
+            }
+            return ret.ToArray();
+        }
     }
     class LIB_PriorityQueue<TK, TV>
     {
@@ -176,6 +198,8 @@ namespace Library
         public void Push(TK k, TV v) => q.Push(new KeyValuePair<TK, TV>(k, v));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<TK, TV> Pop() => q.Pop();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public KeyValuePair<TK, TV>[] NoSortList() => q.NoSortList();
     }
     ////end
 }
