@@ -11,36 +11,32 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_RecurrenceRelation
+    class LIB_RecurrenceRelation<T>
     {
         readonly int size;
-        long[] init;
-        long[] coeff;
-        Func<long, long, long> mul;
-        Func<long, long, long> add;
+        readonly int typeSize;
+        T addE;
+        T mulE;
+        T[] init;
+        T[] coeff;
+        Func<T, T, T> mul;
+        Func<T, T, T> add;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RecurrenceRelation(int[] init, int[] coeff, Func<long, long, long> mul, Func<long, long, long> add)
+        public LIB_RecurrenceRelation(T mulE, T addE, T[] init, T[] coeff, Func<T, T, T> mul, Func<T, T, T> add)
         {
-            this.size = init.Length;
-            this.init = init.Select(e => (long)e).ToArray();
-            this.coeff = new long[size];
-            for (var i = 0; i < size; ++i) this.coeff[i] = coeff[size - i - 1];
-            this.mul = mul;
-            this.add = add;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RecurrenceRelation(long[] init, long[] coeff, Func<long, long, long> mul, Func<long, long, long> add)
-        {
+            typeSize = System.Runtime.InteropServices.Marshal.SizeOf<T>();
+            this.addE = addE;
+            this.mulE = mulE;
             this.size = init.Length;
             this.init = init.ToArray();
-            this.coeff = new long[size];
+            this.coeff = new T[size];
             for (var i = 0; i < size; ++i) this.coeff[i] = coeff[size - i - 1];
             this.mul = mul;
             this.add = add;
         }
-        long[] Next(long[] c)
+        T[] Next(T[] c)
         {
-            var ret = new long[size];
+            var ret = new T[size];
             ref var retref = ref ret[0];
             ref var coeffref = ref coeff[0];
             ref var cref = ref c[0];
@@ -49,14 +45,14 @@ namespace Library
             for (var i = 1; i < size; ++i) Unsafe.Add(ref retref, i) = add(Unsafe.Add(ref cref, i - 1), mul(lastc, Unsafe.Add(ref coeffref, i)));
             return ret;
         }
-        long[] Double(long[] c)
+        T[] Double(T[] c)
         {
-            var tmp = new long[size];
-            var ret = new long[size];
+            var tmp = new T[size];
+            var ret = new T[size];
             ref var tmpref = ref tmp[0];
             ref var retref = ref ret[0];
             ref var cref = ref c[0];
-            Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmpref), ref Unsafe.As<long, byte>(ref cref), (uint)(size << 3));
+            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref tmpref), ref Unsafe.As<T, byte>(ref cref), (uint)(size * typeSize));
             for (var j = 0; j < size; ++j)
             {
                 for (var i = 0; i < size; ++i)
@@ -68,13 +64,13 @@ namespace Library
             }
             return ret;
         }
-        public long a(long n)
+        public T a(long n)
         {
             if (n < size) return init[n];
-            var ary = new long[size];
-            var coe = new long[size];
+            var ary = new T[size];
+            var coe = new T[size];
             ref var initref = ref init[0];
-            coe[1] = 1;
+            coe[1 % size] = mulE;
             var p = 62;
             while (((n >> --p) & 1) == 0) ;
             while (p-- > 0)
@@ -83,7 +79,7 @@ namespace Library
                 if (((n >> p) & 1) == 1) coe = Next(coe);
             }
             ref var coeref = ref coe[0];
-            var ans = 0L;
+            var ans = addE;
             for (var i = 0; i < size; ++i) ans = add(ans, mul(Unsafe.Add(ref coeref, i), Unsafe.Add(ref initref, i)));
             return ans;
         }
