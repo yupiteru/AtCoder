@@ -67,10 +67,22 @@ namespace Library
         public T a(long n)
         {
             if (n < size) return init[n];
+            if (size == 1)
+            {
+                var x = coeff[0];
+                var ret = mulE;
+                while (n > 0)
+                {
+                    if ((n & 1) == 1) ret = mul(ret, x);
+                    x = mul(x, x);
+                    n >>= 1;
+                }
+                return mul(ret, init[0]);
+            }
             var ary = new T[size];
             var coe = new T[size];
             ref var initref = ref init[0];
-            coe[1 % size] = mulE;
+            coe[1] = mulE;
             var p = 62;
             while (((n >> --p) & 1) == 0) ;
             while (p-- > 0)
