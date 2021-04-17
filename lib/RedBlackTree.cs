@@ -44,6 +44,7 @@ namespace Library
         Node root;
         bool isNeedFix;
         Node lmax;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, int, ValueT> g, Func<ValueE, ValueE, ValueE> h, Comparison<Key> c, bool ope = true)
         {
             this.ti = ti;
@@ -54,10 +55,15 @@ namespace Library
             this.c = c;
             this.ope = ope;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, int, ValueT> g, Func<ValueE, ValueE, ValueE> h) : this(ti, ei, f, g, h, Comparer<Key>.Default.Compare) { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsRed(Node n) => n != null && !n.isBlack;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsBlack(Node n) => n != null && n.isBlack;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int Cnt(Node n) => n == null ? 0 : n.cnt;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Eval(Node n)
         {
             if (n == null || ei.Equals(n.lazy)) return;
@@ -114,6 +120,7 @@ namespace Library
             n.right = RotateR(n.right);
             return RotateL(n);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Key key, ValueT val)
         {
             root = Add(root, key, val);
@@ -133,6 +140,7 @@ namespace Library
             ++n.cnt;
             return Balance(n);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Node Balance(Node n)
         {
             if (!isNeedFix || !IsBlack(n)) return n;
@@ -159,6 +167,7 @@ namespace Library
             else isNeedFix = false;
             return n;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(long index)
         {
             root = RemoveAt(root, index);
@@ -192,6 +201,7 @@ namespace Library
             n.needRecalc = true;
             return BalanceL(n);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Key key)
         {
             root = Remove(root, key);
@@ -312,8 +322,10 @@ namespace Library
         }
         public KeyValuePair<Key, ValueT> this[long i]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return At(root, i); }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ChangeValue(long i, ValueT v)
         {
             var n = root;
@@ -363,11 +375,13 @@ namespace Library
                 }
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(Key key)
         {
             var t = LowerBound(key);
             return t < Cnt(root) && c(At(root, t).Key, key) == 0;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long UpperBound(Key key)
         {
             var n = root;
@@ -383,6 +397,7 @@ namespace Library
                 }
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long LowerBound(Key key)
         {
             var n = root;
@@ -398,6 +413,7 @@ namespace Library
                 }
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Min()
         {
             Node n = root.left, p = root;
@@ -409,6 +425,7 @@ namespace Library
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, ValueT> Max()
         {
             Node n = root.right, p = root;
@@ -420,6 +437,7 @@ namespace Library
             }
             return new KeyValuePair<Key, ValueT>(p.key, p.val);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(long l, long r, ValueE val) => Update(root, l, r, val);
         void Update(Node n, long l, long r, ValueE val)
         {
@@ -437,6 +455,7 @@ namespace Library
                 if (lc + 1 < r) Update(n.right, 0, r - lc - 1, val);
             }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueT Query(long l, long r) => root == null ? ti : Query(root, l, r);
         ValueT Query(Node n, long l, long r)
         {
@@ -458,9 +477,12 @@ namespace Library
             }
             return f(f(v1, v2), v3);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Any() => root != null;
         public long Count => Cnt(root);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<KeyValuePair<Key, ValueT>> List() => L(root);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         IEnumerable<KeyValuePair<Key, ValueT>> L(Node n)
         {
             if (n == null) yield break;
@@ -472,43 +494,69 @@ namespace Library
     class LIB_RedBlackTree<Key, Value>
     {
         LIB_RedBlackTree<Key, Value, int> tree;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(Comparison<Key> c) { tree = new LIB_RedBlackTree<Key, Value, int>(default(Value), 0, null, null, null, c, false); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<Key>.Default.Compare) { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Key key, Value val) => tree.Add(key, val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Key key) => tree.Remove(key);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(long index) => tree.RemoveAt(index);
         public KeyValuePair<Key, Value> this[long i]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return tree[i]; }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(Key key) => tree.ContainsKey(key);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long UpperBound(Key key) => tree.UpperBound(key);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long LowerBound(Key key) => tree.LowerBound(key);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, Value> Min() => tree.Min();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValuePair<Key, Value> Max() => tree.Max();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Any() => tree.Any();
         public long Count => tree.Count;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<KeyValuePair<Key, Value>> List() => tree.List();
     }
     class LIB_RedBlackTree<T>
     {
         LIB_RedBlackTree<T, int, int> tree;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(Comparison<T> c) { tree = new LIB_RedBlackTree<T, int, int>(0, 0, null, null, null, c, false); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree() : this(Comparer<T>.Default.Compare) { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T val) => tree.Add(val, 0);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(T val) => tree.Remove(val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(long index) => tree.RemoveAt(index);
         public T this[long i]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return tree[i].Key; }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(T val) => tree.ContainsKey(val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long UpperBound(T val) => tree.UpperBound(val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long LowerBound(T val) => tree.LowerBound(val);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Min() => tree.Min().Key;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Max() => tree.Max().Key;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Any() => tree.Any();
         public long Count => tree.Count;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<T> List() => tree.List().Select(e => e.Key);
     }
     ////end
