@@ -101,7 +101,7 @@ namespace AtCoder
                         }
                         else
                         {
-                            if (actual[i] != expect[i])
+                            if (actual[i].Trim() != expect[i].Trim())
                             {
                                 ok = false;
                                 break;
@@ -149,7 +149,7 @@ namespace AtCoder
                             Console.SetIn(oldIn);
                             Console.SetOut(oldOut);
 
-                            var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
+                            var actual = result.GetStringBuilder().ToString().Split("\n".ToCharArray()).Select(e => e.Trim()).ToArray();
                             var expect = output.ToArray();
                             var checker = (Func<string[], bool>)param[2];
                             var ok = true;
@@ -167,7 +167,7 @@ namespace AtCoder
                                     }
                                     else
                                     {
-                                        if (actual[i] != expect[i]) { ok = false; break; }
+                                        if (actual[i].Trim() != expect[i].Trim()) { ok = false; break; }
                                     }
                                 }
                             }
