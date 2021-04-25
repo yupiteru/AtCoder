@@ -33,6 +33,12 @@ namespace Library
             n = size;
             ary = new ulong[((n - 1) >> 6) + 1];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_Bitset(LIB_Bitset src)
+        {
+            n = src.n;
+            ary = src.ary.ToArray();
+        }
         public long Count => n;
         public long PopCount => ary.Sum(e => LIB_BitUtil.PopCount(e));
         public bool this[int idx]
