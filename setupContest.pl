@@ -72,12 +72,20 @@ sleep 1;
 $mech->get("https://atcoder.jp/contests/$contestId/tasks");
 my $problemsPage = $mech->content();
 $problemsPage =~ s/[\r\n\t ]//g;
-my @problemURLs = $problemsPage =~ /<ahref="(\/contests\/${contestId}\/tasks\/${contestId}_[a-zA-Z])">[A-Z]<\/a>/g;
+my @problemURLs = $problemsPage =~ /<td><ahref="(\/contests\/${contestId}\/tasks\/${contestId}_[a-zA-Z]+)">.+?<\/a><\/td>/g;
 
 print "問題数：" . (@problemURLs) . "\n";
 
 my $baseFolder = "problems";
-system ".\\setup.pl " . chr(64 + @problemURLs);
+my $isAlpha = 1;
+if(@problemURLs > 26) {
+  $isAlpha = 0;
+}
+if($isAlpha == 1) {
+  system ".\\setup.pl " . chr(64 + @problemURLs);
+}else {
+  system ".\\setup.pl " . @problemURLs;
+}
 
 my @socketToChild;
 for(my $j = 0;$j < @problemURLs; ++$j) {
@@ -88,13 +96,19 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
   $socketToChild[$j] = $hToChild;
   if(fork == 0) {
     $mech->get("https://atcoder.jp$url");
-    open my $fh, ">$baseFolder/Problem" . chr(65 + $j) . "_TestCase.txt";
+    my $problemNumberStr = "";
+    if($isAlpha == 1) {
+      $problemNumberStr = chr(65 + $j);
+    }else {
+      $problemNumberStr = sprintf("%03d", $j + 1);
+    }
+    open my $fh, ">$baseFolder/Problem${problemNumberStr}_TestCase.txt";
     my $problemContent = $mech->content();
     for(my $i = 1; ; ++$i) {
-      if($problemContent =~ /<h3>入力例 $i<\/h3><pre>(.*?)<\/pre>/s) {
+      if($problemContent =~ /<h3>入力例 $i<\/h3>\s*<pre>(.*?)<\/pre>/s) {
         my $input = $1;
         $input =~ s/[\r\n]+/\n/g;
-        if($problemContent =~ /<h3>出力例 $i<\/h3><pre>(.*?)<\/pre>/s) {
+        if($problemContent =~ /<h3>出力例 $i<\/h3>\s*<pre>(.*?)<\/pre>/s) {
           my $output = $1;
           $output =~ s/[\r\n]+/\n/g;
           print $fh "[case $i]\n";

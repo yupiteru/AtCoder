@@ -10,8 +10,17 @@ if(@ARGV > 0) {
 }
 
 $limit =~ s/[\r\n]+//;
-if(length $limit > 1 or !$limit =~ /[A-Z]/) {
-  $limit = "Z";
+if($limit =~ /[^0-9]/) {
+  if(length $limit > 1 or $limit =~ /[^A-Z]/) {
+    $limit = "Z";
+  }
+}else {
+  if($limit < 1) {
+    $limit = 1;
+  }
+  if($limit > 999) {
+    $limit = 999;
+  }
 }
 my $baseFolder = "problems";
 
@@ -42,22 +51,45 @@ while(my $line = <$fh>) {
 }
 close $fh;
 
-for(my $i = 'A';length $i < 2 and $i le $limit; $i++) {
-  open $fh, ">$baseFolder\\Problem$i.cs";
-  foreach my $line (@data) {
-    if($line =~ /class template/) {
-      my $tmp = $line;
-      $tmp =~ s/class template/class Problem$i/;
-      print $fh $tmp;
-    } else {
+if($limit =~ /[A-Z]/) {
+  for(my $i = 'A';length $i < 2 and $i le $limit; $i++) {
+    open $fh, ">$baseFolder\\Problem$i.cs";
+    foreach my $line (@data) {
+      if($line =~ /class template/) {
+        my $tmp = $line;
+        $tmp =~ s/class template/class Problem$i/;
+        print $fh $tmp;
+      } else {
+        print $fh $line;
+      }
+    }
+    close $fh;
+
+    open $fh, ">$baseFolder\\Problem${i}_TestCase.txt";
+    foreach my $line (@dataCase) {
       print $fh $line;
     }
+    close $fh;
   }
-  close $fh;
+}else {
+  for(my $i = 1; $i <= $limit; $i++) {
+    my $str = sprintf("%03d", $i);
+    open $fh, ">$baseFolder\\Problem$str.cs";
+    foreach my $line (@data) {
+      if($line =~ /class template/) {
+        my $tmp = $line;
+        $tmp =~ s/class template/class Problem$str/;
+        print $fh $tmp;
+      } else {
+        print $fh $line;
+      }
+    }
+    close $fh;
 
-  open $fh, ">$baseFolder\\Problem${i}_TestCase.txt";
-  foreach my $line (@dataCase) {
-    print $fh $line;
+    open $fh, ">$baseFolder\\Problem${str}_TestCase.txt";
+    foreach my $line (@dataCase) {
+      print $fh $line;
+    }
+    close $fh;
   }
-  close $fh;
 }
