@@ -182,10 +182,18 @@ if($isServerMode == 1) {
       last;
     }
     system "copy.pl $line";
-    if($line =~ /Problem([A-Z])\.cs/) {
-      my $problemIdx = ord($1) - ord("A");
-      my $handle = $socketToChild[$problemIdx];
-      print $handle "go\n";
+    if($isAlpha == 1) {
+      if($line =~ /Problem([A-Z])\.cs/) {
+        my $problemIdx = ord($1) - ord("A");
+        my $handle = $socketToChild[$problemIdx];
+        print $handle "go\n";
+      }
+    }else {
+      if($line =~ /Problem([0-9]+)\.cs/) {
+        my $problemIdx = $1 - 1;
+        my $handle = $socketToChild[$problemIdx];
+        print $handle "go\n";
+      }
     }
   }
   close $hSubmit;
