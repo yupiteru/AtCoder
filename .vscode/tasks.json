@@ -3,10 +3,7 @@
     "tasks": [
         {
             "label": "build",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build", 
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -17,7 +14,7 @@
         },
         {
             "label": "publish",
-            "group": "build",
+            "group": "build", 
             "command": "dotnet",
             "type": "process",
             "args": [
