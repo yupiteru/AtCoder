@@ -3,6 +3,7 @@
     "tasks": [
         {
             "label": "build",
+            "group": "build", 
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -13,11 +14,17 @@
         },
         {
             "label": "publish",
+            "group": "build", 
             "command": "dotnet",
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/AtCoder.csproj"
+                "-r",
+                "win10-x64",
+                "/p:PublishSingleFile=true",
+                "${workspaceFolder}/AtCoder.csproj",
+                "--configuration",
+                "release"
             ],
             "problemMatcher": "$tsc"
         },
