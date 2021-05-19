@@ -60,6 +60,8 @@ namespace Library
                 get { return Sqrt(r2); }
                 private set { }
             }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Circle(double x, double y, double r) { this.p = new LIB_Geo2D.Vec(x, y); this.r2 = r * r; }
         }
         /// <summary>
         /// 点と点の距離を求める
@@ -76,6 +78,19 @@ namespace Library
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public double Distance(this Circle c, Vec p) => Sqrt(Norm(p - c.p)) - c.r;
+        /// <summary>
+        /// 円と円の距離を求める
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public double Distance(this Circle c1, Circle c2)
+        {
+            if (LIB_Geo2D.Intersection(c1, c2).Length > 0) return 0;
+            var d = LIB_Geo2D.Distance(c1.p, c2.p);
+            var r1 = c1.r;
+            var r2 = c2.r;
+            if (d > r1 + r2) return d - r1 - r2;
+            return Max(r1, r2) - d - Min(r1, r2);
+        }
         /// <summary>
         /// 円が点を内包するか
         /// </summary>

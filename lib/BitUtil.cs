@@ -26,6 +26,16 @@ namespace Library
             for (; value > 0; value &= value - 1) yield return value & -value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public int MSB(long value)
+        {
+            return 64 - (int)System.Runtime.Intrinsics.X86.Lzcnt.X64.LeadingZeroCount((ulong)value);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public int LSB(long value)
+        {
+            return 64 - (int)System.Runtime.Intrinsics.X86.Lzcnt.X64.LeadingZeroCount((ulong)(value & -value));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long PopCount(ulong value)
         {
             value = (value & 0x5555555555555555) + ((value >> 1) & 0x5555555555555555);
