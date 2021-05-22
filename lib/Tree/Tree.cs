@@ -82,30 +82,41 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<(long node, long parent)> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<(long node, long parent, long direction)> EulerTour(long root)
+        public (long node, long parent, long direction)[] EulerTour(long root)
         {
-            var eulerList = new List<(long node, long parent, long direction)>();
-            var s = new Stack<Tuple<int, int>>();
-            var done = new bool[N];
-            done[root] = true;
-            s.Push(Tuple.Create((int)root, -1));
-            while (s.Count > 0)
+            var eulerList = new (long node, long parent, long direction)[N << 1];
+            ref var eulerListRef = ref eulerList[0];
+            var stack = new int[N << 1];
+            ref var stackref = ref stack[0];
+            var si = 0;
+            Unsafe.Add(ref stackref, si++) = (int)root + 1;
+            var idx = 0;
+            var par = new int[N];
+            ref var parref = ref par[0];
+            Unsafe.Add(ref parref, (int)root) = -1;
+            while (si > 0)
             {
-                var w = s.Peek();
-                var ad = true;
-                foreach (var i in path[w.Item1])
+                var vtx = Unsafe.Add(ref stackref, --si);
+                if (vtx < 0)
                 {
-                    if (done[i]) continue;
-                    done[i] = true;
-                    ad = false;
-                    s.Push(Tuple.Create(i, w.Item1));
+                    vtx *= -1;
+                    --vtx;
+                    Unsafe.Add(ref eulerListRef, idx) = (vtx, Unsafe.Add(ref parref, vtx), -1);
                 }
-                if (!ad || path[w.Item1].Count == 1) eulerList.Add((w.Item1, w.Item2, 1));
-                if (ad)
+                else
                 {
-                    s.Pop();
-                    eulerList.Add((w.Item1, w.Item2, -1));
+                    Unsafe.Add(ref stackref, si++) = -vtx;
+                    --vtx;
+                    var pare = Unsafe.Add(ref parref, vtx);
+                    Unsafe.Add(ref eulerListRef, idx) = (vtx, pare, 1);
+                    foreach (var item in path[vtx])
+                    {
+                        if (item + 1 == pare) continue;
+                        Unsafe.Add(ref parref, item) = vtx + 1;
+                        Unsafe.Add(ref stackref, si++) = item + 1;
+                    }
                 }
+                ++idx;
             }
             return eulerList;
         }
