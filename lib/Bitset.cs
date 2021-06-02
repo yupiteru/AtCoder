@@ -71,6 +71,18 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void OrEqual(LIB_Bitset y)
+        {
+            if (n < y.n)
+            {
+                n = y.n;
+                var tmp = new ulong[y.n];
+                for (var i = 0; i < ary.Length; i++) tmp[i] = ary[i];
+                ary = tmp;
+            }
+            for (var i = 0; i < y.ary.Length; i++) ary[i] |= y.ary[i];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator ^(LIB_Bitset x, LIB_Bitset y)
         {
             if (x.n < y.n) { var t = x; x = y; y = t; }
