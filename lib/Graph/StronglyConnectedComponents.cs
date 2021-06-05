@@ -118,12 +118,27 @@ namespace Library
             }
             return (groupNum, ids);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int[][] SCC()
+        public class SCCResult
         {
+            public int[][] path;
+            public int[][] revpath;
+            public int[][] groups;
+            public int[] vtxToGroup;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public SCCResult SCC()
+        {
+            var ret = new SCCResult();
             var ids = SCCIDs();
             var idsItem1 = ids.Item1;
-            if (idsItem1 == 0) return new int[0][];
+            if (idsItem1 == 0)
+            {
+                ret.path = new int[0][];
+                ret.revpath = new int[0][];
+                ret.vtxToGroup = new int[0];
+                ret.groups = new int[0][];
+                return ret;
+            }
             Span<int> counts = stackalloc int[idsItem1];
             ref int countsref = ref counts[0];
             var groups = new int[idsItem1][];
@@ -138,7 +153,31 @@ namespace Library
                 var v = Unsafe.Add(ref idsItem2Ref, i);
                 Unsafe.Add(ref groupsref, v)[--Unsafe.Add(ref countsref, v)] = i;
             }
-            return groups;
+            ret.groups = groups;
+            ret.vtxToGroup = new int[groups.Length];
+            for (var i = 0; i < idsItem1; ++i)
+            {
+                foreach (var item in Unsafe.Add(ref groupsref, i))
+                {
+                    ret.vtxToGroup[item] = i;
+                }
+            }
+            var path = Enumerable.Repeat(0, groups.Length).Select(_ => new HashSet<int>()).ToArray();
+            var revpath = Enumerable.Repeat(0, groups.Length).Select(_ => new HashSet<int>()).ToArray();
+            for (var i = 0; i < edgeCnt; ++i)
+            {
+                var item = edges[i];
+                var from = item >> 30;
+                var to = item & 1073741823;
+                if (ret.vtxToGroup[from] != ret.vtxToGroup[to])
+                {
+                    path[ret.vtxToGroup[from]].Add(ret.vtxToGroup[to]);
+                    revpath[ret.vtxToGroup[to]].Add(ret.vtxToGroup[from]);
+                }
+            }
+            ret.path = path.Select(e => e.ToArray()).ToArray();
+            ret.revpath = revpath.Select(e => e.ToArray()).ToArray();
+            return ret;
         }
     }
     ////end
