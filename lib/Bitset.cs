@@ -134,11 +134,13 @@ namespace Library
         {
             var moveCnt = num >> 6;
             var moveBit = num & 63;
-            for (var i = ary.Length - 1; i >= moveCnt; i--)
+            var i = ary.Length - 1;
+            for (; i >= moveCnt; i--)
             {
                 ary[i] = ary[i - moveCnt] << moveBit;
                 if (moveBit > 0 && i > moveCnt) ary[i] |= ary[i - moveCnt - 1] >> (64 - moveBit);
             }
+            for (; i >= 0; --i) ary[i] = 0;
             ary[ary.Length - 1] &= ceil[n & 63];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,11 +149,13 @@ namespace Library
             var ret = new LIB_Bitset(x.n);
             var moveCnt = num >> 6;
             var moveBit = num & 63;
-            for (var i = ret.ary.Length - 1; i >= moveCnt; i--)
+            var i = ret.ary.Length - 1;
+            for (; i >= moveCnt; i--)
             {
                 ret.ary[i] = x.ary[i - moveCnt] << moveBit;
                 if (moveBit > 0 && i > moveCnt) ret.ary[i] |= x.ary[i - moveCnt - 1] >> (64 - moveBit);
             }
+            for (; i >= 0; --i) ret.ary[i] = 0;
             ret.ary[ret.ary.Length - 1] &= ceil[ret.n & 63];
             return ret;
         }
@@ -161,11 +165,13 @@ namespace Library
             var moveCnt = num >> 6;
             var moveBit = num & 63;
             var aryMax = ary.Length - moveCnt;
-            for (var i = 0; i < aryMax; i++)
+            var i = 0;
+            for (; i < aryMax; i++)
             {
                 ary[i] = ary[i + moveCnt] >> moveBit;
                 if (moveBit > 0 && i < aryMax - 1) ary[i] |= ary[i + moveCnt + 1] << (64 - moveBit);
             }
+            for (; i < ary.Length; ++i) ary[i] = 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Bitset operator >>(LIB_Bitset x, int num)
@@ -174,11 +180,13 @@ namespace Library
             var moveCnt = num >> 6;
             var moveBit = num & 63;
             var aryMax = ret.ary.Length - moveCnt;
-            for (var i = 0; i < aryMax; i++)
+            var i = 0;
+            for (; i < aryMax; i++)
             {
                 ret.ary[i] = x.ary[i + moveCnt] >> moveBit;
                 if (moveBit > 0 && i < aryMax - 1) ret.ary[i] |= x.ary[i + moveCnt + 1] << (64 - moveBit);
             }
+            for (; i < ret.ary.Length; ++i) ret.ary[i] = 0;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
