@@ -71,14 +71,22 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => v.ToString();
         static List<LIB_Mod> _fact = new List<LIB_Mod>() { 1 };
+        static List<LIB_Mod> _rfact = new List<LIB_Mod>() { 1 };
         static long _factm = _mod;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void B(long n)
         {
-            if (_factm != _mod) _fact = new List<LIB_Mod>() { 1 };
+            if (_factm != _mod)
+            {
+                _fact = new List<LIB_Mod>() { 1 };
+                _rfact = new List<LIB_Mod>() { 1 };
+            }
             if (n >= _fact.Count)
                 for (int i = _fact.Count; i <= n; ++i)
                     _fact.Add(_fact[i - 1] * i);
+            if (n >= _rfact.Count)
+                for (int i = _rfact.Count; i <= n; ++i)
+                    _rfact.Add(_rfact[i - 1] / i);
             _factm = _mod;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,7 +95,7 @@ namespace Library
             B(n);
             if (n == 0 && k == 0) return 1;
             if (n < k || n < 0) return 0;
-            return _fact[(int)n] / _fact[(int)(n - k)] / _fact[(int)k];
+            return _fact[(int)n] * _rfact[(int)(n - k)] * _rfact[(int)k];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod CombOK(long n, long k)
@@ -103,7 +111,7 @@ namespace Library
             B(n);
             if (n == 0 && k == 0) return 1;
             if (n < k || n < 0) return 0;
-            return _fact[(int)n] / _fact[(int)(n - k)];
+            return _fact[(int)n] * _rfact[(int)(n - k)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod KanzenPerm(long n) => Enumerable.Range(0, (int)n + 1).Aggregate((LIB_Mod)0, (a, e) => a + (1 - ((e & 1) << 1)) * LIB_Mod.Comb(n, e) * LIB_Mod.Perm(n - e, n - e));
