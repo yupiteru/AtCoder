@@ -135,10 +135,40 @@ namespace Library
             return false;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool RemoveAt(long val)
+        public bool RemoveAt(long idx)
         {
-            return false;
-            // TODO
+            if (idx < 0 || Count() <= idx) return false;
+            var node = root;
+            ref var datref = ref dat[0];
+            var list = new (int node, int parent, int bit)[bitlen];
+            var i = bitlen - 1;
+            for (; i >= 0; --i)
+            {
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                var zero = refnode.GetChild(0);
+                var bit = 0;
+                var p = node;
+                if (Unsafe.Add(ref datref, node = zero).cnt <= idx)
+                {
+                    bit = 1;
+                    node = refnode.GetChild(1);
+                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                }
+                list[i] = (node, p, bit);
+            }
+            foreach (var item in list)
+            {
+                ref var parent = ref Unsafe.Add(ref datref, item.parent);
+                parent.shortcut = Unsafe.Add(ref datref, item.node).shortcut;
+                if (--Unsafe.Add(ref datref, item.node).cnt == 0)
+                {
+                    parent.SetChild(item.bit, 0);
+                    parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
+                    AddPool(item.node);
+                }
+            }
+            --Unsafe.Add(ref datref, root).cnt;
+            return true;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long At(long idx)
@@ -187,8 +217,24 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint CountAt(long idx)
         {
-            // TODO
-            return 0;
+            var node = root;
+            ref var datref = ref dat[0];
+            for (var i = bitlen - 1; i >= 0; --i)
+            {
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
+                if (refnode.cnt == refshortcut.cnt)
+                {
+                    return refshortcut.cnt;
+                }
+                var zero = refnode.GetChild(0);
+                if (Unsafe.Add(ref datref, node = zero).cnt <= idx)
+                {
+                    node = refnode.GetChild(1);
+                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                }
+            }
+            return Unsafe.Add(ref datref, node).cnt;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Min()
