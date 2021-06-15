@@ -15,34 +15,51 @@ namespace Library
     class LIB_BinaryTrie
     {
         int bitlen;
+        const int CHILD_SHIFT = 32;
+        const ulong CHILD_MASK = 4294967295;
         struct Node
         {
-            public int zero;
-            public int one;
+            public ulong child;
+            public int shortcut;
             public uint cnt;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int SetChild(int idx, int tgt)
+            {
+                child = (child & (CHILD_MASK << (idx * CHILD_SHIFT))) | ((ulong)tgt << ((1 - idx) * CHILD_SHIFT));
+                return tgt;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetChild(int idx)
+            {
+                return (int)((child >> ((1 - idx) * CHILD_SHIFT)) & CHILD_MASK);
+            }
         }
         int root;
         static int datcnt;
-        static Stack<int> pool;
+        static int[] pool;
+        static int poolcnt;
         static Node[] dat;
         public int Count
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private set;
         }
         static LIB_BinaryTrie()
         {
             dat = new Node[100000000];
-            pool = new Stack<int>();
+            pool = new int[10000000];
             datcnt = 1;
+            poolcnt = 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int NewNode()
         {
-            if (pool.Any())
+            if (poolcnt != 0)
             {
-                var ret = pool.Pop();
-                dat[ret].zero = dat[ret].one = 0;
+                var ret = pool[--poolcnt];
+                dat[ret].child = 0;
                 return ret;
             }
             return datcnt++;
@@ -63,29 +80,24 @@ namespace Library
             bool lastadd = false;
             for (var i = bitlen - 1; i >= 0; --i)
             {
-                if ((val & (1L << i)) != 0)
+                var bit = (int)((val >> i) & 1);
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                if (lastadd || (node = refnode.GetChild(bit)) == 0)
                 {
-                    if (Unsafe.Add(ref datref, node).one == 0)
-                    {
-                        node = Unsafe.Add(ref datref, node).one = NewNode();
-                        lastadd = true;
-                    }
-                    else node = Unsafe.Add(ref datref, node).one;
-                }
-                else
-                {
-                    if (Unsafe.Add(ref datref, node).zero == 0)
-                    {
-                        node = Unsafe.Add(ref datref, node).zero = NewNode();
-                        lastadd = true;
-                    }
-                    else node = Unsafe.Add(ref datref, node).zero;
+                    node = refnode.SetChild(bit, NewNode());
+                    lastadd = true;
                 }
                 list[i] = node;
             }
             if (lastadd)
             {
-                foreach (var item in list) ++Unsafe.Add(ref datref, item).cnt;
+                var last = list[0];
+                Unsafe.Add(ref datref, last).child = (ulong)val;
+                foreach (var item in list)
+                {
+                    ++Unsafe.Add(ref datref, item).cnt;
+                    Unsafe.Add(ref datref, item).shortcut = last;
+                }
                 ++Count;
                 return true;
             }
@@ -96,40 +108,26 @@ namespace Library
         {
             var node = root;
             ref var datref = ref dat[0];
-            var list = new (int node, int parent, bool one)[bitlen];
+            var list = new (int node, int parent, int bit)[bitlen];
             var i = bitlen - 1;
             for (; i >= 0; --i)
             {
-                if ((val & (1L << i)) != 0)
-                {
-                    if (Unsafe.Add(ref datref, node).one != 0)
-                    {
-                        var p = node;
-                        node = Unsafe.Add(ref datref, node).one;
-                        list[i] = (node, p, true);
-                    }
-                    else break;
-                }
-                else
-                {
-                    if (Unsafe.Add(ref datref, node).zero != 0)
-                    {
-                        var p = node;
-                        node = Unsafe.Add(ref datref, node).zero;
-                        list[i] = (node, p, false);
-                    }
-                    else break;
-                }
+                var bit = (int)((val >> i) & 1);
+                var p = node;
+                if ((node = Unsafe.Add(ref datref, node).GetChild(bit)) != 0) list[i] = (node, p, bit);
+                else break;
             }
             if (i == -1)
             {
                 foreach (var item in list)
                 {
+                    ref var parent = ref Unsafe.Add(ref datref, item.parent);
+                    parent.shortcut = Unsafe.Add(ref datref, item.node).shortcut;
                     if (--Unsafe.Add(ref datref, item.node).cnt == 0)
                     {
-                        if (item.one) Unsafe.Add(ref datref, item.parent).one = 0;
-                        else Unsafe.Add(ref datref, item.parent).zero = 0;
-                        pool.Push(item.node);
+                        parent.SetChild(item.bit, 0);
+                        parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
+                        pool[poolcnt++] = item.node;
                     }
                 }
                 --Count;
@@ -164,38 +162,23 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long XorMin(long val)
         {
-            var ret = 0L;
             var node = root;
             ref var datref = ref dat[0];
             for (var i = bitlen - 1; i >= 0; --i)
             {
-                ret <<= 1;
-                if ((val & (1L << i)) != 0)
+                if (Unsafe.Add(ref datref, node).cnt == 1)
                 {
-                    if (Unsafe.Add(ref datref, node).one != 0)
-                    {
-                        node = Unsafe.Add(ref datref, node).one;
-                    }
-                    else
-                    {
-                        node = Unsafe.Add(ref datref, node).zero;
-                        ret |= 1;
-                    }
+                    node = Unsafe.Add(ref datref, node).shortcut;
+                    break;
                 }
-                else
+                var bit = (int)((val >> i) & 1);
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                if ((node = refnode.GetChild(bit)) == 0)
                 {
-                    if (Unsafe.Add(ref datref, node).zero != 0)
-                    {
-                        node = Unsafe.Add(ref datref, node).zero;
-                    }
-                    else
-                    {
-                        node = Unsafe.Add(ref datref, node).one;
-                        ret |= 1;
-                    }
+                    node = refnode.GetChild(1 - bit);
                 }
             }
-            return ret;
+            return (long)Unsafe.Add(ref datref, node).child ^ val;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long XorMax(long val)
