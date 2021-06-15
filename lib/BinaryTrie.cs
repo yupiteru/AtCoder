@@ -39,17 +39,10 @@ namespace Library
         static int[] pool;
         static int poolcnt;
         static Node[] dat;
-        public int Count
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private set;
-        }
         static LIB_BinaryTrie()
         {
-            dat = new Node[100000000];
-            pool = new int[10000000];
+            dat = new Node[50000000];
+            pool = new int[32];
             datcnt = 1;
             poolcnt = 0;
         }
@@ -64,6 +57,17 @@ namespace Library
             }
             return datcnt++;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void AddPool(int idx)
+        {
+            if (pool.Length == poolcnt)
+            {
+                var tmp = new int[poolcnt << 1];
+                Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp[0]), ref Unsafe.As<int, byte>(ref pool[0]), (uint)poolcnt << 2);
+                pool = tmp;
+            }
+            pool[poolcnt++] = idx;
+        }
         static readonly int NODE_SIZE = Unsafe.SizeOf<Node>();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_BinaryTrie(int bitlen)
@@ -72,7 +76,7 @@ namespace Library
             root = NewNode();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Add(long val)
+        public void Add(long val)
         {
             var node = root;
             ref var datref = ref dat[0];
@@ -89,19 +93,14 @@ namespace Library
                 }
                 list[i] = node;
             }
-            if (lastadd)
+            var last = list[0];
+            Unsafe.Add(ref datref, last).child = (ulong)val;
+            foreach (var item in list)
             {
-                var last = list[0];
-                Unsafe.Add(ref datref, last).child = (ulong)val;
-                foreach (var item in list)
-                {
-                    ++Unsafe.Add(ref datref, item).cnt;
-                    Unsafe.Add(ref datref, item).shortcut = last;
-                }
-                ++Count;
-                return true;
+                ++Unsafe.Add(ref datref, item).cnt;
+                Unsafe.Add(ref datref, item).shortcut = last;
             }
-            return false;
+            ++Unsafe.Add(ref datref, root).cnt;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(long val)
@@ -127,10 +126,10 @@ namespace Library
                     {
                         parent.SetChild(item.bit, 0);
                         parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
-                        pool[poolcnt++] = item.node;
+                        AddPool(item.node);
                     }
                 }
-                --Count;
+                --Unsafe.Add(ref datref, root).cnt;
                 return true;
             }
             return false;
@@ -142,7 +141,51 @@ namespace Library
             // TODO
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long At(int idx)
+        public long At(long idx)
+        {
+            var node = root;
+            ref var datref = ref dat[0];
+            for (var i = bitlen - 1; i >= 0; --i)
+            {
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
+                if (refnode.cnt == refshortcut.cnt)
+                {
+                    return (long)refshortcut.child;
+                }
+                var zero = refnode.GetChild(0);
+                if (Unsafe.Add(ref datref, node = zero).cnt <= idx)
+                {
+                    node = refnode.GetChild(1);
+                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                }
+            }
+            return (long)Unsafe.Add(ref datref, node).child;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint Count(long val)
+        {
+            var node = root;
+            ref var datref = ref dat[0];
+            var i = bitlen - 1;
+            for (; i >= 0; --i)
+            {
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
+                if (refnode.cnt == refshortcut.cnt)
+                {
+                    if (refshortcut.child == (ulong)val) return refshortcut.cnt;
+                    return 0;
+                }
+                if ((node = refnode.GetChild((int)((val >> i) & 1))) == 0) break;
+            }
+            if (i == -1) return Unsafe.Add(ref datref, node).cnt;
+            return 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint Count() => dat[root].cnt;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint CountAt(long idx)
         {
             // TODO
             return 0;
@@ -166,13 +209,13 @@ namespace Library
             ref var datref = ref dat[0];
             for (var i = bitlen - 1; i >= 0; --i)
             {
-                if (Unsafe.Add(ref datref, node).cnt == 1)
+                ref var refnode = ref Unsafe.Add(ref datref, node);
+                ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
+                if (refnode.cnt == refshortcut.cnt)
                 {
-                    node = Unsafe.Add(ref datref, node).shortcut;
-                    break;
+                    return (long)refshortcut.child ^ val;
                 }
                 var bit = (int)((val >> i) & 1);
-                ref var refnode = ref Unsafe.Add(ref datref, node);
                 if ((node = refnode.GetChild(bit)) == 0)
                 {
                     node = refnode.GetChild(1 - bit);
@@ -209,6 +252,13 @@ namespace Library
         {
             // TODO
             return 0;
+        }
+        public long this[long index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return At(index); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set { }
         }
     }
     ////end
