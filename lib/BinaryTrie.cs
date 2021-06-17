@@ -16,16 +16,16 @@ namespace Library
     {
         int bitlen;
         const int CHILD_SHIFT = 32;
-        const ulong CHILD_MASK = 4294967295;
+        const long CHILD_MASK = 2147483647;
         struct Node
         {
-            public ulong child;
+            public long child;
             public int shortcut;
             public uint cnt;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void SetChild(int idx, int tgt)
+            public void SetChild(int idx, long tgt)
             {
-                child = (child & (CHILD_MASK << (idx * CHILD_SHIFT))) | ((ulong)tgt << ((1 - idx) * CHILD_SHIFT));
+                child = (child & (CHILD_MASK << (idx * CHILD_SHIFT))) | (tgt << ((1 - idx) * CHILD_SHIFT));
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetChild(int idx)
@@ -70,10 +70,10 @@ namespace Library
         {
             var node = root;
             ref var datref = ref dat[0];
-            var list = new int[bitlen];
+            Span<int> list = stackalloc int[bitlen];
             ref var listref = ref list[0];
             var i = bitlen - 1;
-            for (; i >= 0; --i)
+            for (; i != -1; --i)
             {
                 var bit = (int)((val >> i) & 1);
                 ref var refnode = ref Unsafe.Add(ref datref, node);
@@ -96,13 +96,13 @@ namespace Library
             }
             var last = Unsafe.Add(ref listref, ++i);
             var add = 1U;
-            if (Unsafe.Add(ref datref, last).child == (ulong)val && !allowDup) --add;
-            Unsafe.Add(ref datref, last).child = (ulong)val;
-            for (; i < bitlen; ++i)
+            if (Unsafe.Add(ref datref, last).child == val && !allowDup) --add;
+            Unsafe.Add(ref datref, last).child = val;
+            for (; i != bitlen; ++i)
             {
-                var item = Unsafe.Add(ref listref, i);
-                Unsafe.Add(ref datref, item).cnt += add;
-                Unsafe.Add(ref datref, item).shortcut = last;
+                ref var refitem = ref Unsafe.Add(ref datref, Unsafe.Add(ref listref, i));
+                refitem.cnt += add;
+                refitem.shortcut = last;
             }
             Unsafe.Add(ref datref, root).cnt += add;
         }
@@ -111,23 +111,24 @@ namespace Library
         {
             var node = root;
             ref var datref = ref dat[0];
-            var list = new (int node, int parent, int bit)[bitlen];
+            Span<(int node, int parent, int bit)> list = stackalloc (int node, int parent, int bit)[bitlen];
             ref var listref = ref list[0];
             var i = bitlen - 1;
-            for (; i >= 0; --i)
+            while (true)
             {
                 var bit = (int)((val >> i) & 1);
                 var p = node;
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 if (refnode.shortcut == node)
                 {
-                    if (refnode.child == (ulong)val) break;
+                    if (refnode.child == val) break;
                     return false;
                 }
                 if ((node = refnode.GetChild(bit)) == 0) return false;
                 Unsafe.Add(ref listref, i) = (node, p, bit);
+                --i;
             }
-            for (++i; i < bitlen; ++i)
+            for (++i; i != bitlen; ++i)
             {
                 var item = Unsafe.Add(ref listref, i);
                 ref var parent = ref Unsafe.Add(ref datref, item.parent);
@@ -149,10 +150,10 @@ namespace Library
             if (idx < 0 || Count() <= idx) return false;
             var node = root;
             ref var datref = ref dat[0];
-            var list = new (int node, int parent, int bit)[bitlen];
+            Span<(int node, int parent, int bit)> list = stackalloc (int node, int parent, int bit)[bitlen];
             ref var listref = ref list[0];
             var i = bitlen - 1;
-            for (; i >= 0; --i)
+            while (true)
             {
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 if (refnode.shortcut == node) break;
@@ -163,11 +164,11 @@ namespace Library
                 {
                     bit = 1;
                     node = refnode.GetChild(1);
-                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                    idx -= Unsafe.Add(ref datref, zero).cnt;
                 }
-                Unsafe.Add(ref listref, i) = (node, p, bit);
+                Unsafe.Add(ref listref, i--) = (node, p, bit);
             }
-            for (++i; i < bitlen; ++i)
+            for (++i; i != bitlen; ++i)
             {
                 var item = Unsafe.Add(ref listref, i);
                 ref var parent = ref Unsafe.Add(ref datref, item.parent);
@@ -189,7 +190,7 @@ namespace Library
             if (idx < 0 || Count() <= idx) return 0;
             var node = root;
             ref var datref = ref dat[0];
-            for (var i = bitlen - 1; i >= 0; --i)
+            while (true)
             {
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
@@ -201,10 +202,9 @@ namespace Library
                 if (Unsafe.Add(ref datref, node = zero).cnt <= idx)
                 {
                     node = refnode.GetChild(1);
-                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                    idx -= Unsafe.Add(ref datref, zero).cnt;
                 }
             }
-            return (long)Unsafe.Add(ref datref, node).child;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Count(long val)
@@ -212,19 +212,17 @@ namespace Library
             var node = root;
             ref var datref = ref dat[0];
             var i = bitlen - 1;
-            for (; i >= 0; --i)
+            while (true)
             {
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
                 if (refnode.cnt == refshortcut.cnt)
                 {
-                    if (refshortcut.child == (ulong)val) return refshortcut.cnt;
+                    if (refshortcut.child == val) return refshortcut.cnt;
                     return 0;
                 }
-                if ((node = refnode.GetChild((int)((val >> i) & 1))) == 0) break;
+                if ((node = refnode.GetChild((int)((val >> (i--)) & 1))) == 0) return 0;
             }
-            if (i == -1) return Unsafe.Add(ref datref, node).cnt;
-            return 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Count() => dat[root].cnt;
@@ -234,22 +232,18 @@ namespace Library
             if (idx < 0 || Count() <= idx) return 0;
             var node = root;
             ref var datref = ref dat[0];
-            for (var i = bitlen - 1; i >= 0; --i)
+            while (true)
             {
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
-                if (refnode.cnt == refshortcut.cnt)
-                {
-                    return refshortcut.cnt;
-                }
+                if (refnode.cnt == refshortcut.cnt) return refshortcut.cnt;
                 var zero = refnode.GetChild(0);
                 if (Unsafe.Add(ref datref, node = zero).cnt <= idx)
                 {
                     node = refnode.GetChild(1);
-                    idx -= (int)Unsafe.Add(ref datref, zero).cnt;
+                    idx -= Unsafe.Add(ref datref, zero).cnt;
                 }
             }
-            return Unsafe.Add(ref datref, node).cnt;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Min()
@@ -268,7 +262,8 @@ namespace Library
         {
             var node = root;
             ref var datref = ref dat[0];
-            for (var i = bitlen - 1; i >= 0; --i)
+            var i = bitlen - 1;
+            while (true)
             {
                 ref var refnode = ref Unsafe.Add(ref datref, node);
                 ref var refshortcut = ref Unsafe.Add(ref datref, refnode.shortcut);
@@ -276,13 +271,9 @@ namespace Library
                 {
                     return (long)refshortcut.child ^ val;
                 }
-                var bit = (int)((val >> i) & 1);
-                if ((node = refnode.GetChild(bit)) == 0)
-                {
-                    node = refnode.GetChild(1 - bit);
-                }
+                var bit = (int)((val >> (i--)) & 1);
+                if ((node = refnode.GetChild(bit)) == 0) node = refnode.GetChild(1 - bit);
             }
-            return (long)Unsafe.Add(ref datref, node).child ^ val;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long XorMax(long val)
