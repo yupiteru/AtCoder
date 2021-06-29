@@ -127,14 +127,14 @@ namespace Library
             for (++i; i != bitlen; ++i)
             {
                 var item = Unsafe.Add(ref listref, i);
-                ref var parent = ref Unsafe.Add(ref datref, item.parent);
-                parent.shortcut = Unsafe.Add(ref datref, item.node).shortcut;
-                if (--Unsafe.Add(ref datref, item.node).cnt == 0)
-                {
-                    parent.SetChild(item.bit, 0);
-                    parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
-                    pool[++poolcnt] = item.node;
-                }
+                Unsafe.Add(ref datref, item.parent).shortcut = Unsafe.Add(ref datref, item.node).shortcut;
+                var flagl = 1 - --Unsafe.Add(ref datref, item.node).cnt;
+                flagl &= ~flagl >> 26;
+                var flagi = (int)flagl;
+                ref var parent = ref Unsafe.Add(ref datref, item.parent * flagi);
+                parent.SetChild(item.bit, 0);
+                parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
+                pool[(poolcnt += flagi) + 1 - flagi] = item.node;
             }
             --Unsafe.Add(ref datref, root).cnt;
             Unsafe.Add(ref datref, root).shortcut = 0;
@@ -167,14 +167,14 @@ namespace Library
             for (++i; i != bitlen; ++i)
             {
                 var item = Unsafe.Add(ref listref, i);
-                ref var parent = ref Unsafe.Add(ref datref, item.parent);
-                parent.shortcut = Unsafe.Add(ref datref, item.node).shortcut;
-                if (--Unsafe.Add(ref datref, item.node).cnt == 0)
-                {
-                    parent.SetChild(item.bit, 0);
-                    parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
-                    pool[++poolcnt] = item.node;
-                }
+                Unsafe.Add(ref datref, item.parent).shortcut = Unsafe.Add(ref datref, item.node).shortcut;
+                var flagl = 1 - --Unsafe.Add(ref datref, item.node).cnt;
+                flagl &= ~flagl >> 26;
+                var flagi = (int)flagl;
+                ref var parent = ref Unsafe.Add(ref datref, item.parent * flagi);
+                parent.SetChild(item.bit, 0);
+                parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
+                pool[(poolcnt += flagi) + 1 - flagi] = item.node;
             }
             --Unsafe.Add(ref datref, root).cnt;
             Unsafe.Add(ref datref, root).shortcut = 0;
