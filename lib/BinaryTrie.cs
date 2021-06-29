@@ -34,29 +34,25 @@ namespace Library
             }
         }
         int root;
-        static int datcnt;
         static int[] pool;
-        static int poolcnt;
+        static long poolcnt;
         static Node[] dat;
         static LIB_BinaryTrie()
         {
             dat = new Node[50000000];
             pool = new int[50000000];
-            datcnt = 1;
+            pool[0] = 1;
             poolcnt = 0;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int NewNode()
         {
-            if (poolcnt != 0)
-            {
-                var ret = pool[--poolcnt];
-                dat[ret].child = 0;
-                dat[ret].shortcut = 0;
-                dat[ret].cnt = 0;
-                return ret;
-            }
-            return datcnt++;
+            var ret = pool[poolcnt--]++;
+            poolcnt &= ~poolcnt >> 26;
+            dat[ret].child = 0;
+            dat[ret].shortcut = 0;
+            dat[ret].cnt = 0;
+            return ret;
         }
         static readonly int NODE_SIZE = Unsafe.SizeOf<Node>();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,7 +133,7 @@ namespace Library
                 {
                     parent.SetChild(item.bit, 0);
                     parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
-                    pool[poolcnt++] = item.node;
+                    pool[++poolcnt] = item.node;
                 }
             }
             --Unsafe.Add(ref datref, root).cnt;
@@ -177,7 +173,7 @@ namespace Library
                 {
                     parent.SetChild(item.bit, 0);
                     parent.shortcut = Unsafe.Add(ref datref, parent.GetChild(1 - item.bit)).shortcut;
-                    pool[poolcnt++] = item.node;
+                    pool[++poolcnt] = item.node;
                 }
             }
             --Unsafe.Add(ref datref, root).cnt;
