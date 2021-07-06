@@ -70,18 +70,28 @@ namespace Library
         public override int GetHashCode() => v.GetHashCode();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => v.ToString();
-        static List<LIB_Mod> _fact = new List<LIB_Mod>() { 1 };
+        static List<LIB_Mod> _fact = new List<LIB_Mod>() { 1, 1 };
+        static List<LIB_Mod> _inv = new List<LIB_Mod>() { 0, 1 };
+        static List<LIB_Mod> _factinv = new List<LIB_Mod>() { 1, 1 };
         static long _factm = _mod;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void B(long n)
         {
             if (_factm != _mod)
             {
-                _fact = new List<LIB_Mod>() { 1 };
+                _fact = new List<LIB_Mod>() { 1, 1 };
+                _inv = new List<LIB_Mod>() { 0, 1 };
+                _factinv = new List<LIB_Mod>() { 1, 1 };
             }
             if (n >= _fact.Count)
+            {
                 for (int i = _fact.Count; i <= n; ++i)
+                {
                     _fact.Add(_fact[i - 1] * i);
+                    _inv.Add(_mod - _inv[(int)(_mod % i)] * (_mod / i));
+                    _factinv.Add(_factinv[i - 1] * _inv[i]);
+                }
+            }
             _factm = _mod;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,7 +100,7 @@ namespace Library
             B(n);
             if (n == 0 && k == 0) return 1;
             if (n < k || n < 0) return 0;
-            return _fact[(int)n] / (_fact[(int)(n - k)] * _fact[(int)k]);
+            return _fact[(int)n] * _factinv[(int)(n - k)] * _factinv[(int)k];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod CombOK(long n, long k)
@@ -106,10 +116,10 @@ namespace Library
             B(n);
             if (n == 0 && k == 0) return 1;
             if (n < k || n < 0) return 0;
-            return _fact[(int)n] / _fact[(int)(n - k)];
+            return _fact[(int)n] * _factinv[(int)(n - k)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_Mod KanzenPerm(long n) => Enumerable.Range(0, (int)n + 1).Aggregate((LIB_Mod)0, (a, e) => a + (1 - ((e & 1) << 1)) * LIB_Mod.Comb(n, e) * LIB_Mod.Perm(n - e, n - e));
+        static public LIB_Mod KanzenPerm(long n, long k) => Enumerable.Range(0, (int)k + 1).Aggregate((LIB_Mod)0, (a, e) => a + (1 - ((e & 1) << 1)) * LIB_Mod.Comb(k, e) * LIB_Mod.Perm(n - e, k - e));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod Pow(LIB_Mod x, long y)
         {
