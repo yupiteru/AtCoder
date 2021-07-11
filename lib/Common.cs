@@ -66,9 +66,10 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public List<T> LIS<T>(IEnumerable<T> array, bool strict) where T : IComparable
+        static public (int[] result, List<T> dp) LIS<T>(IEnumerable<T> array, bool strict) where T : IComparable
         {
             var l = new List<T>();
+            var ret = new List<int>();
             foreach (var e in array)
             {
                 var left = -1;
@@ -81,8 +82,9 @@ namespace Library
                 }
                 if (right == l.Count) l.Add(e);
                 else l[right] = e;
+                ret.Add(l.Count);
             }
-            return l;
+            return (ret.ToArray(), l);
         }
     }
     ////end
