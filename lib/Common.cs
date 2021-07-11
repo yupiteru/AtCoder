@@ -15,7 +15,7 @@ namespace Library
     {
         public struct RunLengthResult<T>
         {
-            public int count;
+            public long count;
             public T value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
