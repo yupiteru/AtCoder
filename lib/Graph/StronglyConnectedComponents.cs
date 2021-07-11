@@ -154,7 +154,7 @@ namespace Library
                 Unsafe.Add(ref groupsref, v)[--Unsafe.Add(ref countsref, v)] = i;
             }
             ret.groups = groups;
-            ret.vtxToGroup = new int[groups.Length];
+            ret.vtxToGroup = new int[n];
             for (var i = 0; i < idsItem1; ++i)
             {
                 foreach (var item in Unsafe.Add(ref groupsref, i))
