@@ -41,66 +41,63 @@ namespace Library
         protected (int, int[]) SCCIDs()
         {
             if (edgeCnt == 0) return (0, new int[0]);
-            Span<int> start = stackalloc int[n + 1];
-            ref int startref = ref start[0];
-            Span<int> elist = stackalloc int[edgeCnt];
-            ref int elistref = ref elist[0];
+            Span<int> tmp = stackalloc int[(n << 2) + 1 + edgeCnt];
+            var startoff = 0;
+            var visitedoff = startoff + n + 1;
+            var lowoff = visitedoff + n;
+            var ordoff = lowoff + n;
+            var elistoff = ordoff + n;
+            ref int tmpref = ref tmp[0];
             ref long edgesref = ref edges[0];
             for (var i = 0; i < edgeCnt; ++i)
             {
-                ++Unsafe.Add(ref startref, (int)((Unsafe.Add(ref edgesref, i) >> 30) + 1));
+                ++Unsafe.Add(ref tmpref, startoff + (int)((Unsafe.Add(ref edgesref, i) >> 30) + 1));
             }
-            var beforeStart = startref;
+            var beforeStart = tmpref;
             for (var i = 1; i <= n; ++i)
             {
-                ref int thisStartRef = ref Unsafe.Add(ref startref, i);
+                ref int thisStartRef = ref Unsafe.Add(ref tmpref, startoff + i);
                 thisStartRef += beforeStart;
                 beforeStart = thisStartRef;
             }
             var counter = new int[n + 1];
             ref int counterref = ref counter[0];
-            Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref counterref), ref Unsafe.As<int, byte>(ref startref), (uint)(4 * (n + 1)));
+            Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref counterref), ref Unsafe.As<int, byte>(ref Unsafe.Add(ref tmpref, startoff)), (uint)(4 * (n + 1)));
             for (var i = 0; i < edgeCnt; ++i)
             {
                 var e = Unsafe.Add(ref edgesref, i);
-                Unsafe.Add(ref elistref, Unsafe.Add(ref counterref, (int)(e >> 30))++) = (int)(e & 1073741823);
+                Unsafe.Add(ref tmpref, elistoff + Unsafe.Add(ref counterref, (int)(e >> 30))++) = (int)(e & 1073741823);
             }
             var nowOrd = -1;
             var groupNum = 0;
             var visitedIdx = -1;
-            Span<int> visited = stackalloc int[n];
-            ref int visitedref = ref visited[0];
-            Span<int> low = stackalloc int[n];
-            ref int lowref = ref low[0];
-            Span<int> ord = stackalloc int[n];
-            ref int ordref = ref ord[0];
             var ids = new int[n];
             ref int idsref = ref ids[0];
-            Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref ordref), 255, (uint)(4 * n));
-            void dfs(int v, ref int lowref, ref int ordref, ref int visitedref, ref int startref, ref int elistref, ref int idsref)
+            Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref Unsafe.Add(ref tmpref, ordoff)), 255, (uint)(4 * n));
+            void dfs(int v, ref int tmpref, ref int idsref)
             {
-                ref int lowv = ref Unsafe.Add(ref lowref, v);
-                lowv = Unsafe.Add(ref ordref, v) = ++nowOrd;
-                Unsafe.Add(ref visitedref, ++visitedIdx) = v;
-                var endv = Unsafe.Add(ref startref, v + 1);
-                for (var i = Unsafe.Add(ref startref, v); i < endv; ++i)
+                ref int lowv = ref Unsafe.Add(ref tmpref, lowoff + v);
+                lowv = Unsafe.Add(ref tmpref, ordoff + v) = ++nowOrd;
+                Unsafe.Add(ref tmpref, visitedoff + ++visitedIdx) = v;
+                var endv = Unsafe.Add(ref tmpref, startoff + v + 1);
+                for (var i = Unsafe.Add(ref tmpref, startoff + v); i < endv; ++i)
                 {
-                    var to = Unsafe.Add(ref elistref, i);
-                    ref int ordto = ref Unsafe.Add(ref ordref, to);
+                    var to = Unsafe.Add(ref tmpref, elistoff + i);
+                    ref int ordto = ref Unsafe.Add(ref tmpref, ordoff + to);
                     if (ordto == -1)
                     {
-                        dfs(to, ref lowref, ref ordref, ref visitedref, ref startref, ref elistref, ref idsref);
-                        lowv = Math.Min(lowv, Unsafe.Add(ref lowref, to));
+                        dfs(to, ref tmpref, ref idsref);
+                        lowv = Math.Min(lowv, Unsafe.Add(ref tmpref, lowoff + to));
                     }
                     else lowv = Math.Min(lowv, ordto);
                 }
-                if (lowv == Unsafe.Add(ref ordref, v))
+                if (lowv == Unsafe.Add(ref tmpref, ordoff + v))
                 {
                     while (true)
                     {
-                        var u = Unsafe.Add(ref visitedref, visitedIdx);
+                        var u = Unsafe.Add(ref tmpref, visitedoff + visitedIdx);
                         --visitedIdx;
-                        Unsafe.Add(ref ordref, u) = n;
+                        Unsafe.Add(ref tmpref, ordoff + u) = n;
                         Unsafe.Add(ref idsref, u) = groupNum;
                         if (u == v) break;
                     }
@@ -109,7 +106,7 @@ namespace Library
             }
             for (var i = 0; i < n; ++i)
             {
-                if (Unsafe.Add(ref ordref, i) == -1) dfs(i, ref lowref, ref ordref, ref visitedref, ref startref, ref elistref, ref idsref);
+                if (Unsafe.Add(ref tmpref, ordoff + i) == -1) dfs(i, ref tmpref, ref idsref);
             }
             for (var i = 0; i < n; i++)
             {
@@ -118,27 +115,12 @@ namespace Library
             }
             return (groupNum, ids);
         }
-        public class SCCResult
-        {
-            public int[][] path;
-            public int[][] revpath;
-            public int[][] groups;
-            public int[] vtxToGroup;
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SCCResult SCC()
+        public int[][] SCC()
         {
-            var ret = new SCCResult();
             var ids = SCCIDs();
             var idsItem1 = ids.Item1;
-            if (idsItem1 == 0)
-            {
-                ret.path = new int[0][];
-                ret.revpath = new int[0][];
-                ret.vtxToGroup = new int[0];
-                ret.groups = new int[0][];
-                return ret;
-            }
+            if (idsItem1 == 0) return new int[0][];
             Span<int> counts = stackalloc int[idsItem1];
             ref int countsref = ref counts[0];
             var groups = new int[idsItem1][];
@@ -153,31 +135,7 @@ namespace Library
                 var v = Unsafe.Add(ref idsItem2Ref, i);
                 Unsafe.Add(ref groupsref, v)[--Unsafe.Add(ref countsref, v)] = i;
             }
-            ret.groups = groups;
-            ret.vtxToGroup = new int[n];
-            for (var i = 0; i < idsItem1; ++i)
-            {
-                foreach (var item in Unsafe.Add(ref groupsref, i))
-                {
-                    ret.vtxToGroup[item] = i;
-                }
-            }
-            var path = Enumerable.Repeat(0, groups.Length).Select(_ => new HashSet<int>()).ToArray();
-            var revpath = Enumerable.Repeat(0, groups.Length).Select(_ => new HashSet<int>()).ToArray();
-            for (var i = 0; i < edgeCnt; ++i)
-            {
-                var item = edges[i];
-                var from = item >> 30;
-                var to = item & 1073741823;
-                if (ret.vtxToGroup[from] != ret.vtxToGroup[to])
-                {
-                    path[ret.vtxToGroup[from]].Add(ret.vtxToGroup[to]);
-                    revpath[ret.vtxToGroup[to]].Add(ret.vtxToGroup[from]);
-                }
-            }
-            ret.path = path.Select(e => e.ToArray()).ToArray();
-            ret.revpath = revpath.Select(e => e.ToArray()).ToArray();
-            return ret;
+            return groups;
         }
     }
     ////end
