@@ -40,16 +40,18 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LCAResult LIB_LCA(long root)
         {
-            var euler = new List<long>();
+            var euler = new long[N << 1];
             var visited = new int[N];
             var nodestack = new long[N];
             var parentstack = new long[N];
             var depthlist = new long[N];
+            ref var refeuler = ref euler[0];
             ref var refvisited = ref visited[0];
             ref var refnodestack = ref nodestack[0];
             ref var refparentstack = ref parentstack[0];
             ref var refdepth = ref depthlist[0];
             var stackcount = 1;
+            var eulercnt = 0;
             refnodestack = root;
             refparentstack = -1;
             while (stackcount > 0)
@@ -57,8 +59,8 @@ namespace Library
                 var node = Unsafe.Add(ref refnodestack, stackcount);
                 var parent = Unsafe.Add(ref refparentstack, stackcount--);
                 ref var depth = ref Unsafe.Add(ref refdepth, (int)node);
-                euler.Add(((depth - 1) << SHIFT) | parent);
-                Unsafe.Add(ref refvisited, (int)node) = euler.Count;
+                Unsafe.Add(ref refeuler, eulercnt++) = ((depth - 1) << SHIFT) | parent;
+                Unsafe.Add(ref refvisited, (int)node) = eulercnt;
                 var leaf = true;
                 foreach (var child in path[node])
                 {
@@ -68,9 +70,9 @@ namespace Library
                     Unsafe.Add(ref refnodestack, ++stackcount) = child;
                     Unsafe.Add(ref refparentstack, stackcount) = node;
                 }
-                if (leaf) euler.Add((depth << SHIFT) | node);
+                if (leaf) Unsafe.Add(ref refeuler, eulercnt++) = (depth << SHIFT) | node;
             }
-            var dst = new LIB_SparseTableMin(euler);
+            var dst = new LIB_SparseTableMin(euler.Take(eulercnt));
             return new LCAResult(dst, visited);
         }
     }
