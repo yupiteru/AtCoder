@@ -18,10 +18,10 @@ namespace Library
         const long MASK = 1073741823;
         public class LCAResult
         {
-            LIB_DisjointSparseTable<long> dst;
+            LIB_SparseTableMin dst;
             int[] visited;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public LCAResult(LIB_DisjointSparseTable<long> dst, int[] visited)
+            public LCAResult(LIB_SparseTableMin dst, int[] visited)
             {
                 this.dst = dst;
                 this.visited = visited;
@@ -55,7 +55,7 @@ namespace Library
                 }
             };
             dfs(root, -1, 0);
-            var dst = new LIB_DisjointSparseTable<long>(euler, Min);
+            var dst = new LIB_SparseTableMin(euler);
             return new LCAResult(dst, visited);
         }
     }
