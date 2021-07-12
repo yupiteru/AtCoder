@@ -14,77 +14,49 @@ namespace Library
     // copy key class LIB_LCA
     partial class /* not copy key */ LIB_Tree
     {
+        const int SHIFT = 30;
+        const long MASK = 1073741823;
         public class LCAResult
         {
-            int[] depth;
-            int l;
-            int[][] pr;
+            LIB_DisjointSparseTable<long> dst;
+            int[] visited;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public LCAResult(int[] depth, int l, int[][] pr)
+            public LCAResult(LIB_DisjointSparseTable<long> dst, int[] visited)
             {
-                this.depth = depth;
-                this.l = l;
-                this.pr = pr;
+                this.dst = dst;
+                this.visited = visited;
             }
             public long this[long u, long v]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
-                    if (u == v) return u;
-                    if (depth[u] > depth[v])
-                    {
-                        var t = u; u = v; v = t;
-                    }
-                    for (var k = 0; k < l; k++)
-                    {
-                        if ((((depth[v] - depth[u]) >> k) & 1) != 0) v = pr[k][v];
-                    }
-                    if (u == v) return u;
-                    for (var k = l - 1; k >= 0; k--)
-                    {
-                        if (pr[k][u] != pr[k][v])
-                        {
-                            u = pr[k][u];
-                            v = pr[k][v];
-                        }
-                    }
-                    return pr[0][u];
+                    var min = Min(visited[u], visited[v]);
+                    var max = min ^ visited[u] ^ visited[v];
+                    return dst.Query(min, max + 1) & MASK;
                 }
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LCAResult LIB_LCA(long root)
         {
-            if (N == 1) return new LCAResult(null, 0, null);
-            var depth = new int[N];
-            var l = 0;
-            while (N > (1 << l)) l++;
-            var pr = Enumerable.Repeat(0, l).Select(_ => new int[N]).ToArray();
-            depth[root] = 0;
-            pr[0][root] = -1;
-            var q = new Stack<int>();
-            q.Push((int)root);
-            while (q.Count > 0)
+            var euler = new List<long>();
+            var visited = Enumerable.Repeat(-1, N).ToArray();
+            Action<long, long, long> dfs = null;
+            dfs = (node, parent, depth) =>
             {
-                var w = q.Pop();
-                foreach (var i in path[w])
+                if (visited[node] == -1) visited[node] = euler.Count;
+                euler.Add((depth << SHIFT) | node);
+                foreach (var child in path[node])
                 {
-                    if (i == pr[0][w]) continue;
-                    q.Push(i);
-                    depth[i] = depth[w] + 1;
-                    pr[0][i] = w;
+                    if (child == parent) continue;
+                    dfs(child, node, depth + 1);
+                    euler.Add((depth << SHIFT) | node);
                 }
-            }
-            for (var k = 0; k + 1 < l; k++)
-            {
-                for (var w = 0; w < N; w++)
-                {
-                    if (pr[k][w] < 0) pr[k + 1][w] = -1;
-                    else pr[k + 1][w] = pr[k][pr[k][w]];
-                }
-            }
-            return new LCAResult(depth, l, pr);
+            };
+            dfs(root, -1, 0);
+            var dst = new LIB_DisjointSparseTable<long>(euler, Min);
+            return new LCAResult(dst, visited);
         }
     }
     ////end
