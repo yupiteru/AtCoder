@@ -41,20 +41,35 @@ namespace Library
         public LCAResult LIB_LCA(long root)
         {
             var euler = new List<long>();
-            var visited = Enumerable.Repeat(-1, N).ToArray();
-            Action<long, long, long> dfs = null;
-            dfs = (node, parent, depth) =>
+            var visited = new int[N];
+            var nodestack = new long[N];
+            var parentstack = new long[N];
+            var depthlist = new long[N];
+            ref var refvisited = ref visited[0];
+            ref var refnodestack = ref nodestack[0];
+            ref var refparentstack = ref parentstack[0];
+            ref var refdepth = ref depthlist[0];
+            var stackcount = 1;
+            refnodestack = root;
+            refparentstack = -1;
+            while (stackcount > 0)
             {
-                if (visited[node] == -1) visited[node] = euler.Count;
-                euler.Add((depth << SHIFT) | node);
+                var node = Unsafe.Add(ref refnodestack, stackcount);
+                var parent = Unsafe.Add(ref refparentstack, stackcount--);
+                ref var depth = ref Unsafe.Add(ref refdepth, (int)node);
+                euler.Add(((depth - 1) << SHIFT) | parent);
+                Unsafe.Add(ref refvisited, (int)node) = euler.Count;
+                var leaf = true;
                 foreach (var child in path[node])
                 {
                     if (child == parent) continue;
-                    dfs(child, node, depth + 1);
-                    euler.Add((depth << SHIFT) | node);
+                    leaf = false;
+                    Unsafe.Add(ref refdepth, child) = depth + 1;
+                    Unsafe.Add(ref refnodestack, ++stackcount) = child;
+                    Unsafe.Add(ref refparentstack, stackcount) = node;
                 }
-            };
-            dfs(root, -1, 0);
+                if (leaf) euler.Add((depth << SHIFT) | node);
+            }
             var dst = new LIB_SparseTableMin(euler);
             return new LCAResult(dst, visited);
         }
