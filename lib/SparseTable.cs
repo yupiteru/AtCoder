@@ -67,7 +67,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long Query(long l, long r)
         {
-            if (r <= l) return long.MaxValue;
+            if (r <= l) return long.MinValue;
             var shiftbit = Max(0, LIB_BitUtil.MSB(r - l - 1) - 1);
             var tgtdat = dat[shiftbit];
             return Max(tgtdat[l], tgtdat[r - (1 << shiftbit)]);
