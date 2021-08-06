@@ -44,6 +44,8 @@ namespace Library
         public long Count(long x) => -d[Root(x)];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Calc(long x) => v[Root(x)];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Set(long x, T val) => v[Root(x)] = val;
     }
     class LIB_UnionFind : LIB_UnionFind<int>
     {
