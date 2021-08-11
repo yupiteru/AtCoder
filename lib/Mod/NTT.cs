@@ -117,6 +117,22 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long[] NTT998244353(long[] ary, int len, bool isInverse = false)
+        {
+            var t = 1;
+            while (t < len) t <<= 1;
+            Span<uint> na = new uint[t];
+            ref long aref = ref ary[0];
+            ref uint naref = ref na[0];
+            for (var i = 0; i < ary.Length; ++i) Unsafe.Add(ref naref, i) = (uint)Unsafe.Add(ref aref, i);
+            ntt4(ref na, isInverse);
+            naref = ref na[0];
+            var ret = new long[t];
+            ref var retref = ref ret[0];
+            for (var i = 0; i < ret.Length; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i);
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint[] Multiply1(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; ref uint naref = ref na[0]; ref uint nbref = ref nb[0]; Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref naref), ref Unsafe.As<uint, byte>(ref a[0]), (uint)(a.Length << 2)); Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref nbref), ref Unsafe.As<uint, byte>(ref b[0]), (uint)(b.Length << 2)); ntt1(ref na); ntt1(ref nb); naref = ref na[0]; nbref = ref nb[0]; for (var i = 0; i < t; ++i) { ref uint narefi = ref Unsafe.Add(ref naref, i); narefi = mul1(narefi, Unsafe.Add(ref nbref, i)); } ntt1(ref na, true); var ret = new uint[n]; naref = ref na[0]; ref uint retref = ref ret[0]; for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i); return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint[] Multiply2(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; ref uint naref = ref na[0]; ref uint nbref = ref nb[0]; Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref naref), ref Unsafe.As<uint, byte>(ref a[0]), (uint)(a.Length << 2)); Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref nbref), ref Unsafe.As<uint, byte>(ref b[0]), (uint)(b.Length << 2)); ntt2(ref na); ntt2(ref nb); naref = ref na[0]; nbref = ref nb[0]; for (var i = 0; i < t; ++i) { ref uint narefi = ref Unsafe.Add(ref naref, i); narefi = mul2(narefi, Unsafe.Add(ref nbref, i)); } ntt2(ref na, true); var ret = new uint[n]; naref = ref na[0]; ref uint retref = ref ret[0]; for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i); return ret; }
