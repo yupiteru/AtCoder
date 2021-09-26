@@ -17,11 +17,9 @@ namespace Library
         /// <summary>
         /// 全方位木DP
         /// </summary>
-        /// <param name="idxToVal">頂点番号から値を取得</param>
-        /// <param name="mergeSubTrees">部分木と部分木のマージ (subtree, subtree)</param>
         /// <returns>2次元配列[node, parent]の部分木のDP値。parent=-1はnodeをルートとした木の値</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CReRooting<T> LIB_ReRooting<T>(Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees) => new CReRooting<T>(this, idxToVal, mergeSubTrees);
+        public CReRooting<T> LIB_ReRooting<T>() => new CReRooting<T>(this);
         public class CReRooting<T>
         {
             LIB_Tree tree;
@@ -31,12 +29,12 @@ namespace Library
             Func<long, long, T, T> g2;
             Func<T, T, T> h;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public CReRooting(LIB_Tree tree, Func<long, T> idxToVal, Func<T, T, T> mergeSubTrees)
+            public CReRooting(LIB_Tree tree)
             {
                 this.tree = tree;
                 dp = Enumerable.Repeat(0, tree.N).Select(_ => new Dictionary<int, T>()).ToArray();
-                f = mergeSubTrees;
-                g = idxToVal;
+                f = (x, y) => throw new NotImplementedException();
+                g = v => throw new NotImplementedException();
                 g2 = (r, p, v) => v;
                 h = (v, t) => t;
             }
@@ -46,17 +44,27 @@ namespace Library
                 get { return dp[vtx][(int)parent]; }
             }
             /// <summary>
+            /// 部分木と部分木のマージ(subtree, subtree)するメソッドを設定
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public CReRooting<T> MergeSubtrees(Func<T, T, T> mergeSubTrees) { f = mergeSubTrees; return this; }
+            /// <summary>
+            /// 頂点番号から値を取得するメソッドを設定
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public CReRooting<T> VertexToValue(Func<long, T> idxToVal) { g = idxToVal; return this; }
+            /// <summary>
             /// 頂点番号(root, parent)で表す辺とrootをルートとする部分木をマージするメソッドを設定
             /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void SetMergeEdgeAndSubtree(Func<long, long, T, T> mergeEdgeAndSubtree) { g2 = mergeEdgeAndSubtree; }
+            public CReRooting<T> MergeEdgeAndSubtree(Func<long, long, T, T> mergeEdgeAndSubtree) { g2 = mergeEdgeAndSubtree; return this; }
             /// <summary>
             /// 頂点と部分木の結果をマージ(vertex, subtrees)するメソッドを設定
             /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void SetMergeVertexAndSubtree(Func<T, T, T> mergeVertexAndSubtree) { h = mergeVertexAndSubtree; }
+            public CReRooting<T> MergeVertexAndSubtree(Func<T, T, T> mergeVertexAndSubtree) { h = mergeVertexAndSubtree; return this; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Build()
+            public CReRooting<T> Build()
             {
                 var done = new bool[tree.N];
                 Action<long, long, T> upd = (vtx, rt, val) =>
@@ -126,6 +134,7 @@ namespace Library
                 };
                 foreach (var item in tree.BFSFromRoot(0)) process((int)item.node, (int)item.parent);
                 for (var i = 1; i < tree.N; i++) dp[i][-1] = done[i] ? h(g(i), dp[i][-1]) : g(i);
+                return this;
             }
         }
     }
