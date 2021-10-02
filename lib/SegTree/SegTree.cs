@@ -114,6 +114,13 @@ namespace Library
             } while ((st & -st) != st);
             return -1;
         }
+        public T this[long l, long r]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Query(l, r + 1);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set { }
+        }
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

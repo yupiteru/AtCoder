@@ -66,6 +66,24 @@ namespace Library
                 if ((ri & 1) == 1) { --ri; dat[ri] = f(dat[ri], v); }
             }
         }
+        public class LazySegTreeOperator
+        {
+            T rangeOperator;
+            public T value => rangeOperator;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public LazySegTreeOperator operator *(LazySegTreeOperator lhs, T rhs)
+            {
+                lhs.rangeOperator = rhs;
+                return lhs;
+            }
+        }
+        public LazySegTreeOperator this[long l, long r]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new LazySegTreeOperator();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => Update(l, r + 1, value.value);
+        }
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -200,6 +200,35 @@ namespace Library
             T acc = ti;
             return FindToLeft(st, check, ref acc, 1, 0, n);
         }
+        public class LazySegTreeOperator
+        {
+            int l;
+            int r;
+            E rangeOperator;
+            T rangeValue;
+            public E value => rangeOperator;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public implicit operator T(LazySegTreeOperator x) => x.rangeValue;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public LazySegTreeOperator operator *(LazySegTreeOperator lhs, E rhs)
+            {
+                lhs.rangeOperator = rhs;
+                return lhs;
+            }
+            public LazySegTreeOperator(long l, long r, T rangeValue)
+            {
+                this.rangeValue = rangeValue;
+                this.l = (int)l;
+                this.r = (int)r;
+            }
+        }
+        public LazySegTreeOperator this[long l, long r]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new LazySegTreeOperator(l, r + 1, Query(l, r + 1));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => Update(l, r + 1, value.value);
+        }
         public T this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
