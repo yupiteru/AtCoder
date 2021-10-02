@@ -202,8 +202,6 @@ namespace Library
         }
         public class LazySegTreeOperator
         {
-            int l;
-            int r;
             E rangeOperator;
             T rangeValue;
             public E value => rangeOperator;
@@ -215,17 +213,15 @@ namespace Library
                 lhs.rangeOperator = rhs;
                 return lhs;
             }
-            public LazySegTreeOperator(long l, long r, T rangeValue)
+            public LazySegTreeOperator(T rangeValue)
             {
                 this.rangeValue = rangeValue;
-                this.l = (int)l;
-                this.r = (int)r;
             }
         }
         public LazySegTreeOperator this[long l, long r]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new LazySegTreeOperator(l, r + 1, Query(l, r + 1));
+            get => new LazySegTreeOperator(Query(l, r + 1));
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => Update(l, r + 1, value.value);
         }
