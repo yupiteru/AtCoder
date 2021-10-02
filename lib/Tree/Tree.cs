@@ -64,7 +64,7 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long GetTyokkei()
+        public int[] GetTyokkei()
         {
             var dist1 = GetDistanceFrom(0);
             var maxPos = 0;
@@ -77,7 +77,29 @@ namespace Library
                     maxPos = i;
                 }
             }
-            return GetDistanceFrom(maxPos).Max();
+            var dist2 = new int[N];
+            var parent = new int[N];
+            maxDist = 0;
+            var anotherMaxPos = 0L;
+            foreach (var item in BFSFromRoot(maxPos))
+            {
+                parent[item.node] = (int)item.parent;
+                if (item.parent == -1) continue;
+                dist2[item.node] = dist2[item.parent] + 1;
+                if (maxDist < dist2[item.node])
+                {
+                    maxDist = dist2[item.node];
+                    anotherMaxPos = item.node;
+                }
+            }
+            var nownode = (int)anotherMaxPos;
+            var ret = new List<int>();
+            while (nownode != -1)
+            {
+                ret.Add(nownode);
+                nownode = parent[nownode];
+            }
+            return ret.ToArray();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<(long node, long parent)> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
