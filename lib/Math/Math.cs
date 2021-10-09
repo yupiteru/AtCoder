@@ -221,6 +221,21 @@ namespace Library
             }
             return (r0, m0);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long Phi(long n)
+        {
+            var ret = n;
+            for (var i = 2L; i * i <= n; ++i)
+            {
+                if (n % i == 0)
+                {
+                    ret -= ret / i;
+                    while (n % i == 0) n /= i;
+                }
+            }
+            if (n > 1) ret -= ret / n;
+            return ret;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         /// <summary>
         /// a*i + b
