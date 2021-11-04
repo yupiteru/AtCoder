@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <StartupObject>AtCoder.Program</StartupObject>
+    <StartupObject>AtCoder.Driver</StartupObject>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
