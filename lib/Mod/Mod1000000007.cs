@@ -106,9 +106,12 @@ namespace Library
         static public LIB_Mod1000000007 CombOK(long n, long k)
         {
             LIB_Mod1000000007 ret = 1;
+            LIB_Mod1000000007 deno = 1;
+            var chk = n - k;
+            if (chk < k) k = chk;
             for (var i = 0; i < k; i++) ret *= n - i;
-            for (var i = 1; i <= k; i++) ret /= i;
-            return ret;
+            for (var i = 1; i <= k; i++) deno *= i;
+            return ret / deno;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Mod1000000007 Perm(long n, long k)
