@@ -84,13 +84,13 @@ namespace Library
             Query[] sorted;
             if (maxL - minL > maxR - minR)
             {
-                var blockSize = ((int)Sqrt(maxR - minR + 1));
-                sorted = queries.OrderBy(e => (e.r - minR) / blockSize).ThenBy(e => (((e.r - minR) / blockSize & 1) == 1) ? -e.l : e.l).ToArray();
+                var blockSize = Max(1, (int)(1.7320508 * (maxR - minR + 1) / Sqrt(2 * queryNum)));
+                sorted = queries.OrderBy(e => (e.r - minR + 1) / blockSize).ThenBy(e => (((e.r - minR + 1) / blockSize & 1) == 1) ? -e.l : e.l).ToArray();
             }
             else
             {
-                var blockSize = ((int)Sqrt(maxL - minL + 1));
-                sorted = queries.OrderBy(e => (e.l - minL) / blockSize).ThenBy(e => (((e.l - minL) / blockSize & 1) == 1) ? -e.r : e.r).ToArray();
+                var blockSize = Max(1, (int)(1.7320508 * (maxL - minL + 1) / Sqrt(2 * queryNum)));
+                sorted = queries.OrderBy(e => (e.l - minL + 1) / blockSize).ThenBy(e => (((e.l - minL + 1) / blockSize & 1) == 1) ? -e.r : e.r).ToArray();
             }
             var lidx = 0;
             var ridx = 0;
