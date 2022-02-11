@@ -25,8 +25,10 @@ namespace Library
         int minR;
         int queryNum;
         List<Query> queries;
-        Action<int> add;
-        Action<int> delete;
+        Action<int> rightAdd;
+        Action<int> leftAdd;
+        Action<int> rightDelete;
+        Action<int> leftDelete;
         Action<int> checker;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_MoAlgorithm()
@@ -34,8 +36,10 @@ namespace Library
             maxL = maxR = int.MinValue;
             minL = minR = int.MaxValue;
             queries = new List<Query>();
-            add = e => { };
-            delete = e => { };
+            rightAdd = e => { };
+            leftAdd = e => { };
+            rightDelete = e => { };
+            leftDelete = e => { };
             checker = e => { };
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,7 +61,25 @@ namespace Library
         /// </summary>
         public LIB_MoAlgorithm SetAddMethod(Action<int> act)
         {
-            add = act;
+            leftAdd = rightAdd = act;
+            return this;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 指定した 範囲index を区間の右に追加するメソッドを設定
+        /// </summary>
+        public LIB_MoAlgorithm SetRightAddMethod(Action<int> act)
+        {
+            rightAdd = act;
+            return this;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 指定した 範囲index を区間の左に追加するメソッドを設定
+        /// </summary>
+        public LIB_MoAlgorithm SetLeftAddMethod(Action<int> act)
+        {
+            leftAdd = act;
             return this;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,7 +88,25 @@ namespace Library
         /// </summary>
         public LIB_MoAlgorithm SetDeleteMethod(Action<int> act)
         {
-            delete = act;
+            leftDelete = rightDelete = act;
+            return this;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 指定した 範囲index を区間の右から削除するメソッドを設定
+        /// </summary>
+        public LIB_MoAlgorithm SetRightDeleteMethod(Action<int> act)
+        {
+            rightDelete = act;
+            return this;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// 指定した 範囲index を区間の左から削除するメソッドを設定
+        /// </summary>
+        public LIB_MoAlgorithm SetLeftDeleteMethod(Action<int> act)
+        {
+            leftDelete = act;
             return this;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,25 +136,25 @@ namespace Library
             var ridx = 0;
             foreach (var item in sorted)
             {
-                while (lidx < item.l)
-                {
-                    delete(lidx);
-                    ++lidx;
-                }
                 while (item.l < lidx)
                 {
                     --lidx;
-                    add(lidx);
+                    leftAdd(lidx);
                 }
                 while (ridx < item.r)
                 {
-                    add(ridx);
+                    rightAdd(ridx);
                     ++ridx;
+                }
+                while (lidx < item.l)
+                {
+                    leftDelete(lidx);
+                    ++lidx;
                 }
                 while (item.r < ridx)
                 {
                     --ridx;
-                    delete(ridx);
+                    rightDelete(ridx);
                 }
                 checker(item.idx);
             }
