@@ -133,8 +133,8 @@ namespace Library
                     Unsafe.Add(ref eulerListRef, idx) = (vtx, pare, 1);
                     foreach (var item in path[vtx])
                     {
-                        if (item + 1 == pare) continue;
-                        Unsafe.Add(ref parref, item) = vtx + 1;
+                        if (item == pare) continue;
+                        Unsafe.Add(ref parref, item) = vtx;
                         Unsafe.Add(ref stackref, si++) = item + 1;
                     }
                 }
