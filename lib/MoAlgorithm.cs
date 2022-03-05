@@ -13,11 +13,12 @@ namespace Library
     ////start
     class LIB_MoAlgorithm
     {
-        struct Query
+        readonly struct Query
         {
-            public int idx;
-            public int l;
-            public int r;
+            public readonly int idx;
+            public readonly int l;
+            public readonly int r;
+            public Query(int idx, int l, int r) { this.idx = idx; this.l = l; this.r = r; }
         }
         int maxL;
         int maxR;
@@ -51,7 +52,7 @@ namespace Library
             if (minL > l) minL = l;
             if (maxR < r) maxR = r;
             if (minR > r) minR = r;
-            queries.Add(new Query() { idx = queryNum, l = l, r = r });
+            queries.Add(new Query(queryNum, l, r));
             ++queryNum;
             return queryNum - 1;
         }
@@ -136,26 +137,10 @@ namespace Library
             var ridx = 0;
             foreach (var item in sorted)
             {
-                while (item.l < lidx)
-                {
-                    --lidx;
-                    leftAdd(lidx);
-                }
-                while (ridx < item.r)
-                {
-                    rightAdd(ridx);
-                    ++ridx;
-                }
-                while (lidx < item.l)
-                {
-                    leftDelete(lidx);
-                    ++lidx;
-                }
-                while (item.r < ridx)
-                {
-                    --ridx;
-                    rightDelete(ridx);
-                }
+                while (item.l < lidx) leftAdd(--lidx);
+                while (ridx < item.r) rightAdd(ridx++);
+                while (lidx < item.l) leftDelete(lidx++);
+                while (item.r < ridx) rightDelete(--ridx);
                 checker(item.idx);
             }
         }
