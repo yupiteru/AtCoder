@@ -57,6 +57,8 @@ namespace Library
             int minL;
             int minR;
             int queryNum;
+            (int nextL, int nextR)[] warpWayToL;
+            (int nextL, int nextR)[] warpWayToR;
             Action<int, int> addEdge;
             Action<int, int> deleteEdge;
             Action<int> checker;
@@ -85,6 +87,29 @@ namespace Library
                     else
                     {
                         array[i] = new Edge((int)tour[i].node, (int)tour[i].parent, table);
+                    }
+                }
+                warpWayToL = new (int nextL, int nextR)[tree.N * 2];
+                warpWayToR = new (int nextL, int nextR)[tree.N * 2];
+                var aikataA = new int[tree.N];
+                for (var i = 1; i < array.Length; ++i)
+                {
+                    aikataA[array[i].idx] ^= i;
+                    warpWayToL[i].nextR = array.Length;
+                    warpWayToR[i].nextR = array.Length;
+                }
+                for (var i = 1; i < array.Length; ++i)
+                {
+                    var aikata = aikataA[array[i].idx] ^ i;
+                    if (aikata < i)
+                    {
+                        warpWayToR[aikata - 1].nextR = i;
+                        warpWayToR[i].nextL = aikata - 1;
+                    }
+                    else
+                    {
+                        warpWayToL[i].nextR = aikata + 1;
+                        warpWayToL[aikata + 1].nextL = i;
                     }
                 }
             }
@@ -149,32 +174,42 @@ namespace Library
                 var isOdd = new bool[tree.N];
                 ref var isOddRef = ref isOdd[0];
                 ref var arrayRef = ref array[0];
+                ref var warpWayToLRef = ref warpWayToL[0];
+                ref var warpWayToRRef = ref warpWayToR[0];
                 addEdge(-1, root);
                 foreach (var item in sorted)
                 {
-                    while (item.l < lidx)
+                    while (true)
                     {
+                        while (item.l <= Unsafe.Add(ref warpWayToLRef, lidx).nextL) lidx = Unsafe.Add(ref warpWayToLRef, lidx).nextL;
+                        if (item.l >= lidx) break;
                         var edge = Unsafe.Add(ref arrayRef, --lidx);
                         if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.a, edge.b);
                         else addEdge(edge.b, edge.a);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
-                    while (ridx < item.r)
+                    while (true)
                     {
+                        while (Unsafe.Add(ref warpWayToRRef, ridx - 1).nextR + 1 <= item.r) ridx = Unsafe.Add(ref warpWayToRRef, ridx - 1).nextR + 1;
+                        if (ridx >= item.r) break;
                         var edge = Unsafe.Add(ref arrayRef, ridx++);
                         if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.b, edge.a);
                         else addEdge(edge.a, edge.b);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
-                    while (lidx < item.l)
+                    while (true)
                     {
+                        while (Unsafe.Add(ref warpWayToLRef, lidx).nextR <= item.l) lidx = Unsafe.Add(ref warpWayToLRef, lidx).nextR;
+                        if (lidx >= item.l) break;
                         var edge = Unsafe.Add(ref arrayRef, lidx++);
                         if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.b, edge.a);
                         else addEdge(edge.a, edge.b);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
-                    while (item.r < ridx)
+                    while (true)
                     {
+                        while (item.r <= Unsafe.Add(ref warpWayToRRef, ridx - 1).nextL + 1) ridx = Unsafe.Add(ref warpWayToRRef, ridx - 1).nextL + 1;
+                        if (item.r >= ridx) break;
                         var edge = Unsafe.Add(ref arrayRef, --ridx);
                         if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.a, edge.b);
                         else addEdge(edge.b, edge.a);
