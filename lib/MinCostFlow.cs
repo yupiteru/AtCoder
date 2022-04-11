@@ -125,11 +125,11 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CapCost Flow(long s, long t) => Flow(s, t, long.MaxValue >> 2);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CapCost Flow(long s, long t, long flowLimit) => Slope(s, t, flowLimit).Last();
+        public CapCost Flow(long s, long t, long flowLimit) => Slope(s, t, flowLimit).RowData().Last();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<CapCost> Slope(long s, long t) => Slope(s, t, long.MaxValue >> 2);
+        public SlopeInfo Slope(long s, long t) => Slope(s, t, long.MaxValue >> 2);
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public List<CapCost> Slope(long s, long t, long flowLimit)
+        public SlopeInfo Slope(long s, long t, long flowLimit)
         {
             var tmp1 = new long[N << 1];
             var tmp2 = new int[N];
@@ -200,7 +200,31 @@ namespace Library
                 result.Add(new CapCost { cap = flow, cost = cost });
                 prevCost = cost;
             }
-            return result;
+            return new SlopeInfo(result);
+        }
+        public class SlopeInfo
+        {
+            CapCost[] _pointList;
+            public SlopeInfo(List<CapCost> pointList)
+            {
+                _pointList = pointList.ToArray();
+            }
+            public CapCost[] RowData() => _pointList.ToArray();
+            public long Cost(long flow)
+            {
+                var left = 0;
+                var right = _pointList.Length;
+                while (right - left > 1)
+                {
+                    var mid = (right + left) >> 1;
+                    if (_pointList[mid].cap <= flow) left = mid;
+                    else right = mid;
+                }
+                if (_pointList[left].cap == flow) return _pointList[left].cost;
+                if (_pointList.Length == right) return -1;
+                var diff = (_pointList[right].cost - _pointList[left].cost) / (_pointList[right].cap - _pointList[left].cap);
+                return _pointList[left].cost + diff * (flow - _pointList[left].cap);
+            }
         }
     }
     ////end
