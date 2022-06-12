@@ -372,7 +372,7 @@ namespace Library
                 }
                 else
                 {
-                    l1 = r; r1 = n.nodeR; val1 = n.val;
+                    l2 = r; r2 = n.nodeR; val2 = n.val;
                 }
                 n.nodeR = l;
             }
