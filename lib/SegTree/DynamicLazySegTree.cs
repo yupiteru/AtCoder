@@ -28,7 +28,7 @@ namespace Library
             public bool needRecalc;
         }
         Func<T, T, T> f;
-        Func<T, E, long, T> g;
+        Func<T, E, long, long, T> g;
         Func<E, E, E> h;
         T ti;
         E ei;
@@ -51,7 +51,7 @@ namespace Library
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private set;
         }
-        public LIB_DynamicLazySegTree(T ti, E ei, Func<T, T, T> f, Func<T, E, long, T> g, Func<E, E, E> h)
+        public LIB_DynamicLazySegTree(T ti, E ei, Func<T, T, T> f, Func<T, E, long, long, T> g, Func<E, E, E> h)
         {
             MinKey = long.MaxValue;
             MaxKey = long.MinValue;
@@ -71,7 +71,7 @@ namespace Library
         {
             if (n == null || ei.Equals(n.lazy)) return;
             n.val = h(n.val, n.lazy);
-            if (!n.needRecalc) n.dat = g(n.dat, n.lazy, n.subtreeR - n.subtreeL);
+            if (!n.needRecalc) n.dat = g(n.dat, n.lazy, n.subtreeL, n.subtreeR);
             if (n.left != null) n.left.lazy = h(n.left.lazy, n.lazy);
             if (n.right != null) n.right.lazy = h(n.right.lazy, n.lazy);
             n.lazy = ei;
@@ -81,7 +81,7 @@ namespace Library
             Eval(n);
             if (!n.needRecalc) return;
             n.needRecalc = false;
-            n.dat = g(ti, n.val, n.nodeR - n.nodeL);
+            n.dat = g(ti, n.val, n.nodeL, n.nodeR);
             if (n.left != null)
             {
                 Recalc(n.left);
@@ -137,7 +137,7 @@ namespace Library
             {
                 isNeedFix = true;
                 Node ret;
-                if (poolLength == 0) ret = new Node() { nodeL = l, subtreeL = l, nodeR = r, subtreeR = r, val = val, dat = g(ti, val, r - l), lazy = ei };
+                if (poolLength == 0) ret = new Node() { nodeL = l, subtreeL = l, nodeR = r, subtreeR = r, val = val, dat = g(ti, val, l, r), lazy = ei };
                 else
                 {
                     ret = pool[--poolLength];
@@ -146,7 +146,7 @@ namespace Library
                     ret.nodeR = r;
                     ret.subtreeR = r;
                     ret.val = val;
-                    ret.dat = g(ti, val, r - l);
+                    ret.dat = g(ti, val, l, r);
                     ret.lazy = ei;
                     ret.isBlack = false;
                     ret.needRecalc = false;
@@ -508,7 +508,7 @@ namespace Library
                 var v3 = n.nodeR >= r ? ti : Query(n.right, n.nodeR, r);
                 l = Max(l, n.nodeL);
                 r = Min(r, n.nodeR);
-                var v2 = g(ti, n.val, r - l);
+                var v2 = g(ti, n.val, l, r);
                 return f(f(v1, v2), v3);
             }
         }
