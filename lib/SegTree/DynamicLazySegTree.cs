@@ -324,7 +324,6 @@ namespace Library
             cnt = 0;
             GetRemoveKeyList(root, l, r);
             if (cnt > 0) Add(l1, r1, val1);
-            if (cnt > 1) Add(l2, r2, val2);
             foreach (var key in removeList) Remove(key);
             Add(l, r, val);
         }
@@ -354,26 +353,14 @@ namespace Library
             }
             else if (n.nodeL == l && r < n.nodeR)
             {
-                if (++cnt == 1)
-                {
-                    l1 = r; r1 = n.nodeR; val1 = n.val;
-                }
-                else
-                {
-                    l2 = r; r2 = n.nodeR; val2 = n.val;
-                }
+                cnt = 1;
+                l1 = r; r1 = n.nodeR; val1 = n.val;
                 removeList.Add(n.nodeL);
             }
             else if (n.nodeL < l && r < n.nodeR)
             {
-                if (++cnt == 1)
-                {
-                    l1 = r; r1 = n.nodeR; val1 = n.val;
-                }
-                else
-                {
-                    l2 = r; r2 = n.nodeR; val2 = n.val;
-                }
+                cnt = 1;
+                l1 = r; r1 = n.nodeR; val1 = n.val;
                 n.nodeR = l;
             }
         }
