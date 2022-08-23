@@ -12,7 +12,7 @@ namespace AtCoder
     {
         static void Main(string[] args)
         {
-            if (args.Length > 0 && args[0] == "direct")
+            //if (args.Length > 0 && args[0] == "direct")
             {
                 Program.ProblemA.Main(new string[0]);
                 return;
