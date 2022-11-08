@@ -29,7 +29,8 @@ namespace Program
             public Printer(Stream stream, Encoding encoding) : base(stream, encoding) { base.AutoFlush = false; }
         }
         static LIB_FastIO fastio = new LIB_FastIODebug();
-        static public void Main(string[] args) { if (args.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } if (SAIKI) { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } else Solve(); Console.Out.Flush(); }
+        static string[] args;
+        static public void Main(string[] args_t) { args = args_t; if (args_t.Length == 0) { fastio = new LIB_FastIO(); Console.SetOut(new Printer(Console.OpenStandardOutput())); } if (SAIKI) { var t = new Thread(Solve, 134217728); t.Start(); t.Join(); } else Solve(); Console.Out.Flush(); }
         static long NN => fastio.Long();
         static double ND => fastio.Double();
         static string NS => fastio.Scan();
