@@ -26,8 +26,10 @@ namespace Library
             while (ysz < _ysz) ysz <<= 1;
             ti = _ti;
             f = _f;
-            dat = new T[xsz << 1, ysz << 1];
-            for (var i = 0; i < xsz; ++i) for (var j = 0; j < ysz; ++j) dat[i, j] = ti;
+            var xten = xsz << 1;
+            var yten = ysz << 1;
+            dat = new T[xten, yten];
+            for (var i = 0; i < xten; ++i) for (var j = 0; j < yten; ++j) dat[i, j] = ti;
             for (var j = 0; j < xsz; ++j) for (var i = ysz - 1; i > 0; i--) dat[j, i] = f(dat[j, (i << 1) | 0], dat[j, (i << 1) | 1]);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

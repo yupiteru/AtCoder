@@ -165,6 +165,37 @@ namespace Library
             }
             return (m1, m1v);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long[] NoshiBasis(long[] elementList)
+        {
+            var basis = new List<long>();
+            foreach (var item in elementList)
+            {
+                var e = item;
+                foreach (var item2 in basis)
+                {
+                    var v = e ^ item2;
+                    if (e > v) e = v;
+                }
+                if (e > 0)
+                {
+                    basis.Add(e);
+                }
+            }
+            var ret = new List<long>();
+            basis = basis.OrderByDescending(e => e).ToList();
+            for (var i = 0; i < basis.Count; ++i)
+            {
+                var v = basis[i];
+                for (var j = i + 1; j < basis.Count; ++j)
+                {
+                    var v2 = v ^ basis[j];
+                    if (v > v2) v = v2;
+                }
+                ret.Add(v);
+            }
+            return ret.ToArray();
+        }
     }
     ////end
 }

@@ -208,7 +208,7 @@ namespace Library
         public override int GetHashCode()
         {
             var t = ary.Aggregate((a, x) => a ^ x);
-            return (int)(((t >> 32) ^ t) & 0x00000000ffffffff);
+            return (int)(((t >> 32) ^ t) & 0x000000007fffffff);
         }
     }
     ////end
