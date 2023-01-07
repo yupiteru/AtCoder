@@ -8,12 +8,39 @@ using System.Text;
 using System.Threading;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Library
 {
     ////start
     class LIB_RollingHash
     {
+        public struct RollingHashResult : IEquatable<RollingHashResult>, IEquatable<long>
+        {
+            ulong hash;
+            int len;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public RollingHashResult(ulong hash, int len)
+            {
+                this.hash = hash;
+                this.len = len;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public implicit operator long(RollingHashResult x) => (long)x.hash;
+            public RollingHashResult Concat(RollingHashResult rhs) => new RollingHashResult(Mod(Mul(hash, basePow[rhs.len]) + rhs.hash), len + rhs.len);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public bool operator ==(RollingHashResult x, RollingHashResult y) => x.hash == y.hash;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static public bool operator !=(RollingHashResult x, RollingHashResult y) => x.hash != y.hash;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(RollingHashResult x) => hash == x.hash;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(long x) => hash == (ulong)x;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override bool Equals(object x) => x == null ? false : Equals((RollingHashResult)x);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetHashCode() => hash.GetHashCode();
+        }
         const ulong MASK30 = (1UL << 30) - 1;
         const ulong MASK31 = (1UL << 31) - 1;
         const ulong MOD = (1UL << 61) - 1;
@@ -39,7 +66,7 @@ namespace Library
             basePow.Add(Mod(Mul(basePow.Last(), baseNum)));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long GetHash(int l, int r) => (long)Mod(hash[r] + POSITIVIZER - Mul(hash[l], basePow[r - l]));
+        public RollingHashResult GetHash(int l, int r) => new RollingHashResult(Mod(hash[r] + POSITIVIZER - Mul(hash[l], basePow[r - l])), r - l);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static ulong Mul(ulong l, ulong r)
         {
