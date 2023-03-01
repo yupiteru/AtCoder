@@ -64,6 +64,31 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int[] GetJuusin()
+        {
+            var center = new List<int>();
+            var dp = new long[N];
+            foreach (var item in BFSFromLeaf(0))
+            {
+                dp[item.node] += 1;
+                var ok = false;
+                foreach (var item2 in path[item.node])
+                {
+                    if (item2 == item.parent) continue;
+                    dp[item.node] += dp[item2];
+                    if (dp[item2] <= N / 2) ok = true;
+                }
+                if (ok)
+                {
+                    if (N - dp[item.node] <= N / 2)
+                    {
+                        center.Add((int)item.node);
+                    }
+                }
+            }
+            return center.ToArray();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[] GetTyokkei()
         {
             var dist1 = GetDistanceFrom(0);
