@@ -76,12 +76,12 @@ namespace Library
                 };
                 foreach (var item in tree.BFSFromLeaf(0))
                 {
-                    var ary = tree.path[item.node].Where(e => e != item.parent).ToArray();
+                    var ary = tree.path[item.node].Where(e => e.Key != item.parent).ToArray();
                     var val = g(item.node);
                     if (ary.Length > 0)
                     {
-                        var acc = g2(ary[0], item.node, dp[ary[0]][(int)item.node]);
-                        foreach (var item2 in ary.Skip(1)) acc = f(acc, g2(item2, item.node, dp[item2][(int)item.node]));
+                        var acc = g2(ary[0].Key, item.node, dp[ary[0].Key][(int)item.node]);
+                        foreach (var item2 in ary.Skip(1)) acc = f(acc, g2(item2.Key, item.node, dp[item2.Key][(int)item.node]));
                         val = h(val, acc);
                     }
                     upd(item.parent, item.node, dp[item.node][(int)item.parent] = val);

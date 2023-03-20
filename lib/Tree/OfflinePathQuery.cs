@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    // copy key class LIB_PathQuery
+    // copy key class LIB_OfflinePathQuery
     partial class /* not copy key */ LIB_Tree
     {
         readonly struct Query
@@ -44,7 +44,7 @@ namespace Library
                 this.b = b;
             }
         }
-        public CPathQuery LIB_PathQuery(long root) => new CPathQuery((int)root, this);
+        public CPathQuery LIB_OfflinePathQuery(long root) => new CPathQuery((int)root, this);
         public class CPathQuery
         {
             LIB_Tree tree;

@@ -64,10 +64,10 @@ namespace Library
                 var leaf = true;
                 foreach (var child in path[node])
                 {
-                    if (child == parent) continue;
+                    if (child.Key == parent) continue;
                     leaf = false;
-                    Unsafe.Add(ref refdepth, child) = depth + 1;
-                    Unsafe.Add(ref refnodestack, ++stackcount) = child;
+                    Unsafe.Add(ref refdepth, child.Key) = depth + 1;
+                    Unsafe.Add(ref refnodestack, ++stackcount) = child.Key;
                     Unsafe.Add(ref refparentstack, stackcount) = node;
                 }
                 if (leaf) Unsafe.Add(ref refeuler, eulercnt++) = (depth << SHIFT) | node;
