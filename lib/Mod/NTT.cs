@@ -13,12 +13,12 @@ namespace Library
     ////start
     class LIB_NTT
     {
-        const uint mod1 = 1045430273;
-        const uint root1 = 3;
-        const uint mod2 = 1051721729;
-        const uint root2 = 6;
-        const uint mod3 = 1053818881;
-        const uint root3 = 7;
+        const uint mod1 = 754974721;
+        const uint root1 = 11;
+        const uint mod2 = 167772161;
+        const uint root2 = 3;
+        const uint mod3 = 469762049;
+        const uint root3 = 3;
         const uint mod4 = 998244353;
         const uint root4 = 3;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,6 +199,43 @@ namespace Library
                 Unsafe.Add(ref retref, i) = (xv + ((long)mod1 * v1 % mod) + (m12_mod * v2 % mod)) % mod;
             }
             return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long[] MultiplyLong(long[] a, long[] b)
+        {
+            unchecked
+            {
+                const ulong mod23 = (ulong)mod2 * mod3;
+                const ulong mod13 = (ulong)mod1 * mod3;
+                const ulong mod12 = (ulong)mod1 * mod2;
+                const ulong mod123 = (ulong)mod1 * mod2 * mod3;
+                ulong[] offset = new ulong[] { 0, 0, mod123, 2 * mod123, 3 * mod123 };
+
+                const ulong i1 = 190329765;
+                const ulong i2 = 58587104;
+                const ulong i3 = 187290749;
+
+                var c1 = Multiply1(a.Select(e => (uint)(e % mod1) + mod1).ToArray(), b.Select(e => (uint)(e % mod1) + mod1).ToArray());
+                var c2 = Multiply2(a.Select(e => (uint)(e % mod2) + mod2).ToArray(), b.Select(e => (uint)(e % mod2) + mod2).ToArray());
+                var c3 = Multiply3(a.Select(e => (uint)(e % mod3) + mod3).ToArray(), b.Select(e => (uint)(e % mod3) + mod3).ToArray());
+
+                var c = new long[a.Length + b.Length - 1];
+                for (var i = 0; i < c.Length; ++i)
+                {
+                    var x = 0UL;
+                    x += c1[i] * i1 % mod1 * mod23;
+                    x += c2[i] * i2 % mod2 * mod13;
+                    x += c3[i] * i3 % mod3 * mod12;
+
+                    var tmp = (long)x % mod1;
+                    if (tmp < 0) tmp += mod1;
+                    var diff = c1[i] - tmp;
+                    if (diff < 0) diff += mod1;
+
+                    c[i] = (long)(x - offset[diff % 5]);
+                }
+                return c;
+            }
         }
     }
     ////end
