@@ -27,12 +27,12 @@ namespace Library
         public long this[long idx]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return Sum(idx) - Sum(idx - 1); }
+            get { return Sum_0indexed(idx) - Sum_0indexed(idx - 1); }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { Add(idx, -this[idx]); Add(idx, value); }
+            set { Add_0indexed(idx, -this[idx]); Add_0indexed(idx, value); }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long Sum(long idx)
+        public long Sum_0indexed(long idx)
         {
             var ret = 0L;
             var i = (int)idx + 1;
@@ -45,7 +45,7 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(long idx, long value)
+        public void Add_0indexed(long idx, long value)
         {
             var i = (int)idx + 1;
             ref long datref = ref dat[0];
