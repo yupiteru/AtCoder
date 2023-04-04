@@ -156,7 +156,7 @@ namespace Library
                 return this;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Build()
+            public void Execute()
             {
                 Query[] sorted;
                 if (maxL - minL > maxR - minR)
