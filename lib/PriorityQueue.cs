@@ -99,6 +99,151 @@ namespace Library
             return ret;
         }
     }
+    class LIB_PriorityQueueDeletable
+    {
+        long[] deleted;
+        long[] heap;
+        int[] dat;
+        int deletedCount;
+        int heapCount;
+        public (long Key, int Value) Peek
+        {
+            get { return (heap[0], dat[0]); }
+            private set { }
+        }
+        public long Count
+        {
+            get { return heapCount - deletedCount; }
+            private set { }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_PriorityQueueDeletable()
+        {
+            deleted = new long[8];
+            heap = new long[8];
+            dat = new int[8];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Validate()
+        {
+            while (deletedCount > 0 && heap[0] == deleted[0])
+            {
+                InnerPop();
+                PopDeleted();
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DeleteExistKeyUnchecked(long key)
+        {
+            if (deletedCount == deleted.Length) ExpandDeleted();
+            var i = (int)deletedCount++;
+            ref long heapref = ref deleted[0];
+            Unsafe.Add<long>(ref heapref, i) = key;
+            while (i > 0)
+            {
+                var ni = (i - 1) / 2;
+                var heapni = Unsafe.Add<long>(ref heapref, ni);
+                if (key >= heapni) break;
+                Unsafe.Add<long>(ref heapref, i) = heapni;
+                i = ni;
+            }
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Validate();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Push(long key) => Push(key, 0);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Push(long key, int val)
+        {
+            if (heapCount == heap.Length) Expand();
+            var i = (int)heapCount++;
+            ref long heapref = ref heap[0];
+            ref int datref = ref dat[0];
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
+            while (i > 0)
+            {
+                var ni = (i - 1) / 2;
+                var heapni = Unsafe.Add<long>(ref heapref, ni);
+                if (key >= heapni) break;
+                Unsafe.Add<long>(ref heapref, i) = heapni;
+                Unsafe.Add<int>(ref datref, i) = Unsafe.Add<int>(ref datref, ni);
+                i = ni;
+            }
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void PopDeleted()
+        {
+            ref long heapref = ref deleted[0];
+            var cnt = (int)(--deletedCount);
+            var key = Unsafe.Add<long>(ref heapref, cnt);
+            if (cnt == 0) return;
+            var i = 0; while ((i << 1) + 1 < cnt)
+            {
+                var i1 = (i << 1) + 1;
+                var i2 = (i << 1) + 2;
+                if (i2 < cnt && Unsafe.Add<long>(ref heapref, i1) > Unsafe.Add<long>(ref heapref, i2)) i1 = i2;
+                var heapi1 = Unsafe.Add<long>(ref heapref, i1);
+                if (key <= heapi1) break;
+                Unsafe.Add<long>(ref heapref, i) = heapi1;
+                i = i1;
+            }
+            Unsafe.Add<long>(ref heapref, i) = key;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public (long Key, int Value) Pop()
+        {
+            var ret = InnerPop();
+            Validate();
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        (long Key, int Value) InnerPop()
+        {
+            ref long heapref = ref heap[0];
+            ref int datref = ref dat[0];
+            var ret = (heapref, datref);
+            var cnt = (int)(--heapCount);
+            var key = Unsafe.Add<long>(ref heapref, cnt);
+            var val = Unsafe.Add<int>(ref datref, cnt);
+            if (cnt == 0) return ret;
+            var i = 0; while ((i << 1) + 1 < cnt)
+            {
+                var i1 = (i << 1) + 1;
+                var i2 = (i << 1) + 2;
+                if (i2 < cnt && Unsafe.Add<long>(ref heapref, i1) > Unsafe.Add<long>(ref heapref, i2)) i1 = i2;
+                var heapi1 = Unsafe.Add<long>(ref heapref, i1);
+                if (key <= heapi1) break;
+                Unsafe.Add<long>(ref heapref, i) = heapi1;
+                Unsafe.Add<int>(ref datref, i) = Unsafe.Add<int>(ref datref, i1);
+                i = i1;
+            }
+            Unsafe.Add<long>(ref heapref, i) = key;
+            Unsafe.Add<int>(ref datref, i) = val;
+            return ret;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Expand()
+        {
+            var len = heap.Length;
+            var tmp = new long[len << 1];
+            var tmp2 = new int[len << 1];
+            Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmp[0]), ref Unsafe.As<long, byte>(ref heap[0]), (uint)(8 * len));
+            Unsafe.CopyBlock(ref Unsafe.As<int, byte>(ref tmp2[0]), ref Unsafe.As<int, byte>(ref dat[0]), (uint)(4 * len));
+            heap = tmp;
+            dat = tmp2;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void ExpandDeleted()
+        {
+            var len = deleted.Length;
+            var tmp = new long[len << 1];
+            Unsafe.CopyBlock(ref Unsafe.As<long, byte>(ref tmp[0]), ref Unsafe.As<long, byte>(ref deleted[0]), (uint)(8 * len));
+            deleted = tmp;
+        }
+    }
     class LIB_PriorityQueue<T>
     {
         T[] heap;
