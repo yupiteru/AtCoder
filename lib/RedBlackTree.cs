@@ -44,6 +44,7 @@ namespace Library
         Node root;
         bool isNeedFix;
         Node lmax;
+        List<Node> pool = new List<Node>();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_RedBlackTree(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, int, ValueT> g, Func<ValueE, ValueE, ValueE> h, Comparison<Key> c, bool ope = true)
         {
@@ -131,7 +132,25 @@ namespace Library
             if (n == null)
             {
                 isNeedFix = true;
-                return new Node() { key = key, val = val, dat = val, lazy = ei, cnt = 1 };
+                Node ret;
+                if (pool.Count > 0)
+                {
+                    ret = pool[pool.Count - 1];
+                    pool.RemoveAt(pool.Count - 1);
+                    ret.left = ret.right = null;
+                    ret.key = key;
+                    ret.val = val;
+                    ret.dat = val;
+                    ret.lazy = ei;
+                    ret.isBlack = false;
+                    ret.cnt = 1;
+                    ret.needRecalc = false;
+                }
+                else
+                {
+                    ret = new Node() { key = key, val = val, dat = val, lazy = ei, cnt = 1 };
+                }
+                return ret;
             }
             if (ope) Eval(n);
             if (c(key, n.key) < 0) n.left = Add(n.left, key, val);
@@ -246,6 +265,7 @@ namespace Library
                 return BalanceR(n);
             }
             lmax = n;
+            pool.Add(lmax);
             isNeedFix = n.isBlack;
             return n.left;
         }
