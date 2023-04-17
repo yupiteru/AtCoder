@@ -14,25 +14,29 @@ namespace Library
     partial class LIB_Tree
     {
         int N;
-        Dictionary<int, int>[] path;
+        List<int>[] path;
+        Dictionary<int, int>[] pathWithCount;
         List<(int u, int v)> edges;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Tree(long n)
         {
             N = (int)n;
-            path = Enumerable.Repeat(0, N).Select(_ => new Dictionary<int, int>()).ToArray();
+            path = Enumerable.Repeat(0, N).Select(_ => new List<int>()).ToArray();
+            pathWithCount = Enumerable.Repeat(0, N).Select(_ => new Dictionary<int, int>()).ToArray();
             edges = new List<(int u, int v)>();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddPath(long u, long v)
         {
             if (u >= N || v >= N) throw new Exception();
-            path[u].Add((int)v, edges.Count);
-            path[v].Add((int)u, edges.Count);
+            path[u].Add((int)v);
+            path[v].Add((int)u);
+            pathWithCount[u].Add((int)v, edges.Count);
+            pathWithCount[v].Add((int)u, edges.Count);
             edges.Add(((int)u, (int)v));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int[] GetSurround(long u) => path[u].Select(e => e.Key).ToArray();
+        public int[] GetSurround(long u) => path[u].ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<(long node, long parent)> BFSFromRoot(long root)
         {
@@ -45,7 +49,7 @@ namespace Library
             while (q.Count > 0)
             {
                 var w = q.Dequeue();
-                foreach (var edge in path[w])
+                foreach (var edge in pathWithCount[w])
                 {
                     var i = edge.Key;
                     if (done[i]) continue;
@@ -78,7 +82,7 @@ namespace Library
                 var ok = false;
                 foreach (var edge in path[item.node])
                 {
-                    var idx = edge.Key;
+                    var idx = edge;
                     if (idx == item.parent) continue;
                     dp[item.node] += dp[idx];
                     if (dp[idx] <= N / 2) ok = true;
@@ -163,7 +167,7 @@ namespace Library
                     Unsafe.Add(ref eulerListRef, idx) = (vtx, pare, 1);
                     foreach (var edge in path[vtx])
                     {
-                        var item = edge.Key;
+                        var item = edge;
                         if (item == pare) continue;
                         Unsafe.Add(ref parref, item) = vtx;
                         Unsafe.Add(ref stackref, si++) = item + 1;

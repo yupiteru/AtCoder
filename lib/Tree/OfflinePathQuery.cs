@@ -59,8 +59,10 @@ namespace Library
             int queryNum;
             (int nextL, int nextR)[] warpWayToL;
             (int nextL, int nextR)[] warpWayToR;
-            Action<int, int> addEdge;
-            Action<int, int> deleteEdge;
+            Action<int, int> addRightEdge;
+            Action<int, int> addLeftEdge;
+            Action<int, int> deleteRightEdge;
+            Action<int, int> deleteLeftEdge;
             Action<int> checker;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public CPathQuery(int root, LIB_Tree tree)
@@ -69,7 +71,7 @@ namespace Library
                 minL = minR = int.MaxValue;
                 queryNum = 0;
                 queries = new List<Query>();
-                addEdge = deleteEdge = (e1, e2) => { };
+                addRightEdge = addLeftEdge = deleteRightEdge = deleteLeftEdge = (e1, e2) => { };
                 checker = e => { };
                 var table = new Dictionary<long, int>();
                 this.root = root;
@@ -133,7 +135,17 @@ namespace Library
             /// </summary>
             public CPathQuery SetAddEdgeMethod(Action<int, int> act)
             {
-                addEdge = act;
+                addRightEdge = addLeftEdge = act;
+                return this;
+            }
+            public CPathQuery SetAddRightEdgeMethod(Action<int, int> act)
+            {
+                addRightEdge = act;
+                return this;
+            }
+            public CPathQuery SetAddLeftEdgeMethod(Action<int, int> act)
+            {
+                addLeftEdge = act;
                 return this;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,7 +155,17 @@ namespace Library
             /// </summary>
             public CPathQuery SetDeleteEdgeMethod(Action<int, int> act)
             {
-                deleteEdge = act;
+                deleteRightEdge = deleteLeftEdge = act;
+                return this;
+            }
+            public CPathQuery SetDeleteRightEdgeMethod(Action<int, int> act)
+            {
+                deleteRightEdge = act;
+                return this;
+            }
+            public CPathQuery SetDeleteLeftEdgeMethod(Action<int, int> act)
+            {
+                deleteLeftEdge = act;
                 return this;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,7 +198,7 @@ namespace Library
                 ref var arrayRef = ref array[0];
                 ref var warpWayToLRef = ref warpWayToL[0];
                 ref var warpWayToRRef = ref warpWayToR[0];
-                addEdge(-1, root);
+                addRightEdge(-1, root);
                 foreach (var item in sorted)
                 {
                     while (true)
@@ -184,8 +206,8 @@ namespace Library
                         while (item.l <= Unsafe.Add(ref warpWayToLRef, lidx).nextL) lidx = Unsafe.Add(ref warpWayToLRef, lidx).nextL;
                         if (item.l >= lidx) break;
                         var edge = Unsafe.Add(ref arrayRef, --lidx);
-                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.a, edge.b);
-                        else addEdge(edge.b, edge.a);
+                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteLeftEdge(edge.a, edge.b);
+                        else addLeftEdge(edge.b, edge.a);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
                     while (true)
@@ -193,8 +215,8 @@ namespace Library
                         while (Unsafe.Add(ref warpWayToRRef, ridx - 1).nextR + 1 <= item.r) ridx = Unsafe.Add(ref warpWayToRRef, ridx - 1).nextR + 1;
                         if (ridx >= item.r) break;
                         var edge = Unsafe.Add(ref arrayRef, ridx++);
-                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.b, edge.a);
-                        else addEdge(edge.a, edge.b);
+                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteRightEdge(edge.b, edge.a);
+                        else addRightEdge(edge.a, edge.b);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
                     while (true)
@@ -202,8 +224,8 @@ namespace Library
                         while (Unsafe.Add(ref warpWayToLRef, lidx).nextR <= item.l) lidx = Unsafe.Add(ref warpWayToLRef, lidx).nextR;
                         if (lidx >= item.l) break;
                         var edge = Unsafe.Add(ref arrayRef, lidx++);
-                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.b, edge.a);
-                        else addEdge(edge.a, edge.b);
+                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteLeftEdge(edge.b, edge.a);
+                        else addLeftEdge(edge.a, edge.b);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
                     while (true)
@@ -211,8 +233,8 @@ namespace Library
                         while (item.r <= Unsafe.Add(ref warpWayToRRef, ridx - 1).nextL + 1) ridx = Unsafe.Add(ref warpWayToRRef, ridx - 1).nextL + 1;
                         if (item.r >= ridx) break;
                         var edge = Unsafe.Add(ref arrayRef, --ridx);
-                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteEdge(edge.a, edge.b);
-                        else addEdge(edge.b, edge.a);
+                        if (Unsafe.Add(ref isOddRef, edge.idx)) deleteRightEdge(edge.a, edge.b);
+                        else addRightEdge(edge.b, edge.a);
                         Unsafe.Add(ref isOddRef, edge.idx) = !Unsafe.Add(ref isOddRef, edge.idx);
                     }
                     checker(item.idx);
