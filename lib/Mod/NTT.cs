@@ -13,12 +13,12 @@ namespace Library
     ////start
     class LIB_NTT
     {
-        const uint mod1 = 754974721;
-        const uint root1 = 11;
-        const uint mod2 = 167772161;
+        const uint mod1 = 167772161;
+        const uint root1 = 3;
+        const uint mod2 = 469762049;
         const uint root2 = 3;
-        const uint mod3 = 469762049;
-        const uint root3 = 3;
+        const uint mod3 = 754974721;
+        const uint root3 = 11;
         const uint mod4 = 998244353;
         const uint root4 = 3;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
