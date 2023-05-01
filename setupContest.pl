@@ -143,6 +143,7 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
     }
     exit;
   }
+  usleep 100000;
 }
 
 if($isServerMode == 1) {
