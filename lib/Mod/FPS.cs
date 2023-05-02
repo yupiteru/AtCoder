@@ -47,7 +47,7 @@ namespace Library
             for (var i = 0; i < y.ary.Length; ++i)
             {
                 var sum = ret.ary[i] + y.ary[i];
-                ret.ary[i] = sum >= MOD ? MOD - sum : sum;
+                ret.ary[i] = sum >= MOD ? sum - MOD : sum;
             }
             return ret;
         }
@@ -56,7 +56,7 @@ namespace Library
         {
             var ret = x.Clone();
             var sum = ret[0] + y;
-            ret[0] = sum >= MOD ? MOD - sum : sum;
+            ret[0] = sum >= MOD ? sum - MOD : sum;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,7 +67,7 @@ namespace Library
             for (var i = 0; i < y.ary.Length; ++i)
             {
                 var sum = ret.ary[i] + MOD - y.ary[i];
-                ret.ary[i] = sum >= MOD ? MOD - sum : sum;
+                ret.ary[i] = sum >= MOD ? sum - MOD : sum;
             }
             return ret;
         }
@@ -76,7 +76,7 @@ namespace Library
         {
             var ret = x.Clone();
             var sum = ret[0] + MOD - y;
-            ret[0] = sum >= MOD ? MOD - sum : sum;
+            ret[0] = sum >= MOD ? sum - MOD : sum;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,10 +126,39 @@ namespace Library
             var invc = LIB_Mod998244353.Inverse(ary[l]);
             var g = new LIB_FPS(K - l);
             for (var i = l; i < ary.Length; ++i) g.ary[i - l] = (uint)(ary[i] * invc % MOD);
-            g.Log_inplace();
-            for (var i = 0; i < g.ary.Length; ++i) g.ary[i] = (uint)((M % MOD) * g.ary[i] % MOD);
-            g.Exp_inplace();
+
+            var dat = new List<(int idx, long val)>();
+            for (var i = 1; i < g.ary.Length; ++i) if (g.ary[i] != 0) dat.Add((i, g.ary[i]));
+
             var ten = l * M;
+            M %= MOD;
+            if (dat.Count > 100)
+            {
+                g.Log_inplace_dense();
+                for (var i = 0; i < g.ary.Length; ++i) g.ary[i] = (uint)(M * g.ary[i] % MOD);
+                g.Exp_inplace_dense();
+            }
+            else
+            {
+                var inv = new long[g.ary.Length];
+                inv[1] = 1;
+                for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+
+                for (var n = 0; n < g.ary.Length - 1; ++n)
+                {
+                    g.ary[n + 1] = 0;
+                    foreach (var item in dat)
+                    {
+                        if (item.idx > n + 1) break;
+                        var t = item.val * g.ary[n - item.idx + 1] % MOD;
+                        t = t * ((M * item.idx % MOD) - n + item.idx - 1) % MOD;
+                        if (t < 0) t += MOD;
+                        g.ary[n + 1] += (uint)t;
+                        if (g.ary[n + 1] >= MOD) g.ary[n + 1] -= MOD;
+                    }
+                    g.ary[n + 1] = (uint)(g.ary[n + 1] * inv[n + 1] % MOD);
+                }
+            }
             for (var i = ary.Length - 1; i >= ten; --i) ary[i] = (uint)(powc * g.ary[i - ten] % MOD);
             for (var i = 0; i < ten; ++i) ary[i] = 0;
         }
@@ -148,6 +177,36 @@ namespace Library
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exp_inplace()
+        {
+            var dat = new List<(int idx, long val)>();
+            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i - 1, (long)i * ary[i] % MOD));
+            if (dat.Count > 320)
+            {
+                Exp_inplace_dense();
+                return;
+            }
+
+            // sparse
+            var inv = new long[ary.Length + 1];
+            inv[1] = 1;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+            ary[0] = 1;
+            for (var n = 1; n < ary.Length; ++n)
+            {
+                var rhs = 0L;
+                foreach (var item in dat)
+                {
+                    if (item.idx > n - 1) break;
+                    rhs += item.val * ary[n - 1 - item.idx];
+                }
+                ary[n] = (uint)((rhs % MOD) * inv[n] % MOD);
+            }
+        }
+        /// <summary>
+        /// 指数 (a0 == 0)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Exp_inplace_dense()
         {
             var maxlen = 2;
             while ((maxlen << 1) <= K) maxlen <<= 1;
@@ -262,6 +321,39 @@ namespace Library
                 ary[0] = 0;
                 return;
             }
+            var dat = new List<(int idx, uint val)>();
+            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
+            if (dat.Count > 160)
+            {
+                Log_inplace_dense();
+                return;
+            }
+
+            // sparse
+            var g = new long[ary.Length - 1];
+            var inv = new long[ary.Length];
+            inv[1] = 1;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+            ary[0] = 0;
+            for (var n = 0; n < ary.Length - 1; ++n)
+            {
+                var rhs = (long)(n + 1) * ary[n + 1] % MOD;
+                foreach (var item in dat)
+                {
+                    if (item.idx > n) break;
+                    rhs = rhs - item.val * g[n - item.idx] % MOD;
+                    if (rhs < 0) rhs += MOD;
+                }
+                g[n] = rhs;
+                ary[n + 1] = (uint)(rhs * inv[n + 1] % MOD);
+            }
+        }
+        /// <summary>
+        /// 対数 (a0 == 1)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Log_inplace_dense()
+        {
             var f2 = Differential();
             Inverse_inplace();
             var len = 1;
@@ -339,6 +431,35 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Inverse_inplace()
         {
+            var dat = new List<(int idx, long val)>();
+            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
+            if (dat.Count > 160)
+            {
+                Inverse_inplace_dense();
+                return;
+            }
+
+            // sparse
+            ary[0] = (uint)LIB_Mod998244353.Inverse(ary[0]);
+            for (var n = 1; n < ary.Length; ++n)
+            {
+                var rhs = 0L;
+                foreach (var item in dat)
+                {
+                    if (item.idx > n) break;
+                    rhs -= item.val * ary[n - item.idx];
+                }
+                rhs = (rhs % MOD) * ary[0] % MOD;
+                if (rhs < 0) rhs += MOD;
+                ary[n] = (uint)rhs;
+            }
+        }
+        /// <summary>
+        /// 逆元 (a0 != 0)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Inverse_inplace_dense()
+        {
             var maxlen = 1;
             while (maxlen <= K) maxlen <<= 1;
             var g = new uint[maxlen];
@@ -363,14 +484,18 @@ namespace Library
                 for (var i = len; i < nextlen; ++i) g[i] = (nttf[i] == 0 ? 0 : MOD - nttf[i]);
                 len = nextlen;
             }
-            ary = g;
+            for (var i = 0; i < ary.Length; ++i) ary[i] = g[i];
         }
         public long this[long index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return (long)ary[index]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { ary[index] = (uint)value % MOD; }
+            set
+            {
+                var v = value % MOD;
+                ary[index] = (uint)(v < 0 ? v + MOD : v);
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string Join(string separator = "") => string.Join(separator, ary);
