@@ -11,9 +11,9 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_FPS
+    class LIB_FPSFreeMod
     {
-        const uint MOD = 998244353;
+        public static uint MOD;
         uint[] ary;
         public int K
         {
@@ -21,17 +21,17 @@ namespace Library
             private set;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS(long K)
+        public LIB_FPSFreeMod(long K)
         {
             this.K = (int)K;
             ary = new uint[K + 1];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS(long K, int[] a) : this(K, a.Select(e => (long)e).ToArray())
+        public LIB_FPSFreeMod(long K, int[] a) : this(K, a.Select(e => (long)e).ToArray())
         {
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS(long K, long[] a) : this(K)
+        public LIB_FPSFreeMod(long K, long[] a) : this(K)
         {
             var ten = Min(ary.Length, a.Length);
             for (var i = 0; i < ten; ++i)
@@ -42,16 +42,44 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Clone()
+        public LIB_FPSFreeMod Clone()
         {
-            var ret = new LIB_FPS(K);
+            var ret = new LIB_FPSFreeMod(K);
             ret.ary = (uint[])ary.Clone();
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator +(LIB_FPS x, LIB_FPS y)
+        static long InverseMod(long x)
         {
-            var ret = new LIB_FPS(Max(x.K, y.K));
+            long b = MOD, r = 1, u = 0, t = 0;
+            while (b > 0)
+            {
+                var q = x / b;
+                t = u;
+                u = r - q * u;
+                r = t;
+                t = b;
+                b = x - q * b;
+                x = t;
+            }
+            return r < 0 ? r + MOD : r;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static long PowMod(long x, long y)
+        {
+            long a = 1;
+            while (y != 0)
+            {
+                if ((y & 1) == 1) a = a * x % MOD;
+                x = x * x % MOD;
+                y >>= 1;
+            }
+            return a;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_FPSFreeMod operator +(LIB_FPSFreeMod x, LIB_FPSFreeMod y)
+        {
+            var ret = new LIB_FPSFreeMod(Max(x.K, y.K));
             for (var i = 0; i < x.ary.Length; ++i) ret.ary[i] += x.ary[i];
             for (var i = 0; i < y.ary.Length; ++i)
             {
@@ -61,7 +89,7 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator +(LIB_FPS x, long y)
+        static public LIB_FPSFreeMod operator +(LIB_FPSFreeMod x, long y)
         {
             var ret = x.Clone();
             var sum = ret[0] + y;
@@ -69,9 +97,9 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator -(LIB_FPS x, LIB_FPS y)
+        static public LIB_FPSFreeMod operator -(LIB_FPSFreeMod x, LIB_FPSFreeMod y)
         {
-            var ret = new LIB_FPS(Max(x.K, y.K));
+            var ret = new LIB_FPSFreeMod(Max(x.K, y.K));
             for (var i = 0; i < x.ary.Length; ++i) ret.ary[i] += x.ary[i];
             for (var i = 0; i < y.ary.Length; ++i)
             {
@@ -81,7 +109,7 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator -(LIB_FPS x, long y)
+        static public LIB_FPSFreeMod operator -(LIB_FPSFreeMod x, long y)
         {
             var ret = x.Clone();
             var sum = ret[0] + MOD - y;
@@ -89,23 +117,23 @@ namespace Library
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator *(LIB_FPS x, LIB_FPS y)
+        static public LIB_FPSFreeMod operator *(LIB_FPSFreeMod x, LIB_FPSFreeMod y)
         {
-            return new LIB_FPS(Max(x.K, y.K), LIB_NTT.Multiply(x.ary.Select(e => (long)e).ToArray(), y.ary.Select(e => (long)e).ToArray()));
+            return new LIB_FPSFreeMod(Max(x.K, y.K), LIB_NTT.Multiply(x.ary.Select(e => (long)e).ToArray(), y.ary.Select(e => (long)e).ToArray(), MOD));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator *(LIB_FPS x, long y)
+        static public LIB_FPSFreeMod operator *(LIB_FPSFreeMod x, long y)
         {
             var ret = x.Clone();
             for (var i = 0; i < ret.ary.Length; ++i) ret.ary[i] = (uint)(y * ret.ary[i] % MOD);
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator /(LIB_FPS x, LIB_FPS y) => x * y.Inverse();
+        static public LIB_FPSFreeMod operator /(LIB_FPSFreeMod x, LIB_FPSFreeMod y) => x * y.Inverse();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator /(LIB_FPS x, long y) => x * LIB_Mod998244353.Inverse(y);
+        static public LIB_FPSFreeMod operator /(LIB_FPSFreeMod x, long y) => x * InverseMod(y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno)
+        static public long BostanMori(long N, LIB_FPSFreeMod nume, LIB_FPSFreeMod deno)
         {
             var p = nume.ary.Select(e => (long)e).ToArray();
             var q = deno.ary.Select(e => (long)e).ToArray();
@@ -113,21 +141,21 @@ namespace Library
             {
                 var flipQ = q.ToArray();
                 for (var i = 1; i < flipQ.Length; i += 2) flipQ[i] = flipQ[i] == 0 ? 0 : MOD - flipQ[i];
-                var tmp = LIB_NTT.Multiply(p, flipQ);
+                var tmp = LIB_NTT.Multiply(p, flipQ, MOD);
                 p = new long[(tmp.Length + (~N & 1)) / 2];
                 for (var i = 0; i < p.Length; ++i) p[i] = tmp[i * 2 + (N & 1)];
-                tmp = LIB_NTT.Multiply(q, flipQ);
+                tmp = LIB_NTT.Multiply(q, flipQ, MOD);
                 q = new long[(tmp.Length + 1) / 2];
                 for (var i = 0; i < q.Length; ++i) q[i] = tmp[i * 2];
                 N /= 2;
             }
-            return p[0] * LIB_Mod998244353.Inverse(q[0]) % MOD;
+            return p[0] * InverseMod(q[0]) % MOD;
         }
         /// <summary>
         /// べき乗
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Pow(long M)
+        public LIB_FPSFreeMod Pow(long M)
         {
             var ret = Clone();
             ret.Pow_inplace(M);
@@ -152,9 +180,9 @@ namespace Library
                 for (var i = 0; i < ary.Length; ++i) ary[i] = 0;
                 return;
             }
-            var powc = LIB_Mod998244353.Pow(ary[l], M);
-            var invc = LIB_Mod998244353.Inverse(ary[l]);
-            var g = new LIB_FPS(K - l);
+            var powc = PowMod(ary[l], M);
+            var invc = InverseMod(ary[l]);
+            var g = new LIB_FPSFreeMod(K - l);
             for (var i = l; i < ary.Length; ++i) g.ary[i - l] = (uint)(ary[i] * invc % MOD);
 
             var dat = new List<(int idx, long val)>();
@@ -196,7 +224,7 @@ namespace Library
         /// 指数 (a0 == 0)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Exp()
+        public LIB_FPSFreeMod Exp()
         {
             var ret = Clone();
             ret.Exp_inplace();
@@ -238,103 +266,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exp_inplace_dense()
         {
-            var maxlen = 2;
-            while ((maxlen << 1) <= K) maxlen <<= 1;
-            var g = new uint[maxlen];
-            var inv = new long[maxlen * 2];
-            inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
-            Span<uint> nttg = new uint[2];
-            g[0] = 1;
-            nttg[0] = 1;
-            nttg[1] = 1;
-            ary[0] = 1;
-            var h_drv = Differential();
-
-            var len = 2;
-            while (len <= K)
-            {
-                var nextlen = len * 2;
-                Span<uint> nttf = new uint[nextlen];
-                for (var i = 0; i < len; ++i) nttf[i] = ary[i];
-                LIB_NTT.ntt4(ref nttf);
-
-                {
-                    Span<uint> ntth = new uint[len];
-                    for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)nttf[i * 2] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
-                    for (var i = 0; i < len / 2; ++i) ntth[i] = ntth[i + len / 2];
-                    for (var i = len / 2; i < len; ++i) ntth[i] = 0;
-                    LIB_NTT.ntt4(ref ntth);
-                    for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
-                    for (var i = len / 2; i < len; ++i) g[i] = (ntth[i - len / 2] == 0 ? 0 : MOD - ntth[i - len / 2]);
-                }
-
-                Span<uint> t = new uint[len];
-                {
-                    Span<uint> ntth = new uint[len];
-                    for (var i = 0; i < len - 1; ++i) ntth[i] = h_drv.ary[i];
-                    LIB_NTT.ntt4(ref ntth);
-                    for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttf[i * 2] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
-                    for (var i = 1; i < len; ++i) t[i] = (uint)(((ulong)i * ary[i] + MOD - ntth[i - 1]) % MOD);
-                    t[0] = ntth[len - 1] == 0 ? 0 : MOD - ntth[len - 1];
-                }
-                if (2 * len <= K)
-                {
-                    Span<uint> newt = new uint[nextlen];
-                    for (var i = 0; i < len; ++i) newt[i] = t[i];
-                    LIB_NTT.ntt4(ref newt);
-                    nttg = new uint[nextlen];
-                    for (var i = 0; i < len; ++i) nttg[i] = g[i];
-                    LIB_NTT.ntt4(ref nttg);
-                    for (var i = 0; i < nextlen; ++i) newt[i] = (uint)((ulong)newt[i] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref newt, true);
-                    for (var i = 0; i < len; ++i) t[i] = newt[i];
-                }
-                else
-                {
-                    Span<uint> g1 = new uint[len];
-                    Span<uint> s1 = new uint[len];
-                    for (var i = 0; i < len / 2; ++i) g1[i] = g[i + len / 2];
-                    for (var i = 0; i < len / 2; ++i) s1[i] = t[i + len / 2];
-                    for (var i = len / 2; i < len; ++i) t[i] = 0;
-                    LIB_NTT.ntt4(ref g1);
-                    LIB_NTT.ntt4(ref s1);
-                    LIB_NTT.ntt4(ref t);
-                    for (var i = 0; i < len; ++i)
-                    {
-                        s1[i] = (uint)(((ulong)nttg[i] * s1[i] + (ulong)g1[i] * t[i]) % MOD);
-                        t[i] = (uint)((ulong)nttg[i] * t[i] % MOD);
-                    }
-                    LIB_NTT.ntt4(ref t, true);
-                    LIB_NTT.ntt4(ref s1, true);
-                    for (var i = len / 2; i < len; ++i) t[i] = (t[i] + s1[i - len / 2]) % MOD;
-                }
-
-                {
-                    Span<uint> ntth = new uint[nextlen];
-                    var ten = Min(ary.Length, 2 * len);
-                    for (var i = len; i < ten; ++i) ntth[i - len] = ary[i];
-                    for (var i = 0; i < len; ++i) ntth[i] = (ntth[i] + MOD - (uint)(inv[i + len] * t[i] % MOD)) % MOD;
-
-                    LIB_NTT.ntt4(ref ntth);
-                    for (var i = 0; i < nextlen; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttf[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
-
-                    ten = Min(ary.Length - len, len);
-                    for (var i = 0; i < ten; ++i) ary[i + len] = ntth[i];
-                }
-
-                len = nextlen;
-            }
+            throw new NotImplementedException();
         }
         /// <summary>
         /// 対数 (a0 == 1)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Log()
+        public LIB_FPSFreeMod Log()
         {
             var ret = Clone();
             ret.Log_inplace();
@@ -384,26 +322,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Log_inplace_dense()
         {
-            var f2 = Differential();
-            Inverse_inplace();
-            var len = 1;
-            while (len < ary.Length + f2.ary.Length - 1) len <<= 1;
-            Span<uint> nttdiff = new uint[len];
-            Span<uint> nttinv = new uint[len];
-            for (var i = 0; i < f2.ary.Length; ++i) nttdiff[i] = f2.ary[i];
-            for (var i = 0; i < ary.Length; ++i) nttinv[i] = ary[i];
-            LIB_NTT.ntt4(ref nttdiff);
-            LIB_NTT.ntt4(ref nttinv);
-            for (var i = 0; i < nttinv.Length; ++i) nttinv[i] = (uint)((long)nttinv[i] * nttdiff[i] % MOD);
-            LIB_NTT.ntt4(ref nttinv, true);
-            for (var i = 0; i < ary.Length; ++i) ary[i] = nttinv[i];
-            Integral_inplace();
+            throw new NotImplementedException();
         }
         /// <summary>
         /// 微分
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Differential()
+        public LIB_FPSFreeMod Differential()
         {
             var ret = Clone();
             ret.Differential_inplace();
@@ -427,7 +352,7 @@ namespace Library
         /// 積分
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Integral()
+        public LIB_FPSFreeMod Integral()
         {
             var ret = Clone();
             ret.Integral_inplace();
@@ -449,7 +374,7 @@ namespace Library
         /// 逆元 (a0 != 0)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS Inverse()
+        public LIB_FPSFreeMod Inverse()
         {
             var ret = Clone();
             ret.Inverse_inplace();
@@ -470,7 +395,7 @@ namespace Library
             }
 
             // sparse
-            ary[0] = (uint)LIB_Mod998244353.Inverse(ary[0]);
+            ary[0] = (uint)InverseMod(ary[0]);
             for (var n = 1; n < ary.Length; ++n)
             {
                 var rhs = 0L;
@@ -490,31 +415,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Inverse_inplace_dense()
         {
-            var maxlen = 1;
-            while (maxlen <= K) maxlen <<= 1;
-            var g = new uint[maxlen];
-            g[0] = (uint)LIB_Mod998244353.Inverse((long)ary[0]);
-            var len = 1;
-            while (len <= K)
-            {
-                var nextlen = len << 1;
-                Span<uint> nttf = new uint[nextlen];
-                Span<uint> nttg = new uint[nextlen];
-                var ten = Min(nextlen, ary.Length);
-                for (var i = 0; i < ten; ++i) nttf[i] = ary[i];
-                for (var i = 0; i < len; ++i) nttg[i] = g[i];
-                LIB_NTT.ntt4(ref nttf);
-                LIB_NTT.ntt4(ref nttg);
-                for (var i = 0; i < nextlen; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                LIB_NTT.ntt4(ref nttf, true);
-                for (var i = 0; i < len; ++i) nttf[i] = 0;
-                LIB_NTT.ntt4(ref nttf);
-                for (var i = 0; i < nextlen; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                LIB_NTT.ntt4(ref nttf, true);
-                for (var i = len; i < nextlen; ++i) g[i] = (nttf[i] == 0 ? 0 : MOD - nttf[i]);
-                len = nextlen;
-            }
-            for (var i = 0; i < ary.Length; ++i) ary[i] = g[i];
+            throw new NotImplementedException();
         }
         public long this[long index]
         {
