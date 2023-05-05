@@ -139,8 +139,65 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint[] Multiply3(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; ref uint naref = ref na[0]; ref uint nbref = ref nb[0]; Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref naref), ref Unsafe.As<uint, byte>(ref a[0]), (uint)(a.Length << 2)); Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref nbref), ref Unsafe.As<uint, byte>(ref b[0]), (uint)(b.Length << 2)); ntt3(ref na); ntt3(ref nb); naref = ref na[0]; nbref = ref nb[0]; for (var i = 0; i < t; ++i) { ref uint narefi = ref Unsafe.Add(ref naref, i); narefi = mul3(narefi, Unsafe.Add(ref nbref, i)); } ntt3(ref na, true); var ret = new uint[n]; naref = ref na[0]; ref uint retref = ref ret[0]; for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i); return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static long[] MultiplySparse(long[] a, long[] b, long mod = -1)
+        {
+            if (mod == -1)
+            {
+                var ret = new long[a.Length + b.Length - 1];
+                var data = new List<(int idx, long val)>();
+                var datb = new List<(int idx, long val)>();
+                for (var i = 0; i < a.Length; ++i) if (a[i] != 0) data.Add((i, a[i]));
+                for (var i = 0; i < b.Length; ++i) if (b[i] != 0) datb.Add((i, b[i]));
+                if (data.Count * (long)datb.Count > a.Length + b.Length)
+                {
+                    return null;
+                }
+                foreach (var item in data)
+                {
+                    foreach (var item2 in datb)
+                    {
+                        ret[item.idx + item2.idx] += item.val * item2.val;
+                    }
+                }
+                return ret;
+            }
+            else
+            {
+                var ret = new ulong[a.Length + b.Length - 1];
+                var br = new LIB_BarrettReduction((ulong)mod);
+                var data = new List<(int idx, ulong val)>();
+                var datb = new List<(int idx, ulong val)>();
+                for (var i = 0; i < a.Length; ++i) if (a[i] != 0)
+                    {
+                        var v = a[i] % mod;
+                        if (v < 0) v += mod;
+                        data.Add((i, (ulong)v));
+                    }
+                for (var i = 0; i < b.Length; ++i) if (b[i] != 0)
+                    {
+                        var v = b[i] % mod;
+                        if (v < 0) v += mod;
+                        datb.Add((i, (ulong)v));
+                    }
+                if (data.Count * (long)datb.Count > a.Length + b.Length)
+                {
+                    return null;
+                }
+                foreach (var item in data)
+                {
+                    foreach (var item2 in datb)
+                    {
+                        ret[item.idx + item2.idx] += br.Reduce(item.val * item2.val);
+                    }
+                }
+                return ret.Select(e => (long)(br.Reduce(e))).ToArray();
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] Multiply(long[] a, long[] b)
         {
+            var sparse = MultiplySparse(a, b, mod4);
+            if (sparse != null) return sparse;
             var n = a.Length + b.Length - 1;
             var t = 1;
             while (t < n) t <<= 1;
@@ -150,8 +207,8 @@ namespace Library
             ref long bref = ref b[0];
             ref uint naref = ref na[0];
             ref uint nbref = ref nb[0];
-            for (var i = 0; i < a.Length; ++i) Unsafe.Add(ref naref, i) = (uint)Unsafe.Add(ref aref, i);
-            for (var i = 0; i < b.Length; ++i) Unsafe.Add(ref nbref, i) = (uint)Unsafe.Add(ref bref, i);
+            for (var i = 0; i < a.Length; ++i) Unsafe.Add(ref naref, i) = (uint)(Unsafe.Add(ref aref, i) % mod4);
+            for (var i = 0; i < b.Length; ++i) Unsafe.Add(ref nbref, i) = (uint)(Unsafe.Add(ref bref, i) % mod4);
             ntt4(ref na);
             ntt4(ref nb);
             naref = ref na[0];
@@ -171,18 +228,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] Multiply(long[] a, long[] b, long mod)
         {
+            var sparse = MultiplySparse(a, b, mod);
+            if (sparse != null) return sparse;
             if (mod == 998244353) return Multiply(a, b);
-            var uinta = new uint[a.Length];
-            var uintb = new uint[b.Length];
-            ref uint uintaref = ref uinta[0];
-            ref uint uintbref = ref uintb[0];
-            ref long aref = ref a[0];
-            ref long bref = ref b[0];
-            for (var i = 0; i < a.Length; ++i) Unsafe.Add(ref uintaref, i) = (uint)Unsafe.Add(ref aref, i);
-            for (var i = 0; i < b.Length; ++i) Unsafe.Add(ref uintbref, i) = (uint)Unsafe.Add(ref bref, i);
-            var x = Multiply1(uinta, uintb);
-            var y = Multiply2(uinta, uintb);
-            var z = Multiply3(uinta, uintb);
+            var x = Multiply1(a.Select(e => (uint)(e % mod1)).ToArray(), b.Select(e => (uint)(e % mod1)).ToArray());
+            var y = Multiply2(a.Select(e => (uint)(e % mod2)).ToArray(), b.Select(e => (uint)(e % mod2)).ToArray());
+            var z = Multiply3(a.Select(e => (uint)(e % mod3)).ToArray(), b.Select(e => (uint)(e % mod3)).ToArray());
             var m1_inv_m2 = inverse2(mod1);
             var m12_inv_m3 = inverse3(mul3(mod1, mod2));
             var m12_mod = (long)mod1 * mod2 % mod;
@@ -203,6 +254,8 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long[] MultiplyLong(long[] a, long[] b)
         {
+            var sparse = MultiplySparse(a, b);
+            if (sparse != null) return sparse;
             unchecked
             {
                 const ulong mod23 = (ulong)mod2 * mod3;

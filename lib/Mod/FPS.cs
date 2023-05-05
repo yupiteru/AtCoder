@@ -227,7 +227,7 @@ namespace Library
                 foreach (var item in dat)
                 {
                     if (item.idx > n - 1) break;
-                    rhs += item.val * ary[n - 1 - item.idx];
+                    rhs += item.val * ary[n - 1 - item.idx] % MOD;
                 }
                 ary[n] = (uint)((rhs % MOD) * inv[n] % MOD);
             }
@@ -353,7 +353,7 @@ namespace Library
             }
             var dat = new List<(int idx, uint val)>();
             for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
-            if (dat.Count > 160)
+            if (dat.Count > 200)
             {
                 Log_inplace_dense();
                 return;
@@ -477,7 +477,7 @@ namespace Library
                 foreach (var item in dat)
                 {
                     if (item.idx > n) break;
-                    rhs -= item.val * ary[n - item.idx];
+                    rhs -= item.val * ary[n - item.idx] % MOD;
                 }
                 rhs = (rhs % MOD) * ary[0] % MOD;
                 if (rhs < 0) rhs += MOD;

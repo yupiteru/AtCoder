@@ -190,7 +190,7 @@ namespace Library
 
             var ten = l * M;
             M %= MOD;
-            if (dat.Count > 100)
+            if (dat.Count > 1300)
             {
                 g.Log_inplace_dense();
                 for (var i = 0; i < g.ary.Length; ++i) g.ary[i] = (uint)(M * g.ary[i] % MOD);
@@ -238,7 +238,7 @@ namespace Library
         {
             var dat = new List<(int idx, long val)>();
             for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i - 1, (long)i * ary[i] % MOD));
-            if (dat.Count > 320)
+            if (dat.Count > 3000)
             {
                 Exp_inplace_dense();
                 return;
@@ -255,7 +255,7 @@ namespace Library
                 foreach (var item in dat)
                 {
                     if (item.idx > n - 1) break;
-                    rhs += item.val * ary[n - 1 - item.idx];
+                    rhs += item.val * ary[n - 1 - item.idx] % MOD;
                 }
                 ary[n] = (uint)((rhs % MOD) * inv[n] % MOD);
             }
@@ -264,9 +264,27 @@ namespace Library
         /// 指数 (a0 == 0)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Exp_inplace_dense()
+        void Exp_inplace_dense()
         {
-            throw new NotImplementedException();
+            var len = 1;
+            var maxlen = 1;
+            while (maxlen / 2 < K - 1) maxlen *= 2;
+            var g = new long[maxlen];
+            g[0] = 1;
+            while (len / 2 < K - 1)
+            {
+                var nlen = len * 2;
+                var logg = new LIB_FPSFreeMod(len - 1, g);
+                logg.Log_inplace();
+                var tmp = new long[nlen];
+                for (var i = 0; i < Min(nlen, ary.Length); ++i) tmp[i] = ary[i];
+                tmp[0] += 1;
+                for (var i = 0; i <= logg.K; ++i) tmp[i] = (tmp[i] + MOD - logg[i]) % MOD;
+                tmp = LIB_NTT.Multiply(g, tmp, MOD);
+                for (var i = 0; i < nlen; ++i) g[i] = tmp[i];
+                len = nlen;
+            }
+            for (var i = 0; i < ary.Length; ++i) ary[i] = (uint)g[i];
         }
         /// <summary>
         /// 対数 (a0 == 1)
@@ -291,7 +309,7 @@ namespace Library
             }
             var dat = new List<(int idx, uint val)>();
             for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
-            if (dat.Count > 160)
+            if (dat.Count > 1200)
             {
                 Log_inplace_dense();
                 return;
@@ -322,7 +340,11 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Log_inplace_dense()
         {
-            throw new NotImplementedException();
+            var f2 = Differential();
+            Inverse_inplace();
+            var size = ary.Length;
+            ary = LIB_NTT.Multiply(ary.Select(e => (long)e).ToArray(), f2.ary.Length == 0 ? new[] { 0L } : f2.ary.Select(e => (long)e).ToArray(), MOD).Take(size).Select(e => (uint)e).ToArray();
+            Integral_inplace();
         }
         /// <summary>
         /// 微分
@@ -388,7 +410,7 @@ namespace Library
         {
             var dat = new List<(int idx, long val)>();
             for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
-            if (dat.Count > 160)
+            if (dat.Count > 820)
             {
                 Inverse_inplace_dense();
                 return;
@@ -402,7 +424,7 @@ namespace Library
                 foreach (var item in dat)
                 {
                     if (item.idx > n) break;
-                    rhs -= item.val * ary[n - item.idx];
+                    rhs -= item.val * ary[n - item.idx] % MOD;
                 }
                 rhs = (rhs % MOD) * ary[0] % MOD;
                 if (rhs < 0) rhs += MOD;
@@ -413,9 +435,24 @@ namespace Library
         /// 逆元 (a0 != 0)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Inverse_inplace_dense()
+        void Inverse_inplace_dense()
         {
-            throw new NotImplementedException();
+            var len = 1;
+            var g = new long[1];
+            g[0] = InverseMod(ary[0]);
+            while (len < ary.Length)
+            {
+                var p = LIB_NTT.Multiply(g, g, MOD);
+                var f = new long[Min(len * 2, ary.Length)];
+                for (var i = 0; i < f.Length; ++i) f[i] = ary[i];
+                p = LIB_NTT.Multiply(p, f, MOD);
+                var newg = new long[len * 2];
+                for (var i = 0; i < g.Length; ++i) newg[i] = g[i];
+                for (var i = g.Length; i < newg.Length; ++i) newg[i] = p[i] == 0 ? 0 : MOD - p[i];
+                g = newg;
+                len *= 2;
+            }
+            for (var i = 0; i < ary.Length; ++i) ary[i] = (uint)g[i];
         }
         public long this[long index]
         {
