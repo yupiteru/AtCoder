@@ -65,9 +65,12 @@ namespace Library
         {
             var ret = x.Clone();
             var sum = ret[0] + y;
-            ret[0] = sum >= MOD ? sum - MOD : sum;
+            sum %= MOD;
+            ret[0] = sum < 0 ? sum + MOD : sum;
             return ret;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_FPS operator +(long x, LIB_FPS y) => y + x;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator -(LIB_FPS x, LIB_FPS y)
         {
@@ -84,10 +87,13 @@ namespace Library
         static public LIB_FPS operator -(LIB_FPS x, long y)
         {
             var ret = x.Clone();
-            var sum = ret[0] + MOD - y;
-            ret[0] = sum >= MOD ? sum - MOD : sum;
+            var sum = ret[0] - y;
+            sum %= MOD;
+            ret[0] = sum < 0 ? sum + MOD : sum;
             return ret;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_FPS operator -(long x, LIB_FPS y) => -1 * (y - x);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator *(LIB_FPS x, LIB_FPS y)
         {
@@ -97,13 +103,17 @@ namespace Library
         static public LIB_FPS operator *(LIB_FPS x, long y)
         {
             var ret = x.Clone();
-            for (var i = 0; i < ret.ary.Length; ++i) ret.ary[i] = (uint)(y * ret.ary[i] % MOD);
+            for (var i = 0; i < ret.ary.Length; ++i) ret.ary[i] = (uint)((MOD + y % MOD) * ret.ary[i] % MOD);
             return ret;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_FPS operator *(long x, LIB_FPS y) => y * x;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator /(LIB_FPS x, LIB_FPS y) => x * y.Inverse();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator /(LIB_FPS x, long y) => x * LIB_Mod998244353.Inverse(y);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public LIB_FPS operator /(long x, LIB_FPS y) => y.Inverse() * x;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno)
         {
