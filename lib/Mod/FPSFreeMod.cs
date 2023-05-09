@@ -20,6 +20,9 @@ namespace Library
             get;
             private set;
         }
+        public delegate LIB_FPSFreeMod FPSBuilder(params long[] a);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public FPSBuilder MakeBuilder(long K) => new FPSBuilder(a => new LIB_FPSFreeMod(K, a));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPSFreeMod(long K)
         {
