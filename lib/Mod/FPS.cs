@@ -158,6 +158,7 @@ namespace Library
                 ary[0] = 1;
                 return;
             }
+            if (M == 1) return;
             var l = 0;
             while (l < ary.Length && ary[l] == 0) ++l;
             if (l == ary.Length || l > (ary.Length - 1) / M)
