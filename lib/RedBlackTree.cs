@@ -501,14 +501,26 @@ namespace Library
         public bool Any() => root != null;
         public long Count => Cnt(root);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<KeyValuePair<Key, ValueT>> List() => L(root);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerable<KeyValuePair<Key, ValueT>> L(Node n)
+        public KeyValuePair<Key, ValueT>[] List()
         {
-            if (n == null) yield break;
-            foreach (var i in L(n.left)) yield return i;
-            yield return new KeyValuePair<Key, ValueT>(n.key, n.val);
-            foreach (var i in L(n.right)) yield return i;
+            var ret = new List<KeyValuePair<Key, ValueT>>();
+            var stack = new LIB_Deque<Node>();
+            var node = root;
+            while (true)
+            {
+                if (node != null)
+                {
+                    stack.PushBack(node);
+                    node = node.left;
+                }
+                else
+                {
+                    if (stack.Count == 0) break;
+                    ret.Add(new KeyValuePair<Key, ValueT>(stack.Back.key, stack.Back.val));
+                    node = stack.PopBack().right;
+                }
+            }
+            return ret.ToArray();
         }
     }
     class LIB_RedBlackTree<Key, Value>
@@ -543,7 +555,7 @@ namespace Library
         public bool Any() => tree.Any();
         public long Count => tree.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<KeyValuePair<Key, Value>> List() => tree.List();
+        public KeyValuePair<Key, Value>[] List() => tree.List();
     }
     class LIB_RedBlackTree<T>
     {
@@ -577,7 +589,7 @@ namespace Library
         public bool Any() => tree.Any();
         public long Count => tree.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<T> List() => tree.List().Select(e => e.Key);
+        public T[] List() => tree.List().Select(e => e.Key).ToArray();
     }
     ////end
 }
