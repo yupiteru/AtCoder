@@ -106,10 +106,10 @@ namespace Library
         int[] dat;
         int deletedCount;
         int heapCount;
-        public (long Key, int Value) Peek
+        public (long Key, int Value) Peek()
         {
-            get { return (heap[0], dat[0]); }
-            private set { }
+            Validate();
+            return (heap[0], dat[0]);
         }
         public long Count
         {
