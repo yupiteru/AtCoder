@@ -77,13 +77,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_Fraction operator /(LIB_Fraction x, LIB_Fraction y) { x.Div(y); return x; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool operator <(LIB_Fraction x, LIB_Fraction y) => x.Numerator * y.Denominator < y.Numerator * x.Denominator;
+        static public bool operator <(LIB_Fraction x, LIB_Fraction y) => x.Denominator == y.Denominator ? x.Numerator < y.Numerator : x.Numerator * y.Denominator < y.Numerator * x.Denominator;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool operator >(LIB_Fraction x, LIB_Fraction y) => x.Numerator * y.Denominator > y.Numerator * x.Denominator;
+        static public bool operator >(LIB_Fraction x, LIB_Fraction y) => x.Denominator == y.Denominator ? x.Numerator > y.Numerator : x.Numerator * y.Denominator > y.Numerator * x.Denominator;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool operator <=(LIB_Fraction x, LIB_Fraction y) => x.Numerator * y.Denominator <= y.Numerator * x.Denominator;
+        static public bool operator <=(LIB_Fraction x, LIB_Fraction y) => x.Denominator == y.Denominator ? x.Numerator <= y.Numerator : x.Numerator * y.Denominator <= y.Numerator * x.Denominator;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool operator >=(LIB_Fraction x, LIB_Fraction y) => x.Numerator * y.Denominator >= y.Numerator * x.Denominator;
+        static public bool operator >=(LIB_Fraction x, LIB_Fraction y) => x.Denominator == y.Denominator ? x.Numerator >= y.Numerator : x.Numerator * y.Denominator >= y.Numerator * x.Denominator;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public bool operator ==(LIB_Fraction x, LIB_Fraction y) => x.Numerator == y.Numerator && x.Denominator == y.Denominator;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,6 +91,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(LIB_Fraction x)
         {
+            if (Denominator == x.Denominator) return Numerator.CompareTo(x.Numerator);
             var left = Numerator * x.Denominator;
             var right = x.Numerator * Denominator;
             if (left < right) return -1;
