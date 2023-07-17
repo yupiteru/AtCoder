@@ -275,7 +275,9 @@ namespace Library
                 for (var i = 0; i < subjects.Length; ++i)
                 {
                     var zouka = constants[i] / subjects[i][minidx];
-                    if (zouka < 0.0) continue;
+                    var neg1 = constants[i] < 0;
+                    var neg2 = subjects[i][minidx] < 0;
+                    if (neg1 && !neg2 || !neg1 && neg2) continue;
                     if (minvalue > zouka)
                     {
                         minvalue = zouka;
