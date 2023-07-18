@@ -137,18 +137,25 @@ namespace Library
                 }
                 constants[selectedSubIdx] *= mul;
 
+                var nonzero = new List<int>();
+                for (var i = 0; i < selectedSub.Length; ++i)
+                {
+                    if (Abs(selectedSub[i].Numerator) > 0) nonzero.Add(i);
+                }
+                var nonzeroAry = nonzero.ToArray();
+
                 for (var i = 0; i < subjects.Length; ++i)
                 {
                     if (i == selectedSubIdx) continue;
                     mul = subjects[i][minidx];
-                    for (var j = 0; j < subjects[i].Length; ++j)
+                    foreach (var j in nonzero)
                     {
                         subjects[i][j] -= selectedSub[j] * mul;
                     }
                     constants[i] -= constants[selectedSubIdx] * mul;
                 }
                 mul = target[minidx];
-                for (var i = 0; i < target.Length; ++i)
+                foreach (var i in nonzero)
                 {
                     target[i] -= selectedSub[i] * mul;
                 }
@@ -229,7 +236,7 @@ namespace Library
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public double Minimize(params double[] ary)
         {
             var maxlen = subs.Max(e => e.ary.Length);
@@ -241,19 +248,18 @@ namespace Library
             }
             var targetConstant = 0.0;
             var kitei = new long[subs.Count];
-            var subjects = new double[subs.Count][];
+            var subjects = new double[subs.Count, maxlen + subs.Count];
             var constants = new double[subs.Count];
             for (var i = 0; i < subs.Count; ++i)
             {
                 var sub = subs[i];
                 kitei[i] = maxlen + i;
-                subjects[i] = new double[maxlen + subs.Count];
                 constants[i] = sub.value;
                 for (var j = 0; j < sub.ary.Length; ++j)
                 {
-                    subjects[i][j] = sub.ary[j];
+                    subjects[i, j] = sub.ary[j];
                 }
-                subjects[i][kitei[i]] = 1;
+                subjects[i, kitei[i]] = 1;
             }
 
             while (true)
@@ -272,11 +278,11 @@ namespace Library
 
                 minvalue = Double.PositiveInfinity;
                 var selectedSubIdx = -1;
-                for (var i = 0; i < subjects.Length; ++i)
+                for (var i = 0; i < constants.Length; ++i)
                 {
-                    var zouka = constants[i] / subjects[i][minidx];
+                    var zouka = constants[i] / subjects[i, minidx];
                     var neg1 = constants[i] < 0;
-                    var neg2 = subjects[i][minidx] < 0;
+                    var neg2 = subjects[i, minidx] < 0;
                     if (neg1 && !neg2 || !neg1 && neg2) continue;
                     if (minvalue > zouka)
                     {
@@ -286,30 +292,42 @@ namespace Library
                 }
                 kitei[selectedSubIdx] = minidx;
 
-                var selectedSub = subjects[selectedSubIdx];
-                var mul = 1 / selectedSub[minidx];
-                for (var i = 0; i < selectedSub.Length; ++i)
+                if (subjects[selectedSubIdx, minidx] != 1.0)
                 {
-                    selectedSub[i] *= mul;
+                    var mul = 1 / subjects[selectedSubIdx, minidx];
+                    for (var i = 0; i < target.Length; ++i)
+                    {
+                        subjects[selectedSubIdx, i] *= mul;
+                    }
+                    constants[selectedSubIdx] *= mul;
                 }
-                constants[selectedSubIdx] *= mul;
 
-                for (var i = 0; i < subjects.Length; ++i)
+                var nonzero = new List<(int, double)>();
+                for (var i = 0; i < target.Length; ++i)
+                {
+                    if (Abs(subjects[selectedSubIdx, i]) > 0) nonzero.Add((i, subjects[selectedSubIdx, i]));
+                }
+                var nonzeroAry = nonzero.ToArray();
+
+                for (var i = 0; i < constants.Length; ++i)
                 {
                     if (i == selectedSubIdx) continue;
-                    mul = subjects[i][minidx];
-                    for (var j = 0; j < subjects[i].Length; ++j)
+                    var mul = subjects[i, minidx];
+                    if (mul == 0.0) continue;
+                    foreach (var j in nonzeroAry)
                     {
-                        subjects[i][j] -= selectedSub[j] * mul;
+                        subjects[i, j.Item1] -= j.Item2 * mul;
                     }
                     constants[i] -= constants[selectedSubIdx] * mul;
                 }
-                mul = target[minidx];
-                for (var i = 0; i < target.Length; ++i)
                 {
-                    target[i] -= selectedSub[i] * mul;
+                    var mul = target[minidx];
+                    foreach (var i in nonzeroAry)
+                    {
+                        target[i.Item1] -= i.Item2 * mul;
+                    }
+                    targetConstant -= constants[selectedSubIdx] * mul;
                 }
-                targetConstant -= constants[selectedSubIdx] * mul;
             }
 
             return -1 * targetConstant;
