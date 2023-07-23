@@ -28,6 +28,11 @@ namespace Library
             dat = new int[8];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset()
+        {
+            Count = 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(long key) => Push(key, 0);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(long key, int val)
