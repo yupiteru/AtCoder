@@ -290,6 +290,94 @@ namespace Library
                 return c;
             }
         }
+
+        public class RelaxedConvolutionImpl
+        {
+            int N;
+            int q;
+            long[] a;
+            long[] b;
+            long[] c;
+            List<uint[]> aList;
+            List<uint[]> bList;
+
+            public RelaxedConvolutionImpl(long N)
+            {
+                this.N = (int)N;
+                q = 0;
+                a = new long[N + 1];
+                b = new long[N + 1];
+                c = new long[N + 1];
+                aList = new List<uint[]>();
+                bList = new List<uint[]>();
+            }
+
+            public long Get(long x, long y)
+            {
+                a[q] = (LIB_Mod998244353)x;
+                b[q] = (LIB_Mod998244353)y;
+                c[q] = (c[q] + a[q] * b[0] + (q == 0 ? 0 : a[0] * b[q])) % mod4;
+
+                ++q;
+                if (q > N) return c[q - 1];
+                var lg = -1;
+                for (var d = 1; d <= q; d *= 2)
+                {
+                    ++lg;
+                    if (q % (2 * d) != d) continue;
+                    Span<uint> f = new uint[d * 2];
+                    Span<uint> g = new uint[d * 2];
+                    if (q == d)
+                    {
+                        for (var i = 0; i < d; ++i)
+                        {
+                            f[i] = (uint)a[i];
+                            g[i] = (uint)b[i];
+                        }
+                        ntt4(ref f);
+                        ntt4(ref g);
+                        for (var i = 0; i < d * 2; ++i) f[i] = mul4(f[i], g[i]);
+                    }
+                    else
+                    {
+                        if (lg == aList.Count)
+                        {
+                            Span<uint> s2 = new uint[d * 2];
+                            Span<uint> t2 = new uint[d * 2];
+                            for (var i = 0; i < d * 2; ++i)
+                            {
+                                s2[i] = (uint)a[i];
+                                t2[i] = (uint)b[i];
+                            }
+                            ntt4(ref s2);
+                            ntt4(ref t2);
+                            aList.Add(s2.ToArray());
+                            bList.Add(t2.ToArray());
+                        }
+
+                        for (var i = 0; i < d; ++i)
+                        {
+                            f[i] = (uint)(a[q - d + i]);
+                            g[i] = (uint)(b[q - d + i]);
+                        }
+                        Span<uint> s = aList[lg];
+                        Span<uint> t = bList[lg];
+                        ntt4(ref f);
+                        ntt4(ref g);
+                        for (var i = 0; i < d * 2; ++i) f[i] = (mul4(f[i], t[i]) + mul4(g[i], s[i])) % mod4;
+                    }
+                    ntt4(ref f, true);
+                    for (var i = q; i < Min(q + d, N + 1); ++i) c[i] = (c[i] + f[d + i - q]) % mod4;
+                }
+                return c[q - 1];
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public RelaxedConvolutionImpl RelaxedConvolution(long N)
+        {
+            return new RelaxedConvolutionImpl(N);
+        }
     }
     ////end
 }
