@@ -134,7 +134,7 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
         $mech->submit_form(
           form_number => 2,
           fields      => {
-            'data.LanguageId' => '4010',
+            'data.LanguageId' => '5042',
             'sourceCode'      => decode('Shift_JIS', Win32::Clipboard()->Get()),
           }
         );
