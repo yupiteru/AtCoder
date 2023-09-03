@@ -45,7 +45,7 @@
 	"Multi Input": {
 		"prefix": "multin",
 		"body": [
-			"Repeat(0, $1).Select(_ => new { $2 } ).ToArray();",
+			"Range(0, $1).Select(_ => new { idx = _, $2 } ).ToArray();",
 			"$0"
 		],
 		"description": "multi in"
