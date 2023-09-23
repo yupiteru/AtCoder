@@ -60,6 +60,16 @@ namespace Library
             }
             return ret;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public int[] InternalLoop(int i)
+        {
+            var ret = new List<int>();
+            for (var j = (i - 1) & i; j > (i - j); j = (j - 1) & i)
+            {
+                ret.Add(j);
+            }
+            return ret.ToArray();
+        }
     }
     ////end
 }
