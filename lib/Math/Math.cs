@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Net.Http.Headers;
 
 namespace Library
 {
@@ -286,6 +287,46 @@ namespace Library
                     um ^= ua; ua ^= um; um ^= ua;
                 }
             }
+        }
+        static public long BabyStepGiantStep<T>(T init, T target, long step, Func<T, T> babyStep, Func<T, T> giantStep) where T : IEquatable<T>
+        {
+            // minimal check
+            var chk = init;
+            for (var i = 0; i < step; ++i)
+            {
+                if (chk.Equals(target)) return i;
+                chk = babyStep(chk);
+            }
+
+            var dic = new Dictionary<T, long>();
+            chk = target;
+            for (var i = 1; i <= step; ++i)
+            {
+                chk = babyStep(chk);
+                dic[chk] = i;
+            }
+            var now = init;
+            var fail = false;
+            for (var i = 1; i <= step; ++i)
+            {
+                var next = giantStep(now);
+                if (dic.ContainsKey(next))
+                {
+                    chk = now;
+                    for (var j = 0; j < step; ++j)
+                    {
+                        if (target.Equals(chk))
+                        {
+                            return (i - 1) * step + j;
+                        }
+                        chk = babyStep(chk);
+                    }
+                    if (fail) return -1;
+                    fail = true;
+                }
+                now = next;
+            }
+            return -1;
         }
     }
     ////end
