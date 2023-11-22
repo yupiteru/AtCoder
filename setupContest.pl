@@ -11,26 +11,37 @@ use Encode qw/decode/;
 binmode STDOUT, ':encoding(cp932)';
 
 open my $propertyFh, "setupContestProperty.txt";
-my $loginId = <$propertyFh>;
-my $password = <$propertyFh>;
+my $loginId = (split '=', <$propertyFh>, 2)[1];
+my $password = (split '=', <$propertyFh>, 2)[1];
+close $propertyFh;
+
 $loginId =~ s/[\r\n]+//g;
 $password =~ s/[\r\n]+//g;
-close $propertyFh;
+if(!defined $loginId or $loginId eq "") {
+  print "setupContestProperty.txtにAtCoderのログインIDを入力してください";
+  exit;
+}
+if(!defined $password or $password eq "") {
+  print "setupContestProperty.txtにAtCoderのパスワードを入力してください";
+  exit;
+}
 
 my $contestId = "notinput";
 my $isServerMode = 0;
-if(@ARGV == 2) {
+if(@ARGV == 2 and $ARGV[1] eq "--server") {
   $contestId = $ARGV[0];
   $isServerMode = 1;
 }elsif(@ARGV == 1) {
   $contestId = $ARGV[0];
 }else {
-  print "\t>setupContest.pl ContestID [any]\n";
-  print "\tas submit server mode if input any\n";
+  print "\t\n";
+  print "\t> setupContest.pl ContestID [--server]\n";
+  print "\t\n";
+  print "\t--server が指定されるとサーバモードになります。\n";
+  print "\tサーバモード: コンテスト終了までの間、指示されたソースを自動で提出する\n";
   exit;
 }
 $contestId =~ s/[\r\n]+//;
-
 $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
 
 my $mech = WWW::Mechanize->new( agent => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0 Waterfox/56.3') ;
