@@ -19,14 +19,15 @@ namespace Library
         static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y, c) => x + y, (x, y) => x + y);
         static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (x, y) => x + y, (x, y, c) => y * c, (x, y) => y);
         static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (x, y) => x + y, (x, y, c) => x + y * c, (x, y) => x + y);
-        static public LazySegTreeBeats_RangeChmaxChminAddRangeSum CreateRangeChmaxChminAddRangeSum(IEnumerable<long> init) => new LazySegTreeBeats_RangeChmaxChminAddRangeSum(init);
+        static public LazySegTreeBeats_RangeChmaxChminAddRangeSumLong CreateRangeChmaxChminAddRangeSumLong(IEnumerable<long> init) => new LazySegTreeBeats_RangeChmaxChminAddRangeSumLong(init);
+        static public LazySegTreeBeats_RangeChmaxChminAddRangeSumDouble CreateRangeChmaxChminAddRangeSumDouble(IEnumerable<double> init) => new LazySegTreeBeats_RangeChmaxChminAddRangeSumDouble(init);
     }
-    class LazySegTreeBeats_RangeChmaxChminAddRangeSum : LIB_LazySegTree<(long min, long max, long min2, long max2, long sum, int count, int minCount, int maxCount), (long chmax, long chmin, long bias)>
+    class LazySegTreeBeats_RangeChmaxChminAddRangeSumLong : LIB_LazySegTree<(long min, long max, long min2, long max2, long sum, int count, int minCount, int maxCount), (long chmax, long chmin, long bias)>
     {
         const long INF = long.MaxValue >> 2;
         const long NEGINF = long.MinValue >> 2;
         static readonly (long min, long max, long min2, long max2, long sum, int count, int minCount, int maxCount) zero = (INF, NEGINF, INF, NEGINF, 0, 0, 0, 0);
-        public LazySegTreeBeats_RangeChmaxChminAddRangeSum(IEnumerable<long> init) : base(init.Select(e => (e, e, INF, NEGINF, e, 1, 1, 1)), zero, (NEGINF, INF, 0),
+        public LazySegTreeBeats_RangeChmaxChminAddRangeSumLong(IEnumerable<long> init) : base(init.Select(e => (e, e, INF, NEGINF, e, 1, 1, 1)), zero, (NEGINF, INF, 0),
             (x, y) =>
             {
                 var min = Min(x.min, y.min);
@@ -80,6 +81,66 @@ namespace Library
         public void UpdateChmax(long left, long right, long v) => Update(left, right, (v, INF, 0));
         public void UpdateChmin(long left, long right, long v) => Update(left, right, (NEGINF, v, 0));
         public void UpdateAdd(long left, long right, long v) => Update(left, right, (NEGINF, INF, v));
+    }
+    class LazySegTreeBeats_RangeChmaxChminAddRangeSumDouble : LIB_LazySegTree<(double min, double max, double min2, double max2, double sum, int count, int minCount, int maxCount), (double chmax, double chmin, double bias)>
+    {
+        const double INF = double.MaxValue / 4;
+        const double NEGINF = double.MinValue / 4;
+        static readonly (double min, double max, double min2, double max2, double sum, int count, int minCount, int maxCount) zero = (INF, NEGINF, INF, NEGINF, 0, 0, 0, 0);
+        public LazySegTreeBeats_RangeChmaxChminAddRangeSumDouble(IEnumerable<double> init) : base(init.Select(e => (e, e, INF, NEGINF, e, 1, 1, 1)), zero, (NEGINF, INF, 0),
+            (x, y) =>
+            {
+                var min = Min(x.min, y.min);
+                var max = Max(x.max, y.max);
+                var min2 = x.min == y.min ? Min(x.min2, y.min2) : x.min2 <= y.min ? x.min2 : y.min2 <= x.min ? y.min2 : Max(x.min, y.min);
+                var max2 = x.max == y.max ? Max(x.max2, y.max2) : x.max2 >= y.max ? x.max2 : y.max2 >= x.max ? y.max2 : Min(x.max, y.max);
+                var sum = x.sum + y.sum;
+                var count = x.count + y.count;
+                var minCount = (x.min <= y.min ? x.minCount : 0) + (y.min <= x.min ? y.minCount : 0);
+                var maxCount = (x.max >= y.max ? x.maxCount : 0) + (y.max >= x.max ? y.maxCount : 0);
+                return (min, max, min2, max2, sum, count, minCount, maxCount);
+            },
+            (x, y, c) =>
+            {
+                if (x.count == 0) return (false, zero);
+                if (x.min == x.max || y.chmax == y.chmin || y.chmax >= x.max || y.chmin <= x.min)
+                {
+                    var num = Min(Max(x.min, y.chmax), y.chmin) + y.bias;
+                    return (false, (num, num, INF, NEGINF, num * x.count, x.count, x.count, x.count));
+                }
+                if (x.min2 == x.max)
+                {
+                    var min = Max(x.min, y.chmax) + y.bias;
+                    var max = Min(x.max, y.chmin) + y.bias;
+                    var sum = min * x.minCount + max * x.maxCount;
+                    return (false, (min, max, max, min, sum, x.count, x.minCount, x.maxCount));
+                }
+                if (y.chmax < x.min2 && y.chmin > x.max2)
+                {
+                    var nextMin = Max(x.min, y.chmax);
+                    var nextMax = Min(x.max, y.chmin);
+                    var sum = x.sum + (nextMin - x.min) * x.minCount - (x.max - nextMax) * x.maxCount + y.bias * x.count;
+                    var min = nextMin + y.bias;
+                    var max = nextMax + y.bias;
+                    var min2 = x.min2 + y.bias;
+                    var max2 = x.max2 + y.bias;
+                    return (false, (min, max, min2, max2, sum, x.count, x.minCount, x.maxCount));
+                }
+                return (true, zero);
+            },
+            (x, y) =>
+            {
+                var chmax = Max(Min(x.chmax + x.bias, y.chmin), y.chmax) - x.bias;
+                var chmin = Min(Max(x.chmin + x.bias, y.chmax), y.chmin) - x.bias;
+                var bias = x.bias + y.bias;
+                return (chmax, chmin, bias);
+            })
+        {
+        }
+
+        public void UpdateChmax(long left, long right, double v) => Update(left, right, (v, INF, 0));
+        public void UpdateChmin(long left, long right, double v) => Update(left, right, (NEGINF, v, 0));
+        public void UpdateAdd(long left, long right, double v) => Update(left, right, (NEGINF, INF, v));
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
