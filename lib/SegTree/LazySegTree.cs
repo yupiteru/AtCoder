@@ -19,21 +19,85 @@ namespace Library
         static public LIB_LazySegTree<long, long> CreateRangeAddRangeMax(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, long.MinValue, 0, Math.Max, (x, y, c) => x + y, (x, y) => x + y);
         static public LIB_LazySegTree<long, long> CreateRangeUpdateRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, long.MaxValue, (x, y) => x + y, (x, y, c) => y * c, (x, y) => y);
         static public LIB_LazySegTree<long, long> CreateRangeAddRangeSum(IEnumerable<long> init) => new LIB_LazySegTree<long, long>(init, 0, 0, (x, y) => x + y, (x, y, c) => x + y * c, (x, y) => x + y);
+        static public LazySegTreeBeats_RangeChmaxChminAddRangeSum CreateRangeChmaxChminAddRangeSum(IEnumerable<long> init) => new LazySegTreeBeats_RangeChmaxChminAddRangeSum(init);
+    }
+    class LazySegTreeBeats_RangeChmaxChminAddRangeSum : LIB_LazySegTree<(long min, long max, long min2, long max2, long sum, int count, int minCount, int maxCount), (long chmax, long chmin, long bias)>
+    {
+        const long INF = long.MaxValue >> 2;
+        const long NEGINF = long.MinValue >> 2;
+        static readonly (long min, long max, long min2, long max2, long sum, int count, int minCount, int maxCount) zero = (INF, NEGINF, INF, NEGINF, 0, 0, 0, 0);
+        public LazySegTreeBeats_RangeChmaxChminAddRangeSum(IEnumerable<long> init) : base(init.Select(e => (e, e, INF, NEGINF, e, 1, 1, 1)), zero, (NEGINF, INF, 0),
+            (x, y) =>
+            {
+                var min = Min(x.min, y.min);
+                var max = Max(x.max, y.max);
+                var min2 = x.min == y.min ? Min(x.min2, y.min2) : x.min2 <= y.min ? x.min2 : y.min2 <= x.min ? y.min2 : Max(x.min, y.min);
+                var max2 = x.max == y.max ? Max(x.max2, y.max2) : x.max2 >= y.max ? x.max2 : y.max2 >= x.max ? y.max2 : Min(x.max, y.max);
+                var sum = x.sum + y.sum;
+                var count = x.count + y.count;
+                var minCount = (x.min <= y.min ? x.minCount : 0) + (y.min <= x.min ? y.minCount : 0);
+                var maxCount = (x.max >= y.max ? x.maxCount : 0) + (y.max >= x.max ? y.maxCount : 0);
+                return (min, max, min2, max2, sum, count, minCount, maxCount);
+            },
+            (x, y, c) =>
+            {
+                if (x.count == 0) return (false, zero);
+                if (x.min == x.max || y.chmax == y.chmin || y.chmax >= x.max || y.chmin <= x.min)
+                {
+                    var num = Min(Max(x.min, y.chmax), y.chmin) + y.bias;
+                    return (false, (num, num, INF, NEGINF, num * x.count, x.count, x.count, x.count));
+                }
+                if (x.min2 == x.max)
+                {
+                    var min = Max(x.min, y.chmax) + y.bias;
+                    var max = Min(x.max, y.chmin) + y.bias;
+                    var sum = min * x.minCount + max * x.maxCount;
+                    return (false, (min, max, max, min, sum, x.count, x.minCount, x.maxCount));
+                }
+                if (y.chmax < x.min2 && y.chmin > x.max2)
+                {
+                    var nextMin = Max(x.min, y.chmax);
+                    var nextMax = Min(x.max, y.chmin);
+                    var sum = x.sum + (nextMin - x.min) * x.minCount - (x.max - nextMax) * x.maxCount + y.bias * x.count;
+                    var min = nextMin + y.bias;
+                    var max = nextMax + y.bias;
+                    var min2 = x.min2 + y.bias;
+                    var max2 = x.max2 + y.bias;
+                    return (false, (min, max, min2, max2, sum, x.count, x.minCount, x.maxCount));
+                }
+                return (true, zero);
+            },
+            (x, y) =>
+            {
+                var chmax = Max(Min(x.chmax + x.bias, y.chmin), y.chmax) - x.bias;
+                var chmin = Min(Max(x.chmin + x.bias, y.chmax), y.chmin) - x.bias;
+                var bias = x.bias + y.bias;
+                return (chmax, chmin, bias);
+            })
+        {
+        }
+
+        public void UpdateChmax(long left, long right, long v) => Update(left, right, (v, INF, 0));
+        public void UpdateChmin(long left, long right, long v) => Update(left, right, (NEGINF, v, 0));
+        public void UpdateAdd(long left, long right, long v) => Update(left, right, (NEGINF, INF, v));
     }
     class LIB_LazySegTree<T, E> where E : IEquatable<E>
     {
         int n, height, sz;
         int[] rangeSz;
+        bool isBeats;
         T ti;
         E ei;
         Func<T, T, T> f;
         Func<T, E, int, T> g;
+        Func<T, E, int, (bool, T)> gBeats;
         Func<E, E, E> h;
         T[] dat;
         E[] laz;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, T> _g, Func<E, E, E> _h)
         {
+            isBeats = false;
             n = 1; height = 0; sz = (int)_n;
             while (n < _n) { n <<= 1; ++height; }
             ti = _ti;
@@ -62,15 +126,64 @@ namespace Library
             for (var i = n - 1; i > 0; i--) Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_LazySegTree(long _n, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, (bool, T)> _gBeats, Func<E, E, E> _h)
+        {
+            isBeats = true;
+            n = 1; height = 0; sz = (int)_n;
+            while (n < _n) { n <<= 1; ++height; }
+            ti = _ti;
+            ei = _ei;
+            f = _f;
+            gBeats = _gBeats;
+            h = _h;
+            dat = Enumerable.Repeat(ti, n << 1).ToArray();
+            laz = Enumerable.Repeat(ei, n).ToArray();
+            rangeSz = new int[n << 1];
+            ref T datref = ref dat[0];
+            ref int rangeSzref = ref rangeSz[0];
+            for (var i = 0; i < sz; i++) Unsafe.Add(ref rangeSzref, n + i) = 1;
+            for (var i = n - 1; i > 0; i--)
+            {
+                Unsafe.Add(ref rangeSzref, i) = Unsafe.Add(ref rangeSzref, i << 1) + Unsafe.Add(ref rangeSzref, (i << 1) | 1);
+                Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_LazySegTree(IEnumerable<T> l, T _ti, E _ei, Func<T, T, T> _f, Func<T, E, int, (bool, T)> _gBeats, Func<E, E, E> _h) : this(l.Count(), _ti, _ei, _f, _gBeats, _h)
+        {
+            var idx = 0;
+            ref T datref = ref dat[0];
+            foreach (var item in l) Unsafe.Add(ref datref, n + idx++) = item;
+            for (var i = n - 1; i > 0; i--) Unsafe.Add(ref datref, i) = f(Unsafe.Add(ref datref, i << 1), Unsafe.Add(ref datref, (i << 1) | 1));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Apply(int i, ref T datref, ref E lazref, ref E v)
         {
             if (v.Equals(ei)) return;
             ref T dati = ref Unsafe.Add(ref datref, i);
-            dati = g(dati, v, rangeSz[i]);
-            if (i < n)
+            if (isBeats)
             {
-                ref E lazi = ref Unsafe.Add(ref lazref, i);
-                lazi = h(lazi, v);
+                var res = gBeats(dati, v, rangeSz[i]);
+                dati = res.Item2;
+                if (i < n)
+                {
+                    ref E lazi = ref Unsafe.Add(ref lazref, i);
+                    lazi = h(lazi, v);
+                    if (res.Item1)
+                    {
+                        Down(ref datref, ref lazref, i);
+                        Up(ref datref, i);
+                    }
+                }
+            }
+            else
+            {
+                dati = g(dati, v, rangeSz[i]);
+                if (i < n)
+                {
+                    ref E lazi = ref Unsafe.Add(ref lazref, i);
+                    lazi = h(lazi, v);
+                }
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
