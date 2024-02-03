@@ -9,7 +9,7 @@
            "type": "coreclr",
            "request": "launch",
            "preLaunchTask": "build",
-           "program": "${workspaceFolder}/bin/Debug/netcoreapp3.1/AtCoder.exe",
+           "program": "${workspaceFolder}/bin/Debug/net7.0/AtCoder.exe",
            "args": [],
            "cwd": "${workspaceFolder}",
            "stopAtEntry": false,
