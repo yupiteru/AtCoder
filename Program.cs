@@ -14,7 +14,7 @@ namespace AtCoder
         {
             if (args.Length > 0 && args[0] == "direct")
             {
-                Program.ProblemA.Main(new string[] { "debug" }.Concat(args).ToArray());
+                Program.ProblemA.Main(args);
                 return;
             }
             var ts = Assembly.GetExecutingAssembly().GetTypes();

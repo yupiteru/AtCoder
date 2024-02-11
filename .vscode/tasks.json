@@ -41,9 +41,10 @@
         },
         {
             "label": "copyWithLib",
-            "command": "copy.pl",
+            "command": "perl",
             "type": "shell",
             "args": [
+                "copy.pl",
                 "${file}"
             ],
             "problemMatcher": []
