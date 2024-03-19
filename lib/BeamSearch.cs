@@ -11,123 +11,9 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    abstract class LIB_BeamSearch
+    // use LIB_HeuristicStateBase
+    class LIB_BeamSearch
     {
-        protected class IntArray
-        {
-            static int historyCount = 0;
-            static int beforeHistoryCount = 0;
-            static byte targetCount = 0;
-            static int[][] targetList = new int[255][];
-            const int HISTORY_INDEX_MASK = (1 << 25) - 1;
-            static (byte targetIdx, int index, int xorval)[] history = new (byte, int, int)[1 << 25];
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public (int l, int r) Batch()
-            {
-                var ret = (beforeHistoryCount, historyCount);
-                beforeHistoryCount = historyCount;
-                return ret;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public void Apply((int l, int r) ope)
-            {
-                for (var i = ope.l; i != ope.r; i = (i + 1) & HISTORY_INDEX_MASK)
-                {
-                    ref var hist = ref history[i];
-                    targetList[hist.targetIdx][hist.index] ^= hist.xorval;
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static public void Rollback((int l, int r) ope)
-            {
-                var i = ope.r;
-                while (i != ope.l)
-                {
-                    i = (i - 1) & HISTORY_INDEX_MASK;
-                    ref var hist = ref history[i];
-                    targetList[hist.targetIdx][hist.index] ^= hist.xorval;
-                }
-            }
-
-            int len1 = -1;
-            int len2 = -1;
-            int len3 = -1;
-            int len4 = -1;
-            byte thisTargetIdx = 0;
-            int[] ary;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public IntArray(int len1)
-            {
-                targetList[thisTargetIdx = targetCount++] = ary = new int[len1];
-                this.len1 = len1;
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public IntArray(int len1, int len2)
-            {
-                targetList[thisTargetIdx = targetCount++] = ary = new int[len1 * len2];
-                this.len1 = len1;
-                this.len2 = len2;
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public IntArray(int len1, int len2, int len3)
-            {
-                targetList[thisTargetIdx = targetCount++] = ary = new int[len1 * len2 * len3];
-                this.len1 = len1;
-                this.len2 = len2;
-                this.len3 = len3;
-            }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public IntArray(int len1, int len2, int len3, int len4)
-            {
-                targetList[thisTargetIdx = targetCount++] = ary = new int[len1 * len2 * len3 * len4];
-                this.len1 = len1;
-                this.len2 = len2;
-                this.len3 = len3;
-                this.len4 = len4;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void Set(int index, int val)
-            {
-                if (ary[index] == val) return;
-                history[historyCount++] = (thisTargetIdx, index, ary[index] ^ val);
-                historyCount &= HISTORY_INDEX_MASK;
-                ary[index] = val;
-            }
-
-            public int this[int index]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return ary[index]; }
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(index, value); }
-            }
-            public int this[int index1, int index2]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return ary[index1 * len2 + index2]; }
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(index1 * len2 + index2, value); }
-            }
-            public int this[int index1, int index2, int index3]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return ary[index1 * len2 * len3 + index2 * len3 + index3]; }
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(index1 * len2 * len3 + index2 * len3 + index3, value); }
-            }
-            public int this[int index1, int index2, int index3, int index4]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return ary[index1 * len2 * len3 * len4 + index2 * len3 * len4 + index3 * len4 + index4]; }
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(index1 * len2 * len3 * len4 + index2 * len3 * len4 + index3 * len4 + index4, value); }
-            }
-        }
-
         struct Node
         {
             public int parent;
@@ -135,7 +21,7 @@ namespace Library
             public int prev;
             public int next;
             public (int l, int r) patch;
-            public string action;
+            public LIB_OperatorBase ope;
         }
 
         LIB_Deque<int> waitingReUse = new LIB_Deque<int>();
@@ -143,21 +29,22 @@ namespace Library
         int nodeCount = 0;
         int root;
 
-        protected abstract void Initialize();
-        protected abstract string[] ListupActions();
-        protected abstract long DoAction(string act, int turn);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int NewNode()
         {
+            // waitingReUse に削除されたノードが格納されており、これを使い回す
+            // nodeList のできるだけ近い位置のノードを使うことでキャッシュヒット率を上げる意図があります（上がるのかは不明）
             if (waitingReUse.Count == 0) return ++nodeCount;
             return waitingReUse.PopBack();
         }
 
         void Remove(int nodeIdx)
         {
+            // ノードを削除します
+            // ノードの削除によって親ノードの子が無くなった場合は、親ノードも削除します（再帰的に）
             waitingReUse.PushBack(nodeIdx);
             ref var node = ref nodeList[nodeIdx];
+            node.ope.Unuse();
             if (node.prev == 0 && node.next == 0)
             {
                 Remove(node.parent);
@@ -178,107 +65,199 @@ namespace Library
             }
         }
 
-        public string[] Run(int width, int maxTurn)
+        public string[] Run(HeuristicStateInternal state, int width, int maxTurn)
         {
-            return Run(width, -1, maxTurn);
+            return Run(state, width, -1, maxTurn, true);
         }
-        public string[] Run(int initialWidth, int totalMillis, int maxTurn)
+        public string[] Run(HeuristicStateInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false)
         {
-            var nextQueue = new LIB_PriorityQueue();
+            // 状態を木構造で持ちます
+            // Node 構造体で1つの要素を表現
+            // Node の実体はリストで管理して、親や子などの情報はインデックス番号で保持します
+            // 0番目の要素は番兵です（nullチェック回避のため）
+            //
+            // Node は以下の情報を持ちます
+            // parent - 親の Node のインデックス
+            // child - 一番左の子のインデックス
+            // next - 右の兄弟のインデックス
+            // prev - 左の兄弟のインデックス
+            // patch - この Node で行った操作の履歴
+            // action - この Node で行った操作（最終的に出力される文字列）
+            //
+            // Node は操作の履歴と親兄弟の情報のみ保持して、状態自体は継承先のクラスが保持する方針
+
+            // 確定済みの操作を保存するためのリスト
             var answer = new List<string>();
 
-            Initialize();
+            // 状態の初期化
+            // 継承先のクラスで実装する
+            state.Initialize();
+
+            // 初期状態を表す Node を作成
             root = NewNode();
-            IntArray.Batch();
+            HeuristicStateInternal.Batch();
 
             var width = initialWidth;
             ref var nodeListRef = ref nodeList[0];
             var startTime = DateTime.Now;
             var checkpointTime = startTime;
+            var usedHash = new HashSet<long>();
+            var nextQueue = new LIB_PriorityQueue(); // このキューは最小要素を取り出す＝スコアの最大化になる（途中要らないものを Pop すると最小のものから削除されるので）
             for (var i = 0; i < maxTurn; ++i)
             {
-                nextQueue.Reset();
-                if (totalMillis >= 0 && (i & 15) == 0 && i > 0)
+                // ハッシュ履歴が多くなると遅くなるので、3ターンごとにクリアする
+                // 頻度は問題によって変えるかも
+                if (i % 99 == 0) usedHash.Clear();
+
+                Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key}");
+
+                var turnStartTime = DateTime.Now;
+                // elapsed - 経過時間
+                // lastTime - 残り時間
+                var elapsed = (turnStartTime - startTime).TotalMilliseconds;
+                var lastTime = totalMillis - elapsed;
+                if (totalMillis >= 0 && lastTime < 0) break;
+                if (!fixHaba && (i & 15) == 0 && i > 0)
                 {
-                    var turnStartTime = DateTime.Now;
-                    var elapsed = (turnStartTime - startTime).TotalMilliseconds;
-                    var lastTime = totalMillis - elapsed;
+                    // 残り時間に応じて幅を調整します
+                    // 一回の調整幅は 0.9?1.1 倍まで
                     var keisu = lastTime * 16 / ((maxTurn - i) * (turnStartTime - checkpointTime).TotalMilliseconds);
                     width = (int)(width * Max(Min(keisu, 1.1), 0.9));
+                    width = Max(width, 10); // 最小幅は 10（問題によって変えるかも）
                     checkpointTime = turnStartTime;
                 }
-                var nodeIdx = root;
+
+                // キューを空にします
+                // このキューは、1ターンの処理の途中で幅を超える要素を削除するために使います
+                // 木には生きているノードしかおらず、毎ターン木の root から走査するので、
+                // キューは問答無用で空にする
+                nextQueue.Reset();
+
+                var nodeIdx = root; // 今見ているノードのインデックス
                 while (true)
                 {
+                    // 一番左の子ノードに移動できるだけ移動する
                     while (Unsafe.Add(ref nodeListRef, nodeIdx).child != 0)
                     {
                         nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).child;
-                        IntArray.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     }
+                    // ここで nodeIdx は一番左の葉ノードになっている
+
+                    // needRemoveIdx は、子が一つも無くなったらノードを削除するために使われます
+                    // 以下 foreach の中で、子の要素が全て usedHash に含まれている場合に子が一つも無くなる
+                    var needRemoveIdx = nodeIdx;
+
+                    // beforeNodeIdx は兄弟ノードをつなぐために使われます
                     var beforeNodeIdx = 0;
-                    foreach (var act in ListupActions())
+                    //Debug();
+
+                    // ListupActions で可能な操作を列挙し、操作ごとに子を生やします
+                    // ハッシュが usedHash に含まれている（過去と同一の盤面）なら、その操作はスキップします
+                    foreach (var ope in state.ListupActions())
                     {
-                        var score = DoAction(act, i);
+                        // DoAction で操作（順遷移）を行う
+                        var score = state.DoAction(ope, i);
+                        if (usedHash.Contains(score.Item2))
+                        {
+                            HeuristicStateInternal.Rollback(HeuristicStateInternal.Batch());
+                            continue;
+                        }
+                        usedHash.Add(score.Item2);
+                        needRemoveIdx = 0; // 有効な子がいたので、親を削除しないようにする
                         var newNodeIdx = NewNode();
                         ref var node = ref Unsafe.Add(ref nodeListRef, newNodeIdx);
                         node.child = 0;
                         node.prev = 0;
                         node.next = 0;
                         node.parent = nodeIdx;
-                        node.patch = IntArray.Batch();
-                        node.action = act;
+                        node.patch = HeuristicStateInternal.Batch();
+                        node.ope = ope;
                         if (beforeNodeIdx != 0)
                         {
+                            // 兄ノードがある場合
                             node.prev = beforeNodeIdx;
                             Unsafe.Add(ref nodeListRef, beforeNodeIdx).next = newNodeIdx;
                         }
-                        if (Unsafe.Add(ref nodeListRef, nodeIdx).child == 0) Unsafe.Add(ref nodeListRef, nodeIdx).child = newNodeIdx;
-                        beforeNodeIdx = newNodeIdx;
-                        nextQueue.Push(score, newNodeIdx);
+                        else
+                        {
+                            // 兄ノードがいない（newNodeIdx が一番左の子）なら、親とつなぐ
+                            Unsafe.Add(ref nodeListRef, nodeIdx).child = newNodeIdx;
+                        }
 
-                        IntArray.Rollback(node.patch);
+                        beforeNodeIdx = newNodeIdx;
+                        nextQueue.Push(score.Item1, newNodeIdx);
+
+                        HeuristicStateInternal.Rollback(node.patch);
                     }
-                    IntArray.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+
+                    // なんかのケースで 0 番が汚染されていたことがあったので、ここでリセット
+                    Unsafe.Add(ref nodeListRef, 0).prev = 0;
+                    Unsafe.Add(ref nodeListRef, 0).child = 0;
+
+                    // 有効な要素数を width に制限する
+                    while (nextQueue.Count > width) Remove(nextQueue.Pop().Value);
+
+                    // 木上を移動します
+                    HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                    // next == 0、つまり右の兄弟がいない場合は親に移動します
                     while (Unsafe.Add(ref nodeListRef, nodeIdx).next == 0 && Unsafe.Add(ref nodeListRef, nodeIdx).parent != 0)
                     {
                         nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).parent;
-                        IntArray.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     }
-                    while (nextQueue.Count > width) Remove(nextQueue.Pop().Value);
+
+                    // 親がいない（root に戻った）場合は終了
                     if (Unsafe.Add(ref nodeListRef, nodeIdx).parent == 0) break;
+
+                    // 右の兄弟に移動します
                     nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).next;
-                    IntArray.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                    HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+
+                    // needRemoveIdx > 0 なら、それは子が一つもないノードなので、ここで削除
+                    if (needRemoveIdx > 0) Remove(needRemoveIdx);
                 }
-                while (Unsafe.Add(ref nodeListRef, Unsafe.Add(ref nodeListRef, root).child).next == 0)
+
+                // root の子がただ一つなら、それを root に昇格させる
+                // 旧 root は確定操作として answer に追加
+                while (Unsafe.Add(ref nodeListRef, root).child != 0 && Unsafe.Add(ref nodeListRef, Unsafe.Add(ref nodeListRef, root).child).next == 0)
                 {
                     waitingReUse.PushBack(root);
                     root = Unsafe.Add(ref nodeListRef, root).child;
-                    answer.Add(Unsafe.Add(ref nodeListRef, root).action);
-                    IntArray.Apply(Unsafe.Add(ref nodeListRef, root).patch);
+                    answer.Add(Unsafe.Add(ref nodeListRef, root).ope.GetOperateString());
+                    Unsafe.Add(ref nodeListRef, root).ope.Unuse();
+                    HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, root).patch);
                     Unsafe.Add(ref nodeListRef, root).parent = 0;
                     Unsafe.Add(ref nodeListRef, root).patch = (0, 0);
                 }
             }
 
+            // nextQueue から最後に取れる要素＝最大スコアの要素を取り出します
             var maxNode = 0;
-            while (nextQueue.Count > 0) maxNode = nextQueue.Pop().Value;
+            var maxv = 0L;
+            while (nextQueue.Count > 0)
+            {
+                var pop = nextQueue.Pop();
+                maxNode = pop.Value;
+                maxv = pop.Key;
+            }
+            //Console.Error.WriteLine($"lastScore: {maxv}");
 
-            var forwardNodeList = new List<int>();
+            // 最大スコアの要素から親を辿っていき、操作の履歴を answer に追加します
+            var backwardNodeList = new List<int>();
             while (maxNode != root)
             {
-                forwardNodeList.Add(maxNode);
+                backwardNodeList.Add(maxNode);
                 maxNode = nodeList[maxNode].parent;
             }
-            forwardNodeList.Reverse();
-            foreach (var item in forwardNodeList)
+            backwardNodeList.Reverse();
+            foreach (var item in backwardNodeList)
             {
-                IntArray.Apply(nodeList[item].patch);
-                answer.Add(nodeList[item].action);
+                answer.Add(nodeList[item].ope.GetOperateString());
             }
 
             return answer.ToArray();
         }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_BeamSearch()
         {
