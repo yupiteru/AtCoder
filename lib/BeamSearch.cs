@@ -101,7 +101,7 @@ namespace Library
             ref var nodeListRef = ref nodeList[0];
             var startTime = DateTime.Now;
             var checkpointTime = startTime;
-            var usedHash = new HashSet<long>();
+            var usedHash = new HashSet<long>(100000);
             var nextQueue = new LIB_PriorityQueue(); // このキューは最小要素を取り出す＝スコアの最大化になる（途中要らないものを Pop すると最小のものから削除されるので）
             for (var i = 0; i < maxTurn; ++i)
             {
@@ -109,7 +109,7 @@ namespace Library
                 // 頻度は問題によって変えるかも
                 if (i % 99 == 0) usedHash.Clear();
 
-                Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key}");
+                Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key} hashCount:{usedHash.Count}");
 
                 var turnStartTime = DateTime.Now;
                 // elapsed - 経過時間
@@ -120,7 +120,7 @@ namespace Library
                 if (!fixHaba && (i & 15) == 0 && i > 0)
                 {
                     // 残り時間に応じて幅を調整します
-                    // 一回の調整幅は 0.9?1.1 倍まで
+                    // 一回の調整幅は 0.9~1.1 倍まで
                     var keisu = lastTime * 16 / ((maxTurn - i) * (turnStartTime - checkpointTime).TotalMilliseconds);
                     width = (int)(width * Max(Min(keisu, 1.1), 0.9));
                     width = Max(width, 10); // 最小幅は 10（問題によって変えるかも）
@@ -158,12 +158,12 @@ namespace Library
                     {
                         // DoAction で操作（順遷移）を行う
                         var score = state.DoAction(ope, i);
-                        if (usedHash.Contains(score.Item2))
+                        if (usedHash.Contains(score.hash))
                         {
                             HeuristicStateInternal.Rollback(HeuristicStateInternal.Batch());
                             continue;
                         }
-                        usedHash.Add(score.Item2);
+                        usedHash.Add(score.hash);
                         needRemoveIdx = 0; // 有効な子がいたので、親を削除しないようにする
                         var newNodeIdx = NewNode();
                         ref var node = ref Unsafe.Add(ref nodeListRef, newNodeIdx);
@@ -186,7 +186,7 @@ namespace Library
                         }
 
                         beforeNodeIdx = newNodeIdx;
-                        nextQueue.Push(score.Item1, newNodeIdx);
+                        nextQueue.Push(score.score, newNodeIdx);
 
                         HeuristicStateInternal.Rollback(node.patch);
                     }

@@ -181,12 +181,21 @@ namespace Library
                 this.len4 = len4;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static long GetAndMerge(int idx) => ((long)memory[idx] << 32) | (long)memory[idx + 1];
+            static long GetAndMerge(int idx)
+            {
+                unchecked
+                {
+                    return (long)(((ulong)(uint)memory[idx] << 32) | (uint)memory[idx + 1]);
+                }
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void SplitAndSet(int idx, long val)
             {
-                memory[idx] = (int)(val >> 32);
-                memory[idx + 1] = (int)val;
+                unchecked
+                {
+                    Set(idx, (int)(val >> 32));
+                    Set(idx + 1, (int)val);
+                }
             }
             public long this[int index]
             {
