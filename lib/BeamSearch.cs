@@ -45,6 +45,7 @@ namespace Library
             waitingReUse.PushBack(nodeIdx);
             ref var node = ref nodeList[nodeIdx];
             node.ope.Unuse();
+            HeuristicStateInternal.DeleteHistory(node.patch);
             if (node.prev == 0 && node.next == 0)
             {
                 Remove(node.parent);
@@ -69,7 +70,7 @@ namespace Library
         {
             return Run(state, width, -1, maxTurn, true);
         }
-        public string[] Run(HeuristicStateInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false)
+        public string[] Run(HeuristicStateInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false, int[] widthList = null)
         {
             // 状態を木構造で持ちます
             // Node 構造体で1つの要素を表現
@@ -103,11 +104,32 @@ namespace Library
             var checkpointTime = startTime;
             var usedHash = new HashSet<long>(100000);
             var nextQueue = new LIB_PriorityQueue(); // このキューは最小要素を取り出す＝スコアの最大化になる（途中要らないものを Pop すると最小のものから削除されるので）
+            var maxScore = 0L;
+            var maxAns = new List<string>();
+            Func<int, string[]> calcAnswer = maxNode =>
+            {
+                var ret = answer.ToList();
+                var backwardNodeList = new List<int>();
+                var tmpmaxNode = maxNode;
+                while (tmpmaxNode != root)
+                {
+                    backwardNodeList.Add(tmpmaxNode);
+                    tmpmaxNode = nodeList[tmpmaxNode].parent;
+                }
+                backwardNodeList.Reverse();
+                foreach (var item in backwardNodeList)
+                {
+                    ret.Add(nodeList[item].ope.GetOperateString());
+                }
+                return ret.ToArray();
+            };
             for (var i = 0; i < maxTurn; ++i)
             {
+                if (widthList != null) width = widthList[i];
+
                 // ハッシュ履歴が多くなると遅くなるので、3ターンごとにクリアする
                 // 頻度は問題によって変えるかも
-                if (i % 99 == 0) usedHash.Clear();
+                if (i % 4 == 0) usedHash.Clear();
 
                 Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key} hashCount:{usedHash.Count}");
 
@@ -117,11 +139,11 @@ namespace Library
                 var elapsed = (turnStartTime - startTime).TotalMilliseconds;
                 var lastTime = totalMillis - elapsed;
                 if (totalMillis >= 0 && lastTime < 0) break;
-                if (!fixHaba && (i & 15) == 0 && i > 0)
+                if (!fixHaba && (i & 7) == 0 && i > 0)
                 {
                     // 残り時間に応じて幅を調整します
                     // 一回の調整幅は 0.9~1.1 倍まで
-                    var keisu = lastTime * 16 / ((maxTurn - i) * (turnStartTime - checkpointTime).TotalMilliseconds);
+                    var keisu = (lastTime * 0.9) * 8 / ((maxTurn - i) * (turnStartTime - checkpointTime).TotalMilliseconds);
                     width = (int)(width * Max(Min(keisu, 1.1), 0.9));
                     width = Max(width, 10); // 最小幅は 10（問題によって変えるかも）
                     checkpointTime = turnStartTime;
@@ -154,13 +176,15 @@ namespace Library
 
                     // ListupActions で可能な操作を列挙し、操作ごとに子を生やします
                     // ハッシュが usedHash に含まれている（過去と同一の盤面）なら、その操作はスキップします
-                    foreach (var ope in state.ListupActions())
+                    foreach (var ope in state.ListupActions(i))
                     {
                         // DoAction で操作（順遷移）を行う
                         var score = state.DoAction(ope, i);
                         if (usedHash.Contains(score.hash))
                         {
-                            HeuristicStateInternal.Rollback(HeuristicStateInternal.Batch());
+                            var noUseHistory = HeuristicStateInternal.Batch();
+                            HeuristicStateInternal.Rollback(noUseHistory);
+                            HeuristicStateInternal.DeleteHistory(noUseHistory);
                             continue;
                         }
                         usedHash.Add(score.hash);
@@ -189,6 +213,12 @@ namespace Library
                         nextQueue.Push(score.score, newNodeIdx);
 
                         HeuristicStateInternal.Rollback(node.patch);
+
+                        if (maxScore < score.score)
+                        {
+                            maxScore = score.score;
+                            maxAns = calcAnswer(newNodeIdx).ToList();
+                        }
                     }
 
                     // なんかのケースで 0 番が汚染されていたことがあったので、ここでリセット
@@ -244,6 +274,11 @@ namespace Library
             //Console.Error.WriteLine($"lastScore: {maxv}");
 
             // 最大スコアの要素から親を辿っていき、操作の履歴を answer に追加します
+            if (maxScore < maxv)
+            {
+                maxAns = calcAnswer(maxNode).ToList();
+            }
+            /*
             var backwardNodeList = new List<int>();
             while (maxNode != root)
             {
@@ -257,6 +292,9 @@ namespace Library
             }
 
             return answer.ToArray();
+            */
+
+            return maxAns.ToArray();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_BeamSearch()

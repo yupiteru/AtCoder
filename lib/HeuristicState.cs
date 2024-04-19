@@ -23,25 +23,41 @@ namespace Library
 
     abstract class HeuristicStateInternal
     {
-        const int HISTORY_INDEX_MASK = (1 << 25) - 1;
-        static (int index, int xorval)[] history = new (int, int)[1 << 25];
+        static (int index, int xorval)[] history = new (int, int)[1 << 27];
         static int[] memory = new int[0];
         static int historyCount = 0;
-        static int beforeHistoryCount = 0;
+        static int nowHistoryTop = 0;
+        static int maxHistoryTop = 0;
+        static int historyBatchLength = 20;
+        static LIB_Deque<int> unusedHistoryIndex = new LIB_Deque<int>();
         static public LIB_Deque<LIB_OperatorBase> unusedOperatorPool = new LIB_Deque<LIB_OperatorBase>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public (int l, int r) Batch()
         {
-            var ret = (beforeHistoryCount, historyCount);
-            beforeHistoryCount = historyCount;
+            var ret = (nowHistoryTop, historyCount);
+            if (unusedHistoryIndex.Count > 0)
+            {
+                historyCount = nowHistoryTop = unusedHistoryIndex.PopBack();
+            }
+            else
+            {
+                historyCount = nowHistoryTop = maxHistoryTop;
+                maxHistoryTop += historyBatchLength;
+            }
             return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public void DeleteHistory((int l, int r) ope)
+        {
+            unusedHistoryIndex.PushBack(ope.l);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public void Apply((int l, int r) ope)
         {
-            for (var i = ope.l; i != ope.r; i = (i + 1) & HISTORY_INDEX_MASK)
+            for (var i = ope.l; i != ope.r; ++i)
             {
                 ref var hist = ref history[i];
                 memory[hist.index] ^= hist.xorval;
@@ -54,7 +70,7 @@ namespace Library
             var i = ope.r;
             while (i != ope.l)
             {
-                i = (i - 1) & HISTORY_INDEX_MASK;
+                --i;
                 ref var hist = ref history[i];
                 memory[hist.index] ^= hist.xorval;
             }
@@ -65,7 +81,6 @@ namespace Library
         {
             if (memory[index] == val) return;
             history[historyCount++] = (index, memory[index] ^ val);
-            historyCount &= HISTORY_INDEX_MASK;
             memory[index] = val;
         }
 
@@ -185,7 +200,7 @@ namespace Library
             {
                 unchecked
                 {
-                    return (long)(((ulong)(uint)memory[idx] << 32) | (uint)memory[idx + 1]);
+                    return (long)((((ulong)(uint)memory[idx]) << 32) | (uint)memory[idx + 1]);
                 }
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -200,16 +215,16 @@ namespace Library
             public long this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return GetAndMerge(dataOffset + index); }
+                get { return GetAndMerge(dataOffset + index * 2); }
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { SplitAndSet(dataOffset + index, value); }
+                set { SplitAndSet(dataOffset + index * 2, value); }
             }
             public long this[int index1, int index2]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return GetAndMerge(dataOffset + index1 * len2 + index2); }
+                get { return GetAndMerge(dataOffset + index1 * 2 * len2 + index2 * 2); }
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { SplitAndSet(dataOffset + index1 * len2 + index2, value); }
+                set { SplitAndSet(dataOffset + index1 * 2 * len2 + index2 * 2, value); }
             }
             public long this[int index1, int index2, int index3]
             {
@@ -228,7 +243,7 @@ namespace Library
         }
         public abstract void Debug();
         public abstract void Initialize();
-        public abstract LIB_OperatorBase[] ListupActions();
+        public abstract LIB_OperatorBase[] ListupActions(int turn);
         public abstract (long score, long hash) DoAction(LIB_OperatorBase ope, int turn);
     }
 
