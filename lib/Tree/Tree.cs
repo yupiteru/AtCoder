@@ -38,12 +38,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[] GetSurround(long u) => path[u].ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<(long node, long parent)> BFSFromRoot(long root)
+        public (long node, long parent)[] BFSFromRoot(long root)
         {
-            var bfsList = new List<(long node, long parent)>();
+            var bfsList = new (long node, long parent)[N];
             var q = new Queue<int>();
             var done = new bool[N];
-            bfsList.Add((root, -1));
+            var bfsIdx = 0;
+            bfsList[bfsIdx++] = (root, -1);
             done[root] = true;
             q.Enqueue((int)root);
             while (q.Count > 0)
@@ -55,7 +56,7 @@ namespace Library
                     if (done[i]) continue;
                     done[i] = true;
                     q.Enqueue(i);
-                    bfsList.Add((i, w));
+                    bfsList[bfsIdx++] = (i, w);
                 }
             }
             return bfsList;
@@ -136,7 +137,7 @@ namespace Library
             return ret.ToArray();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<(long node, long parent)> BFSFromLeaf(long root) => BFSFromRoot(root).ToArray().Reverse().ToList();
+        public (long node, long parent)[] BFSFromLeaf(long root) => BFSFromRoot(root).Reverse().ToArray();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (long node, long parent, long direction)[] EulerTour(long root)
         {
