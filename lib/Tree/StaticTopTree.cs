@@ -55,7 +55,29 @@ namespace Library
                 get { return vertexArray[vtx]; }
                 set { vertexArray[vtx] = value; Recalc(vtx); }
             }
-            public Path Query() => nodes[root].path;
+            public Point Query() => addEdge(nodes[root].path);
+            public Point Query(long vtx)
+            {
+                var node = vtxToNode[vtx];
+                var val = nodes[node].vtx == vtx + 1 ? addVertex(vertexArray[nodes[node].vtx - 1], e) : nodes[node].path;
+                var id = true;
+                while (!nodes[node].addEdge || nodes[node].vvtx == vtx + 1)
+                {
+                    var parent = nodes[node].parent;
+                    if (parent == 0) break;
+                    if (nodes[parent].left == node)
+                    {
+                        if (id && (!nodes[parent].addEdge || nodes[parent].vvtx == vtx + 1)) val = nodes[parent].path;
+                        else val = compress(val, nodes[nodes[parent].right].path);
+                    }
+                    else
+                    {
+                        id = false;
+                    }
+                    node = parent;
+                }
+                return addEdge(val);
+            }
             /// <summary>
             /// Rakeメソッドを設定
             /// </summary>
