@@ -196,6 +196,104 @@ namespace Library
             }
             return ret.ToArray();
         }
+        
+        static public int[] MergeSort<T>(IList<T> list, int l, int r, Func<T, T, bool> leftIsSmall)
+        {
+            int Fill(int x)
+            {
+                --x;
+                x |= x >> 1;
+                x |= x >> 2;
+                x |= x >> 4;
+                x |= x >> 8;
+                x |= x >> 16;
+                return ++x;
+            }
+
+            var N = r - l;
+            var ret = Enumerable.Range(0, N).ToArray();
+
+            if (N == 1) return ret;
+
+            {
+                var i = 0;
+                var j = (N + 1) / 2;
+                while (j < N)
+                {
+                    if (!leftIsSmall(list[l + i], list[l + j]))
+                    {
+                        (list[l + i], list[l + j]) = (list[l + j], list[l + i]);
+                        (ret[i], ret[j]) = (ret[j], ret[i]);
+                    }
+                    ++i; ++j;
+                }
+            }
+
+            if (N == 2) return ret;
+
+            {
+                var perm = MergeSort(list, l + (N + 1) / 2, r, leftIsSmall);
+                var inv = Enumerable.Range(0, N / 2).ToArray();
+                var p = Enumerable.Range(0, N / 2).ToArray();
+                for (var i = 0; i < N / 2; ++i)
+                {
+                    var j = inv[perm[i]];
+                    if (i != j)
+                    {
+                        (list[l + i], list[l + j]) = (list[l + j], list[l + i]);
+                        (ret[i], ret[j]) = (ret[j], ret[i]);
+                        (ret[i + (N + 1) / 2], ret[j + (N + 1) / 2]) = (ret[j + (N + 1) / 2], ret[i + (N + 1) / 2]);
+                        (p[i], p[j]) = (p[j], p[i]);
+                        (inv[p[i]], inv[p[j]]) = (inv[p[j]], inv[p[i]]);
+                    }
+                }
+            }
+            {
+                var inv = Enumerable.Range(0, N + 1).ToArray();
+                var p = Enumerable.Range(0, N + 1).ToArray();
+                void Swap(int x, int y)
+                {
+                    if (x == y) return;
+                    (list[l + x], list[l + y]) = (list[l + y], list[l + x]);
+                    (ret[x], ret[y]) = (ret[y], ret[x]);
+                    (p[x], p[y]) = (p[y], p[x]);
+                    (inv[p[x]], inv[p[y]]) = (inv[p[y]], inv[p[x]]);
+                }
+                void Rotate(int L, int R)
+                {
+                    for (var i = R; --i > L;) Swap(L, i);
+                }
+                void BinarySearch(int X, int L, int R)
+                {
+                    while (L + 1 < R)
+                    {
+                        var x = R - L;
+                        var y = Fill(x);
+                        var z = 3 * y / 4;
+                        var M = L + (x < z ? y / 4 : x - y / 2);
+                        if (leftIsSmall(list[l + M], list[l + X])) L = M;
+                        else R = M;
+                    }
+                    Rotate(X, R);
+                }
+                Rotate(0, (N + 1) / 2);
+                var L = 1;
+                var R = Min(3, (N + 1) / 2);
+                var C = 8;
+                var now = 1;
+                while (L < (N + 1) / 2)
+                {
+                    for (var i = R; i-- > L; ++now)
+                    {
+                        BinarySearch(i - L, (N + 1) / 2 - now - 1, inv[i + (N + 1) / 2]);
+                    }
+                    C *= 2;
+                    L = R;
+                    R = Min((C + 1) / 3, (N + 1) / 2);
+                }
+            }
+            return ret;
+        }
     }
     ////end
 }
