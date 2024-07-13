@@ -37,36 +37,82 @@ namespace Library
             builtAhoCorasick = false;
             patLens = new List<int>();
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<(int patIdx, int pos)> AhoCorasick(ReadOnlySpan<T> str) => AhoCorasick((IEnumerable<T>)str.ToArray());
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<(int patIdx, int pos)> AhoCorasick(IEnumerable<T> str)
+        public int[] AhoCorasick(ReadOnlySpan<T> str)
         {
             if (!builtAhoCorasick)
             {
                 builtAhoCorasick = true;
-                var q = new Queue<TrieNode>();
-                foreach (var item in root.Next)
+                var q = new LIB_Deque<TrieNode>();
+                foreach (var item in root.Next.ToArray())
                 {
                     item.Value.fail = root;
-                    foreach (var item2 in item.Value.Accept) item.Value.UnionAccept.Add(item2);
-                    q.Enqueue(item.Value);
+                    foreach (var item2 in item.Value.Accept.ToArray())
+                    {
+                        item.Value.UnionAccept.Add(item2);
+                    }
+                    q.PushBack(item.Value);
                 }
                 root.fail = root;
                 while (q.Count > 0)
                 {
-                    var t = q.Dequeue();
-                    foreach (var item in t.Next)
+                    var t = q.PopFront();
+                    foreach (var item in t.Next.ToArray())
                     {
-                        foreach (var item2 in item.Value.Accept) item.Value.UnionAccept.Add(item2);
-                        q.Enqueue(item.Value);
+                        foreach (var item2 in item.Value.Accept.ToArray())
+                        {
+                            item.Value.UnionAccept.Add(item2);
+                        }
+                        q.PushBack(item.Value);
                         var r = t.fail;
                         while (r != root && !r.Next.ContainsKey(item.Key)) r = r.fail;
                         if (!r.Next.TryGetValue(item.Key, out item.Value.fail))
                         {
                             item.Value.fail = root;
                         }
-                        foreach (var item2 in item.Value.fail.UnionAccept)
+                        foreach (var item2 in item.Value.fail.UnionAccept.ToArray())
+                        {
+                            item.Value.UnionAccept.Add(item2);
+                        }
+                    }
+                }
+            }
+            var v = root;
+            var ret = new int[patLens.Count];
+            foreach (var item in str)
+            {
+                while (v != root && !v.Next.ContainsKey(item)) v = v.fail;
+                if (!v.Next.TryGetValue(item, out v)) v = root;
+                foreach (var item2 in v.UnionAccept) ++ret[item2];
+            }
+            return ret.ToArray();
+        }
+        public IEnumerable<(int patIdx, int pos)> AhoCorasickWithPoses(T[] str)
+        {
+            if (!builtAhoCorasick)
+            {
+                builtAhoCorasick = true;
+                var q = new LIB_Deque<TrieNode>();
+                foreach (var item in root.Next.ToArray())
+                {
+                    item.Value.fail = root;
+                    foreach (var item2 in item.Value.Accept.ToArray()) item.Value.UnionAccept.Add(item2);
+                    q.PushBack(item.Value);
+                }
+                root.fail = root;
+                while (q.Count > 0)
+                {
+                    var t = q.PopFront();
+                    foreach (var item in t.Next.ToArray())
+                    {
+                        foreach (var item2 in item.Value.Accept.ToArray()) item.Value.UnionAccept.Add(item2);
+                        q.PushBack(item.Value);
+                        var r = t.fail;
+                        while (r != root && !r.Next.ContainsKey(item.Key)) r = r.fail;
+                        if (!r.Next.TryGetValue(item.Key, out item.Value.fail))
+                        {
+                            item.Value.fail = root;
+                        }
+                        foreach (var item2 in item.Value.fail.UnionAccept.ToArray())
                         {
                             item.Value.UnionAccept.Add(item2);
                         }
