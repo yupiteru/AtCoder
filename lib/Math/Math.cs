@@ -124,56 +124,43 @@ namespace Library
             if (n < k || n < 0) return 0;
             return _fact[(int)n] / _fact[(int)(n - k)];
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public IEnumerable<List<int>> MakePermutation(long n, bool zeroIndexed = true)
-        {
-            if (n <= 0) throw new Exception();
-            var c = new int[n];
-            var a = new int[n];
-            if (!zeroIndexed) a[0] = 1;
-            for (var i = 1; i < n; i++) a[i] = a[i - 1] + 1;
-            yield return new List<int>(a);
-            for (var i = 0; i < n;)
-            {
-                if (c[i] < i)
-                {
-                    if (i % 2 == 0)
-                    {
-                        var t = a[0]; a[0] = a[i]; a[i] = t;
-                    }
-                    else
-                    {
-                        var t = a[c[i]]; a[c[i]] = a[i]; a[i] = t;
-                    }
-                    yield return new List<int>(a);
-                    ++c[i];
-                    i = 0;
-                }
-                else
-                {
-                    c[i] = 0;
-                    ++i;
-                }
-            }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public bool NextPermutation(long[] ary)
+        static public void PrevPermutation<T>(T[] ary) where T : IComparable<T>
         {
             var n = ary.Length;
             var i = n - 1;
-            while (i - 1 >= 0 && ary[i - 1] > ary[i]) --i;
-            if (i == 0) return false;
-            var j = i;
-            while (j + 1 < n && ary[i - 1] < ary[j + 1]) ++j;
-            var tmp = ary[i - 1]; ary[i - 1] = ary[j]; ary[j] = tmp;
+            while (i - 1 >= 0 && ary[i - 1].CompareTo(ary[i]) <= 0) --i;
+            if (i > 0)
+            {
+                var j = i;
+                while (j + 1 < n && ary[i - 1].CompareTo(ary[j + 1]) > 0) ++j;
+                var tmp = ary[i - 1]; ary[i - 1] = ary[j]; ary[j] = tmp;
+            }
             var s = i;
             var t = n - 1;
             while (t - s > 0)
             {
-                tmp = ary[t]; ary[t] = ary[s]; ary[s] = tmp;
+                var tmp = ary[t]; ary[t] = ary[s]; ary[s] = tmp;
                 ++s; --t;
             }
-            return true;
+        }
+        static public void NextPermutation<T>(T[] ary) where T : IComparable<T>
+        {
+            var n = ary.Length;
+            var i = n - 1;
+            while (i - 1 >= 0 && ary[i - 1].CompareTo(ary[i]) >= 0) --i;
+            if (i > 0)
+            {
+                var j = i;
+                while (j + 1 < n && ary[i - 1].CompareTo(ary[j + 1]) < 0) ++j;
+                var tmp = ary[i - 1]; ary[i - 1] = ary[j]; ary[j] = tmp;
+            }
+            var s = i;
+            var t = n - 1;
+            while (t - s > 0)
+            {
+                var tmp = ary[t]; ary[t] = ary[s]; ary[s] = tmp;
+                ++s; --t;
+            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public (long, long) InvGCD(long a, long b)
