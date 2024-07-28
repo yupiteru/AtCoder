@@ -270,16 +270,20 @@ namespace Library
         {
             while ((i /= 2) > 0)
             {
-                if (comp(poppedVal[i * 2], poppedVal[i * 2 + 1]) < 0) poppedVal[i] = poppedVal[i * 2 + 1];
-                else poppedVal[i] = poppedVal[i * 2];
+                var next = poppedVal[i * 2];
+                if (comp(next, poppedVal[i * 2 + 1]) < 0) next = poppedVal[i * 2 + 1];
+                if (comp(poppedVal[i], next) == 0) break;
+                poppedVal[i] = next;
             }
         }
         void UpdateRemainVal(int i)
         {
             while ((i /= 2) > 0)
             {
-                if (comp(remainVal[i * 2], remainVal[i * 2 + 1]) < 0) remainVal[i] = remainVal[i * 2];
-                else remainVal[i] = remainVal[i * 2 + 1];
+                var next = remainVal[i * 2];
+                if (comp(next, remainVal[i * 2 + 1]) > 0) next = remainVal[i * 2 + 1];
+                if (comp(remainVal[i], next) == 0) break;
+                remainVal[i] = next;
             }
         }
         void IncrementalUpdate(int i)
