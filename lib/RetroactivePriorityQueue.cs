@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_RetroactivePriorityQueue<T>
+    class LIB_RetroactivePriorityQueueFix<T>
     {
         // noshi91 さんの提出を参考にしました
         // URL：https://atcoder.jp/contests/abc363/submissions/55828915
@@ -25,7 +25,7 @@ namespace Library
         List<T> erase;
         (int sum, int min)[] ruisekiFlows;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RetroactivePriorityQueue(long maxOpes, T min, T max, Comparison<T> cmp, bool asc = true)
+        public LIB_RetroactivePriorityQueueFix(long maxOpes, T min, T max, Comparison<T> cmp, bool asc = true)
         {
             comp = asc ? cmp : (x, y) => cmp(y, x);
             n = (int)maxOpes;
@@ -40,7 +40,7 @@ namespace Library
             erase = new List<T>();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RetroactivePriorityQueue(long maxOpes, T min, T max, bool asc = true) : this(maxOpes, min, max, Comparer<T>.Default.Compare, asc) { }
+        public LIB_RetroactivePriorityQueueFix(long maxOpes, T min, T max, bool asc = true) : this(maxOpes, min, max, Comparer<T>.Default.Compare, asc) { }
         void UpdateFlows(int i)
         {
             while ((i /= 2) > 0)
@@ -217,32 +217,39 @@ namespace Library
             return (insert.ToArray(), erase.ToArray());
         }
     }
-    class LIB_RetroactivePriorityQueue2<T>
+    class LIB_RetroactivePriorityQueue<T>
     {
-        // noshi91 さんの提出を参考にしました
-        // URL：https://atcoder.jp/contests/abc363/submissions/55828915
-
         int n;
         int m;
         Comparison<T> comp;
+        Comparison<T> compRev;
         T[] poppedVal;
         T[] remainVal;
-        LIB_RedBlackTree<T>[] poppedQueue;
-        LIB_RedBlackTree<T>[] remainQueue;
+        PriorityQueueDeletable[] poppedQueue;
+        PriorityQueueDeletable[] remainQueue;
         List<T> insert;
         List<T> erase;
         (int sum, int min)[] ruisekiFlows;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RetroactivePriorityQueue2(long maxOpes, T min, T max, Comparison<T> cmp, bool asc = true)
+        public LIB_RetroactivePriorityQueue(long maxOpes, T min, T max, Comparison<T> cmp, bool asc = true)
         {
-            comp = asc ? cmp : (x, y) => cmp(y, x);
+            if (asc)
+            {
+                comp = cmp;
+                compRev = (x, y) => cmp(y, x);
+            }
+            else
+            {
+                comp = (x, y) => cmp(y, x);
+                compRev = cmp;
+            }
             n = (int)maxOpes;
             m = 1;
             while (m < n + 1) m <<= 1;
             poppedVal = new T[m * 2];
             remainVal = new T[m * 2];
-            poppedQueue = Enumerable.Repeat(0, m).Select(_ => new LIB_RedBlackTree<T>((x, y) => comp(y, x))).ToArray();
-            remainQueue = Enumerable.Repeat(0, m).Select(_ => new LIB_RedBlackTree<T>(comp)).ToArray();
+            poppedQueue = Enumerable.Repeat(0, m).Select(_ => new PriorityQueueDeletable(compRev)).ToArray();
+            remainQueue = Enumerable.Repeat(0, m).Select(_ => new PriorityQueueDeletable(comp)).ToArray();
             ruisekiFlows = new (int sum, int min)[m * 2];
             poppedVal.AsSpan().Fill(asc ? min : max);
             remainVal.AsSpan().Fill(asc ? max : min);
@@ -250,7 +257,7 @@ namespace Library
             erase = new List<T>();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_RetroactivePriorityQueue2(long maxOpes, T min, T max, bool asc = true) : this(maxOpes, min, max, Comparer<T>.Default.Compare, asc) { }
+        public LIB_RetroactivePriorityQueue(long maxOpes, T min, T max, bool asc = true) : this(maxOpes, min, max, Comparer<T>.Default.Compare, asc) { }
         void UpdateFlows(int i)
         {
             while ((i /= 2) > 0)
@@ -326,10 +333,10 @@ namespace Library
             // poppedVal[c] の値は最終的に残るように変化する
             insert.Add(poppedVal[c]);
             ruisekiFlows[c].sum--;
-            remainQueue[c - m].Add(poppedVal[c]);
-            remainVal[c] = remainQueue[c - m].Min();
-            poppedQueue[c - m].RemoveAt(0);
-            poppedVal[c] = poppedQueue[c - m].Count > 0 ? poppedQueue[c - m].Min() : poppedVal[0];
+            remainQueue[c - m].Push(poppedVal[c]);
+            remainVal[c] = remainQueue[c - m].Peek();
+            poppedQueue[c - m].Pop();
+            poppedVal[c] = poppedQueue[c - m].Count > 0 ? poppedQueue[c - m].Peek() : poppedVal[0];
             UpdateFlows(c);
             UpdatePoppedVal(c);
             UpdateRemainVal(c);
@@ -381,10 +388,10 @@ namespace Library
             erase.Add(remainVal[c]);
             ruisekiFlows[c].sum++;
 
-            poppedQueue[c - m].Add(remainVal[c]);
-            poppedVal[c] = poppedQueue[c - m].Min();
-            remainQueue[c - m].RemoveAt(0);
-            remainVal[c] = remainQueue[c - m].Count > 0 ? remainQueue[c - m].Min() : remainVal[0];
+            poppedQueue[c - m].Push(remainVal[c]);
+            poppedVal[c] = poppedQueue[c - m].Peek();
+            remainQueue[c - m].Pop();
+            remainVal[c] = remainQueue[c - m].Count > 0 ? remainQueue[c - m].Peek() : remainVal[0];
             UpdateFlows(c);
             UpdatePoppedVal(c);
             UpdateRemainVal(c);
@@ -395,8 +402,8 @@ namespace Library
             insert.Clear();
             erase.Clear();
             i += m;
-            poppedQueue[i - m].Add(val);
-            poppedVal[i] = poppedQueue[i - m].Min();
+            poppedQueue[i - m].Push(val);
+            poppedVal[i] = poppedQueue[i - m].Peek();
             UpdatePoppedVal((int)i);
             IncrementalUpdate((int)i);
             return (insert.ToArray(), erase.ToArray());
@@ -425,21 +432,144 @@ namespace Library
             insert.Clear();
             erase.Clear();
             i += m;
-            if (remainQueue[i - m].ContainsKey(val))
+            if (comp(remainVal[i], val) <= 0)
             {
                 erase.Add(val);
-                remainQueue[i - m].Remove(val);
-                remainVal[i] = remainQueue[i - m].Count > 0 ? remainQueue[i - m].Min() : remainVal[0];
+                remainQueue[i - m].DeleteExistKeyUnchecked(val);
+                remainVal[i] = remainQueue[i - m].Count > 0 ? remainQueue[i - m].Peek() : remainVal[0];
                 UpdateRemainVal((int)i);
             }
             else
             {
-                poppedQueue[i - m].Remove(val);
-                poppedVal[i] = poppedQueue[i - m].Count > 0 ? poppedQueue[i - m].Min() : poppedVal[0];
+                poppedQueue[i - m].DeleteExistKeyUnchecked(val);
+                poppedVal[i] = poppedQueue[i - m].Count > 0 ? poppedQueue[i - m].Peek() : poppedVal[0];
                 UpdatePoppedVal((int)i);
                 DecrementalUpdate((int)i);
             }
             return (insert.ToArray(), erase.ToArray());
+        }
+
+        class PriorityQueueDeletable
+        {
+            Comparison<T> comp;
+            T[] deleted;
+            T[] heap;
+            int deletedCount;
+            int heapCount;
+            public T Peek()
+            {
+                Validate();
+                return heap[0];
+            }
+            public long Count
+            {
+                get { Validate(); return heapCount - deletedCount; }
+                private set { }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public PriorityQueueDeletable(Comparison<T> cmp)
+            {
+                comp = cmp;
+                deleted = new T[8];
+                heap = new T[8];
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Validate()
+            {
+                while (deletedCount > 0 && comp(heap[0], deleted[0]) == 0)
+                {
+                    Pop();
+                    PopDeleted();
+                }
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void DeleteExistKeyUnchecked(T key)
+            {
+                if (deletedCount == deleted.Length) ExpandDeleted();
+                var i = deletedCount++;
+                ref T heapref = ref deleted[0];
+                Unsafe.Add(ref heapref, i) = key;
+                while (i > 0)
+                {
+                    var ni = (i - 1) / 2;
+                    var heapni = Unsafe.Add(ref heapref, ni);
+                    if (comp(key, heapni) >= 0) break;
+                    Unsafe.Add(ref heapref, i) = heapni;
+                    i = ni;
+                }
+                Unsafe.Add(ref heapref, i) = key;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Push(T key)
+            {
+                if (heapCount == heap.Length) Expand();
+                var i = heapCount++;
+                ref T heapref = ref heap[0];
+                Unsafe.Add(ref heapref, i) = key;
+                while (i > 0)
+                {
+                    var ni = (i - 1) / 2;
+                    var heapni = Unsafe.Add(ref heapref, ni);
+                    if (comp(key, heapni) >= 0) break;
+                    Unsafe.Add(ref heapref, i) = heapni;
+                    i = ni;
+                }
+                Unsafe.Add(ref heapref, i) = key;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void PopDeleted()
+            {
+                ref T heapref = ref deleted[0];
+                var cnt = --deletedCount;
+                var key = Unsafe.Add(ref heapref, cnt);
+                if (cnt == 0) return;
+                var i = 0; while ((i << 1) + 1 < cnt)
+                {
+                    var i1 = (i << 1) + 1;
+                    var i2 = (i << 1) + 2;
+                    if (i2 < cnt && comp(Unsafe.Add(ref heapref, i1), Unsafe.Add(ref heapref, i2)) > 0) i1 = i2;
+                    var heapi1 = Unsafe.Add(ref heapref, i1);
+                    if (comp(key, heapi1) <= 0) break;
+                    Unsafe.Add(ref heapref, i) = heapi1;
+                    i = i1;
+                }
+                Unsafe.Add(ref heapref, i) = key;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Pop()
+            {
+                ref T heapref = ref heap[0];
+                var cnt = --heapCount;
+                var key = Unsafe.Add(ref heapref, cnt);
+                if (cnt == 0) return;
+                var i = 0; while ((i << 1) + 1 < cnt)
+                {
+                    var i1 = (i << 1) + 1;
+                    var i2 = (i << 1) + 2;
+                    if (i2 < cnt && comp(Unsafe.Add(ref heapref, i1), Unsafe.Add(ref heapref, i2)) > 0) i1 = i2;
+                    var heapi1 = Unsafe.Add(ref heapref, i1);
+                    if (comp(key, heapi1) <= 0) break;
+                    Unsafe.Add(ref heapref, i) = heapi1;
+                    i = i1;
+                }
+                Unsafe.Add(ref heapref, i) = key;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void Expand()
+            {
+                var len = heap.Length;
+                var tmp = new T[len << 1];
+                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref tmp[0]), ref Unsafe.As<T, byte>(ref heap[0]), (uint)(Unsafe.SizeOf<T>() * len));
+                heap = tmp;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void ExpandDeleted()
+            {
+                var len = deleted.Length;
+                var tmp = new T[len << 1];
+                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref tmp[0]), ref Unsafe.As<T, byte>(ref deleted[0]), (uint)(Unsafe.SizeOf<T>() * len));
+                deleted = tmp;
+            }
         }
     }
     ////end
