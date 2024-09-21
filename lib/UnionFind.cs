@@ -30,9 +30,18 @@ namespace Library
             y = Root(y);
             if (x != y)
             {
-                d[x] = d[x] + d[y];
-                v[x] = f(v[x], v[y]);
-                d[y] = (int)x;
+                if (d[x] < d[y])
+                {
+                    d[x] = d[x] + d[y];
+                    v[x] = f(v[x], v[y]);
+                    d[y] = (int)x;
+                }
+                else
+                {
+                    d[y] = d[x] + d[y];
+                    v[y] = f(v[y], v[x]);
+                    d[x] = (int)y;
+                }
             }
             return x != y;
         }
