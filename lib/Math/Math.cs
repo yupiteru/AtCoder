@@ -15,6 +15,8 @@ namespace Library
     class LIB_Math
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public bool IsPrime(long x) => LIB_MillerRabin.IsPrime((ulong)x);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public IEnumerable<long> Primes(long x)
         {
             if (x < 2) yield break;
