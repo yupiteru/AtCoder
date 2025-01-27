@@ -14,13 +14,11 @@ namespace Library
     class LIB_MillerRabin
     {
         static readonly ulong[] a1 = new ulong[] { 2, 7, 61 };
-        static readonly ulong[] a2 = new ulong[] { 2, 325, 9375, 28178, 450775, 9780504, 1795265022 };
+        static readonly ulong[] a21 = new ulong[] { 2, 325, 9375, 28178, 450775, 9780504 };
+        static readonly ulong[] a22 = new ulong[] { 2, 325, 9375, 28178, 450775, 9780504, 1795265022 };
         static readonly byte[] smallPrimes = new byte[] { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
-        static ulong N;
-        static ulong NEG_INV;
         static public bool IsPrime(ulong N)
         {
-            LIB_MillerRabin.N = N;
             if (N < 66049)
             {
                 var n = (int)N;
@@ -35,7 +33,7 @@ namespace Library
                 return true;
             }
             if ((N & 1) == 0) return false;
-            if (1000000000 < N) return IsPrime64();
+            if (1000000000 < N) return IsPrime64(N);
             var br = new LIB_BarrettReduction(N);
             var d = N - 1;
             var cnt = 0;
@@ -66,9 +64,8 @@ namespace Library
             }
             return true;
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong reduce(UInt128 v) => (ulong)((v + (UInt128)((ulong)v * NEG_INV) * N) >> 64);
-        static bool IsPrime64()
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        static bool IsPrime64(ulong N)
         {
             unchecked
             {
@@ -79,10 +76,12 @@ namespace Library
                 INV_MOD *= 2 - N * INV_MOD;
                 INV_MOD *= 2 - N * INV_MOD;
                 INV_MOD *= 2 - N * INV_MOD;
-                NEG_INV = ~INV_MOD + 1;
+                var NEG_INV = ~INV_MOD + 1;
 
-                var ONE = reduce(T128);
-                var MINUS_ONE = reduce(((UInt128)N - 1) * T128);
+                var t = (UInt128)T128;
+                var ONE = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
+                t = ((UInt128)N - 1) * T128;
+                var MINUS_ONE = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
                 if (ONE >= N) ONE -= N;
                 if (MINUS_ONE >= N) MINUS_ONE -= N;
 
@@ -93,16 +92,23 @@ namespace Library
                     d >>= 1;
                     ++cnt;
                 }
+                var a2 = N < 1795265022 ? a21 : a22;
                 foreach (var item in a2)
                 {
                     var x = ONE;
                     var d2 = d;
-                    var num = reduce((UInt128)item * T128);
+                    t = (UInt128)item * T128;
+                    var num = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
                     while (d2 > 0)
                     {
-                        if ((d2 & 1) == 1) x = reduce((UInt128)x * num);
+                        if ((d2 & 1) == 1)
+                        {
+                            t = (UInt128)x * num;
+                            x = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
+                        }
                         d2 >>= 1;
-                        num = reduce((UInt128)num * num);
+                        t = (UInt128)num * num;
+                        num = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
                     }
 
                     var i = 0;
@@ -110,7 +116,8 @@ namespace Library
                     for (; i < cnt; ++i)
                     {
                         if (v == ONE || v == MINUS_ONE) break;
-                        x = reduce((UInt128)x * x);
+                        t = (UInt128)x * x;
+                        x = (ulong)((t + (UInt128)((ulong)t * NEG_INV) * N) >> 64);
                         v = x >= N ? x - N : x;
                     }
                     if (i > 0 && v != MINUS_ONE) return false;
