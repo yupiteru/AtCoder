@@ -42,6 +42,7 @@ namespace Library
         Node root;
         bool isNeedFix;
         Node lmax;
+        List<Node> pool = new List<Node>();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_InsertableList(ValueT ti, ValueE ei, Func<ValueT, ValueT, ValueT> f, Func<ValueT, ValueE, int, ValueT> g, Func<ValueE, ValueE, ValueE> h, bool ope = true)
         {
@@ -135,7 +136,24 @@ namespace Library
             if (n == null)
             {
                 isNeedFix = true;
-                return new Node() { val = val, dat = val, lazy = ei, cnt = 1 };
+                Node ret;
+                if (pool.Count > 0)
+                {
+                    ret = pool[pool.Count - 1];
+                    pool.RemoveAt(pool.Count - 1);
+                    ret.left = ret.right = null;
+                    ret.val = val;
+                    ret.dat = val;
+                    ret.lazy = ei;
+                    ret.isBlack = false;
+                    ret.cnt = 1;
+                    ret.needRecalc = false;
+                }
+                else
+                {
+                    ret = new Node() { val = val, dat = val, lazy = ei, cnt = 1 };
+                }
+                return ret;
             }
             if (ope) Eval(n);
             var lc = Cnt(n.left);
@@ -216,6 +234,7 @@ namespace Library
                 return BalanceR(n);
             }
             lmax = n;
+            pool.Add(lmax);
             isNeedFix = n.isBlack;
             return n.left;
         }
@@ -391,14 +410,26 @@ namespace Library
         public bool Any() => root != null;
         public long Count => Cnt(root);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<ValueT> List() => L(root);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerable<ValueT> L(Node n)
+        public ValueT[] List()
         {
-            if (n == null) yield break;
-            foreach (var i in L(n.left)) yield return i;
-            yield return n.val;
-            foreach (var i in L(n.right)) yield return i;
+            var ret = new List<ValueT>();
+            var stack = new LIB_Deque<Node>();
+            var node = root;
+            while (true)
+            {
+                if (node != null)
+                {
+                    stack.PushBack(node);
+                    node = node.left;
+                }
+                else
+                {
+                    if (stack.Count == 0) break;
+                    ret.Add(stack.Back.val);
+                    node = stack.PopBack().right;
+                }
+            }
+            return ret.ToArray();
         }
     }
     class LIB_InsertableList<T>
@@ -421,7 +452,7 @@ namespace Library
         }
         public long Count => tree.Count;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<T> List() => tree.List();
+        public T[] List() => tree.List();
     }
     ////end
 }
