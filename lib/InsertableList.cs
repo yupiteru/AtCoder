@@ -440,7 +440,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T val) => tree.Add(val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Insert(long index, T val) => tree.Insert(index, val);
+        public void InsertAt(long index, T val) => tree.Insert(index, val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(long index) => tree.RemoveAt(index);
         public T this[long i]
