@@ -89,13 +89,13 @@ namespace Library
             }
         }
         long shift;
-        LIB_Dict<long, LIB_Dict<long, long>> path;
+        LIB_Dictionary<long, LIB_Dictionary<long, long>> path;
         long additionalVertexCount;
         long start;
         long goal;
         public LIB_MoyasuUmeru()
         {
-            path = new LIB_Dict<long, LIB_Dict<long, long>>(_ => new LIB_Dict<long, long>());
+            path = new LIB_Dictionary<long, LIB_Dictionary<long, long>>(_ => new LIB_Dictionary<long, long>());
             shift = 0;
             start = -1;
             goal = -2;

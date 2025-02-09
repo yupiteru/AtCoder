@@ -29,6 +29,11 @@ namespace Library
             array = new T[this.cap = (int)cap];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear()
+        {
+            front = Count = 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int GetIndex(int i)
         {
             if (i >= cap) throw new Exception();

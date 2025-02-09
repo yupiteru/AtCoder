@@ -11,9 +11,9 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    class LIB_FactorizedNumber : LIB_Dict<long, long>, IEquatable<LIB_FactorizedNumber>
+    class LIB_FactorizedNumber : LIB_Dictionary<long, long>, IEquatable<LIB_FactorizedNumber>
     {
-        // LIB_Dict wo tukaimasu
+        // LIB_Dictionary wo tukaimasu
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FactorizedNumber(long x)
         {
