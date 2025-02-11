@@ -27,7 +27,7 @@ namespace Library
             return ret;
         }
     }
-    class LIB_Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>, IEquatable<LIB_Dictionary<TKey, TValue>> where TKey : IEquatable<TKey>
+    class LIB_Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IEquatable<LIB_Dictionary<TKey, TValue>> where TKey : IEquatable<TKey>
     {
         struct Entry
         {
@@ -338,8 +338,7 @@ namespace Library
             return default;
         }
 
-        public KeyCollection Keys => new KeyCollection(this);
-        public class KeyCollection : IEnumerable<TKey>, ICollection<TKey>, IReadOnlyCollection<TKey>
+        public class KeyCollection : ICollection<TKey>, IReadOnlyCollection<TKey>
         {
             private LIB_Dictionary<TKey, TValue> dict;
             public KeyCollection(LIB_Dictionary<TKey, TValue> dict)
@@ -360,15 +359,17 @@ namespace Library
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
+        public KeyCollection Keys => new KeyCollection(this);
+
         public ValueCollection Values => new ValueCollection(this);
 
-        ICollection<TKey> IDictionary<TKey, TValue>.Keys => throw new NotImplementedException();
+        ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
 
-        ICollection<TValue> IDictionary<TKey, TValue>.Values => throw new NotImplementedException();
+        ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
 
-        public bool IsReadOnly => throw new NotImplementedException();
+        public bool IsReadOnly => false;
 
-        public class ValueCollection : IEnumerable<TValue>, ICollection<TValue>, IReadOnlyCollection<TValue>
+        public class ValueCollection : ICollection<TValue>, IReadOnlyCollection<TValue>
         {
             private LIB_Dictionary<TKey, TValue> dict;
             public ValueCollection(LIB_Dictionary<TKey, TValue> dict)
@@ -575,7 +576,7 @@ namespace Library
             public void Dispose() { }
         }
     }
-    class LIB_HashSet<TKey> : IEnumerable<TKey>, IEquatable<LIB_HashSet<TKey>> where TKey : IEquatable<TKey>
+    class LIB_HashSet<TKey> : ICollection<TKey>, IEquatable<LIB_HashSet<TKey>> where TKey : IEquatable<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(LIB_HashSet<TKey> x)
@@ -603,6 +604,8 @@ namespace Library
             private set { }
         }
 
+        public bool IsReadOnly => false;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(TKey key) => dict.Add(key, 0);
 
@@ -614,6 +617,13 @@ namespace Library
 
         IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => dict.GetEnumeratorKey();
         IEnumerator IEnumerable.GetEnumerator() => dict.GetEnumeratorKey();
+
+        public void Clear() => dict.Clear();
+
+        public void CopyTo(TKey[] array, int arrayIndex)
+        {
+            foreach (var item in this) array[arrayIndex++] = item;
+        }
     }
     ////end
 }
