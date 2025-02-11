@@ -31,7 +31,10 @@ while(@folders > 0) {
           if($line =~ /(class|struct) LIB_([A-Za-z0-9_]+)/) {
             $classToFilename{$2} = $path;
           }
-          if($line =~ /LIB_([A-Za-z0-9_]+)/) {
+          while($line =~ /LIB_([A-Za-z0-9_]+)/g) {
+            ${$filenameToUsedLib{$path}}[@{$filenameToUsedLib{$path}}] = $1;
+          }
+          while($line =~ /To(HashSet|Dictionary)/g) { # ToHashSet と ToDictionary は特殊化
             ${$filenameToUsedLib{$path}}[@{$filenameToUsedLib{$path}}] = $1;
           }
           $libstr .= $line;
@@ -53,6 +56,10 @@ my %usedLib;
 while(my $line = decode('UTF-8', <$fh>)) {
   $str .= $line;
   while($line =~ /LIB_([A-Za-z0-9_]+)/g) {
+    my $libFileName = $classToFilename{$1};
+    $usedLib{$libFileName} = 1;
+  }
+  while($line =~ /To(HashSet|Dictionary)/g) { # ToHashSet と ToDictionary は特殊化
     my $libFileName = $classToFilename{$1};
     $usedLib{$libFileName} = 1;
   }

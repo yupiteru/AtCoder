@@ -16,10 +16,10 @@ namespace Library
     {
         public class AuxiliaryTree
         {
-            Dictionary<long, List<(long vtx, long len)>>[] edges;
-            Dictionary<long, int> idToIdx;
+            IDictionary<long, List<(long vtx, long len)>>[] edges;
+            IDictionary<long, int> idToIdx;
             long selectId = 0;
-            public AuxiliaryTree(Dictionary<long, int> idToIdx, Dictionary<long, List<(long vtx, long len)>>[] edges)
+            public AuxiliaryTree(IDictionary<long, int> idToIdx, IDictionary<long, List<(long vtx, long len)>>[] edges)
             {
                 this.idToIdx = idToIdx;
                 this.edges = edges;

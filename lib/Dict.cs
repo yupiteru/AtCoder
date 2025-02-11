@@ -14,25 +14,34 @@ namespace Library
     ////start
     static partial class LIB_Static
     {
-        public static LIB_HashSet<T> LIB_ToHashSet<T>(this IEnumerable<T> source) where T : IEquatable<T>
+        public static LIB_HashSet<T> ToHashSet<T>(this IEnumerable<T> source) where T : IEquatable<T>
         {
             var ret = new LIB_HashSet<T>();
             foreach (var item in source) ret.Add(item);
             return ret;
         }
-        public static LIB_Dictionary<TKey, TValue> LIB_ToDictionary<T, TKey, TValue>(this IEnumerable<T> source, Func<T, TKey> keySelector, Func<T, TValue> elementSelector) where TKey : IEquatable<TKey>
+        public static LIB_Dictionary<TKey, TValue> ToDictionary<T, TKey, TValue>(this IEnumerable<T> source, Func<T, TKey> keySelector, Func<T, TValue> elementSelector) where TKey : IEquatable<TKey>
         {
             var ret = new LIB_Dictionary<TKey, TValue>();
             foreach (var item in source) ret[keySelector(item)] = elementSelector(item);
             return ret;
         }
     }
-
-    class LIB_Dictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IEquatable<LIB_Dictionary<TKey, TValue>> where TKey : IEquatable<TKey>
+    class LIB_Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>, IEquatable<LIB_Dictionary<TKey, TValue>> where TKey : IEquatable<TKey>
     {
+        struct Entry
+        {
+            public bool used;
+            public int hashCode;
+            public TKey Key;
+            public TValue Value;
+            public int Next;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(LIB_Dictionary<TKey, TValue> x)
         {
+            if (totalHash != x.totalHash) return false;
             if (Count != x.Count) return false;
             foreach (var kv in this)
             {
@@ -48,30 +57,48 @@ namespace Library
         public TValue this[TKey key]
         {
             get => GetOrInsert(key);
-            set => AddOrUpdate(key, value);
+            set => Add(key, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int Hash(ulong h)
+        int Hash(TKey key)
         {
             unchecked
             {
-                var key = h << 32 | h;
-                key = (~key) + (key << 18);
-                key = key ^ (key >> 31);
-                key = key * 21;
-                key = key ^ (key >> 11);
-                key = key + (key << 6);
-                key = key ^ (key >> 22);
-                return (int)key;
+                {
+                    if (key is long h && h > int.MaxValue)
+                    {
+                        h = (~h) + (h << 18);
+                        h = h ^ (h >> 31);
+                        h = h * 21;
+                        h = h ^ (h >> 11);
+                        h = h + (h << 6);
+                        h = h ^ (h >> 22);
+                        return (int)h;
+                    }
+                }
+                {
+                    if (key is ulong h && h > uint.MaxValue)
+                    {
+                        h = (~h) + (h << 18);
+                        h = h ^ (h >> 31);
+                        h = h * 21;
+                        h = h ^ (h >> 11);
+                        h = h + (h << 6);
+                        h = h ^ (h >> 22);
+                        return (int)h;
+                    }
+                }
+                return key.GetHashCode();
             }
         }
-        int[] st;
         bool[] kouhoAdded;
-        KeyValuePair<TKey, TValue>[] bck;
+        int[] bck;
+        Entry[] entries;
         int mask;
-        int prode;
         int totalHash;
+        int freeCount;
+        int freeList;
         Func<TKey, TValue> defval = _ => default;
         public int Count
         {
@@ -82,79 +109,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_Dictionary(Func<TKey, TValue> defval = null)
         {
-            prode = -1;
-            st = new int[0];
+            freeList = -1;
             kouhoAdded = new bool[0];
-            bck = new KeyValuePair<TKey, TValue>[0];
+            bck = new int[0];
+            entries = new Entry[0];
             elemKouho = new LIB_Deque<int>();
             if (defval != null) this.defval = defval;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int FindEmpty(TKey key)
-        {
-            var h = Hash((ulong)key.GetHashCode());
-            ref int stref = ref st[0];
-            for (var delta = 0; ; ++delta)
-            {
-                var i = (h + delta) & mask;
-                if (Unsafe.Add(ref stref, i) != 2)
-                {
-                    if (prode < delta) prode = delta;
-                    return i;
-                }
-            }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int FindFilled(TKey key)
-        {
-            if (Count == 0) return -1;
-            var h = Hash((ulong)key.GetHashCode());
-            ref int stref = ref st[0];
-            ref KeyValuePair<TKey, TValue> bckref = ref bck[0];
-            for (var delta = 0; delta <= prode; ++delta)
-            {
-                var i = (h + delta) & mask;
-                var sti = Unsafe.Add(ref stref, i);
-                if (sti == 2)
-                {
-                    if (Unsafe.Add(ref bckref, i).Key.Equals(key)) return i;
-                }
-                else if (sti == 0) return -1;
-            }
-            return -1;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int FindOrAllocate(TKey key)
-        {
-            var h = Hash((ulong)key.GetHashCode());
-            var hole = -1;
-            var delta = 0;
-            ref int stref = ref st[0];
-            ref KeyValuePair<TKey, TValue> bckref = ref bck[0];
-            for (; delta <= prode; ++delta)
-            {
-                var i = (h + delta) & mask;
-                var sti = Unsafe.Add(ref stref, i);
-                if (sti == 2)
-                {
-                    if (Unsafe.Add(ref bckref, i).Key.Equals(key)) return i;
-                }
-                else if (sti == 0) return i;
-                else
-                {
-                    if (hole == -1) hole = i;
-                }
-            }
-            if (hole != -1) return hole;
-            for (; ; ++delta)
-            {
-                var i = (h + delta) & mask;
-                if (Unsafe.Add(ref stref, i) != 2)
-                {
-                    prode = delta;
-                    return i;
-                }
-            }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Reserve(int nextCnt)
@@ -166,97 +126,216 @@ namespace Library
                 nextCnt = 4;
                 while (nextCnt < requiredCnt) nextCnt <<= 1;
             }
-            else if (nextCnt <= nowlen >> 2) nextCnt = Max(4, nowlen >> 1);
             else return;
-            var oldSt = new int[nextCnt];
-            var oldKouhoAdded = new bool[nextCnt];
-            var oldBck = new KeyValuePair<TKey, TValue>[nextCnt];
-            { var t = oldSt; oldSt = st; st = t; }
-            { var t = oldKouhoAdded; oldKouhoAdded = kouhoAdded; kouhoAdded = t; }
-            { var t = oldBck; oldBck = bck; bck = t; }
+            var oldEntries = entries;
+            var oldKouhoAdded = kouhoAdded;
+            entries = new Entry[nextCnt];
+            kouhoAdded = new bool[nextCnt];
+            bck = new int[nextCnt];
             mask = nextCnt - 1;
-            Count = 0;
-            prode = 0;
-            elemKouho.Clear();
             if (nowlen == 0) return;
-            ref int stref = ref st[0];
-            ref bool kouhoAddedref = ref kouhoAdded[0];
-            ref KeyValuePair<TKey, TValue> bckref = ref bck[0];
-            ref int oldstref = ref oldSt[0];
-            ref bool oldkouhoAddedref = ref oldKouhoAdded[0];
-            ref KeyValuePair<TKey, TValue> oldbckref = ref oldBck[0];
+            Array.Copy(oldEntries, entries, nowlen);
+            Array.Copy(oldKouhoAdded, kouhoAdded, nowlen);
+            ref var oldEntriesref = ref oldEntries[0];
             for (var pos = 0; pos < nowlen; ++pos)
             {
-                if (Unsafe.Add(ref oldstref, pos) == 2)
+                ref var entry = ref Unsafe.Add(ref oldEntriesref, pos);
+                if (entry.used)
                 {
-                    ref KeyValuePair<TKey, TValue> oldbckpos = ref Unsafe.Add(ref oldbckref, pos);
-                    var i = FindEmpty(oldbckpos.Key);
-                    Unsafe.Add(ref stref, i) = 2;
-                    Unsafe.Add(ref kouhoAddedref, i) = true;
-                    Unsafe.Add(ref bckref, i) = oldbckpos;
-                    elemKouho.PushBack(i);
-                    ++Count;
+                    var h = entry.hashCode;
+
+                    ref var bckref = ref bck[h & mask];
+                    entries[pos].Next = bckref - 1;
+                    bckref = pos + 1;
                 }
             }
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddOrUpdate(TKey key, TValue val)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public void Add(TKey key, TValue val)
         {
             Reserve(Count + 1);
-            var i = FindOrAllocate(key);
-            if (st[i] != 2)
+
+            var h = Hash(key);
+            ref var entriesref = ref entries[0];
+            ref var bckref = ref bck[h & mask];
+            var i = bckref - 1;
+            while (i >= 0)
             {
-                st[i] = 2;
-                bck[i] = new KeyValuePair<TKey, TValue>(key, val);
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
+                if (entry.hashCode == h && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                {
+                    totalHash ^= entry.Value.GetHashCode() ^ val.GetHashCode();
+                    entry.Value = val;
+                    return;
+                }
+                i = entry.Next;
+            }
+
+            if (freeCount > 0)
+            {
+                i = freeList;
+                freeList = Unsafe.Add(ref entriesref, freeList).Next;
+                --freeCount;
+            }
+            else
+            {
+                i = Count;
+            }
+
+            {
+                ref var entry = ref entries[i];
+                entry.used = true;
+                entry.hashCode = h;
+                entry.Next = bckref - 1;
+                entry.Key = key;
+                entry.Value = val;
+                bckref = i + 1;
                 if (!kouhoAdded[i])
                 {
                     kouhoAdded[i] = true;
                     elemKouho.PushBack(i);
                 }
-                totalHash ^= key.GetHashCode();
+                totalHash ^= key.GetHashCode() ^ val.GetHashCode();
                 ++Count;
             }
-            else bck[i] = new KeyValuePair<TKey, TValue>(key, val);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(TKey key)
         {
-            var i = FindFilled(key);
-            if (i == -1) return false;
-            st[i] = 1;
-            totalHash ^= key.GetHashCode();
-            --Count;
-            return true;
+            var h = Hash(key);
+            ref var entriesref = ref entries[0];
+            ref var bckref = ref bck[h & mask];
+            var i = bckref - 1;
+            var last = -1;
+            while (i >= 0)
+            {
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
+                if (entry.hashCode == h && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                {
+                    if (last < 0)
+                    {
+                        bckref = entry.Next + 1;
+                    }
+                    else
+                    {
+                        Unsafe.Add(ref entriesref, last).Next = entry.Next;
+                    }
+                    totalHash ^= entry.Key.GetHashCode() ^ entry.Value.GetHashCode();
+                    --Count;
+                    entry.used = false;
+                    entry.Next = freeList;
+
+                    freeList = i;
+                    ++freeCount;
+                    return true;
+                }
+                last = i;
+                i = entry.Next;
+            }
+
+            return false;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ContainsKey(TKey key) => FindFilled(key) != -1;
+        public bool ContainsKey(TKey key)
+        {
+            var h = Hash(key);
+            ref var entriesref = ref entries[0];
+            var i = bck[h & mask] - 1;
+            while (i >= 0)
+            {
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
+                if (entry.hashCode == h && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                {
+                    return true;
+                }
+                i = entry.Next;
+            }
+            return false;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TValue GetOrInsert(TKey key, Func<TKey, TValue> val = null)
         {
             Reserve(Count + 1);
-            var i = FindOrAllocate(key);
-            if (st[i] != 2)
+
+            var h = Hash(key);
+            ref var entriesref = ref entries[0];
+            ref var bckref = ref bck[h & mask];
+            var i = bckref - 1;
+            while (i >= 0)
             {
-                st[i] = 2;
-                bck[i] = new KeyValuePair<TKey, TValue>(key, val == null ? defval(key) : val(key));
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
+                if (entry.hashCode == h && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                {
+                    return entry.Value;
+                }
+                i = entry.Next;
+            }
+
+            if (freeCount > 0)
+            {
+                i = freeList;
+                freeList = Unsafe.Add(ref entriesref, freeList).Next;
+                --freeCount;
+            }
+            else
+            {
+                i = Count;
+            }
+
+            {
+                ref var entry = ref entries[i];
+                entry.used = true;
+                entry.hashCode = h;
+                entry.Next = bckref - 1;
+                entry.Key = key;
+                entry.Value = val == null ? defval(key) : val(key);
+                bckref = i + 1;
                 if (!kouhoAdded[i])
                 {
                     kouhoAdded[i] = true;
                     elemKouho.PushBack(i);
                 }
-                totalHash ^= key.GetHashCode();
+                totalHash ^= key.GetHashCode() ^ entry.Value.GetHashCode();
                 ++Count;
+
+                return entry.Value;
             }
-            return bck[i].Value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TValue GetAndErase(TKey key)
+        public TValue GetAndRemove(TKey key)
         {
-            var i = FindFilled(key);
-            st[i] = 1;
-            totalHash ^= key.GetHashCode();
-            --Count;
-            return bck[i].Value;
+            var h = Hash(key);
+            ref var entriesref = ref entries[0];
+            ref var bckref = ref bck[h & mask];
+            var i = bckref - 1;
+            var last = -1;
+            while (i >= 0)
+            {
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
+                if (entry.hashCode == h && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                {
+                    if (last < 0)
+                    {
+                        bckref = entry.Next + 1;
+                    }
+                    else
+                    {
+                        Unsafe.Add(ref entriesref, last).Next = entry.Next;
+                    }
+                    totalHash ^= entry.Key.GetHashCode() ^ entry.Value.GetHashCode();
+                    --Count;
+                    entry.used = false;
+                    entry.Next = freeList;
+
+                    freeList = i;
+                    ++freeCount;
+                    return entry.Value;
+                }
+                last = i;
+                i = entry.Next;
+            }
+
+            return default;
         }
 
         public KeyCollection Keys => new KeyCollection(this);
@@ -274,10 +353,7 @@ namespace Library
             public bool Contains(TKey item) => dict.ContainsKey(item);
             public void CopyTo(TKey[] array, int arrayIndex)
             {
-                foreach (var kv in dict)
-                {
-                    array[arrayIndex++] = kv.Key;
-                }
+                foreach (var kv in dict) array[arrayIndex++] = kv.Key;
             }
             public bool Remove(TKey item) => throw new NotSupportedException();
             public IEnumerator<TKey> GetEnumerator() => dict.GetEnumeratorKey();
@@ -285,6 +361,13 @@ namespace Library
         }
 
         public ValueCollection Values => new ValueCollection(this);
+
+        ICollection<TKey> IDictionary<TKey, TValue>.Keys => throw new NotImplementedException();
+
+        ICollection<TValue> IDictionary<TKey, TValue>.Values => throw new NotImplementedException();
+
+        public bool IsReadOnly => throw new NotImplementedException();
+
         public class ValueCollection : IEnumerable<TValue>, ICollection<TValue>, IReadOnlyCollection<TValue>
         {
             private LIB_Dictionary<TKey, TValue> dict;
@@ -298,18 +381,12 @@ namespace Library
             public void Clear() => throw new NotSupportedException();
             public bool Contains(TValue item)
             {
-                foreach (var kv in dict)
-                {
-                    if (kv.Value.Equals(item)) return true;
-                }
+                foreach (var kv in dict) if (kv.Value.Equals(item)) return true;
                 return false;
             }
             public void CopyTo(TValue[] array, int arrayIndex)
             {
-                foreach (var kv in dict)
-                {
-                    array[arrayIndex++] = kv.Value;
-                }
+                foreach (var kv in dict) array[arrayIndex++] = kv.Value;
             }
             public bool Remove(TValue item) => throw new NotSupportedException();
             public IEnumerator<TValue> GetEnumerator() => dict.GetEnumeratorValue();
@@ -338,7 +415,7 @@ namespace Library
                 {
                     if (!first && dict.elemKouho.Front == firstObj) return false;
                     var idx = dict.elemKouho.PopFront();
-                    if (dict.st[idx] == 2)
+                    if (dict.entries[idx].used)
                     {
                         dict.elemKouho.PushBack(idx);
                         frontObj = idx;
@@ -359,7 +436,7 @@ namespace Library
                 first = true;
             }
 
-            public KeyValuePair<TKey, TValue> Current => dict.bck[frontObj];
+            public KeyValuePair<TKey, TValue> Current => new KeyValuePair<TKey, TValue>(dict.entries[frontObj].Key, dict.entries[frontObj].Value);
             object IEnumerator.Current => Current;
 
             public void Dispose() { }
@@ -385,7 +462,7 @@ namespace Library
                 {
                     if (!first && dict.elemKouho.Front == firstObj) return false;
                     var idx = dict.elemKouho.PopFront();
-                    if (dict.st[idx] == 2)
+                    if (dict.entries[idx].used)
                     {
                         dict.elemKouho.PushBack(idx);
                         frontObj = idx;
@@ -406,13 +483,52 @@ namespace Library
                 first = true;
             }
 
-            public TKey Current => dict.bck[frontObj].Key;
+            public TKey Current => dict.entries[frontObj].Key;
             object IEnumerator.Current => Current;
 
             public void Dispose() { }
         }
 
         public EnumeratorValue GetEnumeratorValue() => new EnumeratorValue(this);
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            if (ContainsKey(key))
+            {
+                value = this[key];
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+
+        public void Clear()
+        {
+            Count = 0;
+            totalHash = 0;
+            freeCount = 0;
+            freeList = -1;
+            kouhoAdded = new bool[0];
+            bck = new int[0];
+            entries = new Entry[0];
+            elemKouho.Clear();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            if (ContainsKey(item.Key)) return this[item.Key].Equals(item.Value);
+            return false;
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            foreach (var kv in this) array[arrayIndex++] = kv;
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item) => Remove(item.Key);
+
         public struct EnumeratorValue : IEnumerator<TValue>
         {
             private readonly LIB_Dictionary<TKey, TValue> dict;
@@ -432,7 +548,7 @@ namespace Library
                 {
                     if (!first && dict.elemKouho.Front == firstObj) return false;
                     var idx = dict.elemKouho.PopFront();
-                    if (dict.st[idx] == 2)
+                    if (dict.entries[idx].used)
                     {
                         dict.elemKouho.PushBack(idx);
                         frontObj = idx;
@@ -453,7 +569,7 @@ namespace Library
                 first = true;
             }
 
-            public TValue Current => dict.bck[frontObj].Value;
+            public TValue Current => dict.entries[frontObj].Value;
             object IEnumerator.Current => Current;
 
             public void Dispose() { }
@@ -488,7 +604,7 @@ namespace Library
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(TKey key) => dict.AddOrUpdate(key, 0);
+        public void Add(TKey key) => dict.Add(key, 0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(TKey key) => dict.ContainsKey(key);
