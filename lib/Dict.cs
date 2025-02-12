@@ -137,7 +137,11 @@ namespace Library
             Array.Copy(oldEntries, entries, nowlen);
             Array.Copy(oldKouhoAdded, kouhoAdded, nowlen);
             ref var oldEntriesref = ref oldEntries[0];
-            for (var pos = 0; pos < nowlen; ++pos)
+            ref var kouhoAddedref = ref kouhoAdded[0];
+            ref var entriesref = ref entries[0];
+            var firstItem = elemKouho.PopFront();
+            var pos = firstItem;
+            while (true)
             {
                 ref var entry = ref Unsafe.Add(ref oldEntriesref, pos);
                 if (entry.used)
@@ -145,9 +149,13 @@ namespace Library
                     var h = entry.hashCode;
 
                     ref var bckref = ref bck[h & mask];
-                    entries[pos].Next = bckref - 1;
+                    Unsafe.Add(ref entriesref, pos).Next = bckref - 1;
                     bckref = pos + 1;
+                    elemKouho.PushBack(pos);
                 }
+                else Unsafe.Add(ref kouhoAddedref, pos) = false;
+                if (firstItem == elemKouho.Front) break;
+                pos = elemKouho.PopFront();
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -183,7 +191,7 @@ namespace Library
             }
 
             {
-                ref var entry = ref entries[i];
+                ref var entry = ref Unsafe.Add(ref entriesref, i);
                 entry.used = true;
                 entry.hashCode = h;
                 entry.Next = bckref - 1;
@@ -581,6 +589,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(LIB_HashSet<TKey> x)
         {
+            if (GetHashCode() != x.GetHashCode()) return false;
             if (Count != x.Count) return false;
             foreach (var v in this)
             {
