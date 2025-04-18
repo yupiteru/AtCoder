@@ -122,6 +122,11 @@ namespace Library
             private set { }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset()
+        {
+            Count = 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueueDeletable()
         {
             deleted = new long[8];
@@ -260,6 +265,11 @@ namespace Library
             private set;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset()
+        {
+            Count = 0;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(long cap, Comparison<T> cmp, bool asc = true)
         {
             heap = new T[cap];
@@ -340,6 +350,8 @@ namespace Library
         {
             q = new LIB_PriorityQueue<KeyValuePair<TK, TV>>((x, y) => cmp(x.Key, y.Key), asc);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset() => q.Reset();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_PriorityQueue(long cap, bool asc = true) : this(cap, Comparer<TK>.Default.Compare, asc) { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

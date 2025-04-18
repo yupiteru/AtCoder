@@ -23,55 +23,103 @@ namespace Library
 
     abstract class HeuristicStateInternal
     {
-        static (int index, int xorval)[] history = new (int, int)[1 << 27];
+        static (int index, int xorval)[] history = new (int, int)[1 << 28];
         static int[] memory = new int[0];
-        static int historyCount = 0;
-        static int nowHistoryTop = 0;
-        static int maxHistoryTop = 0;
-        static int historyBatchLength = 20;
+        static int historyCount = 2;
+        static int historyCountStart = 2;
+        static int nowHistoryTop = 1;
+        static int maxHistoryTop = 1;
+        static int historyBatchLength = 64;
         static LIB_Deque<int> unusedHistoryIndex = new LIB_Deque<int>();
         static public LIB_Deque<LIB_OperatorBase> unusedOperatorPool = new LIB_Deque<LIB_OperatorBase>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public (int l, int r) Batch()
         {
-            var ret = (nowHistoryTop, historyCount);
-            if (unusedHistoryIndex.Count > 0)
-            {
-                historyCount = nowHistoryTop = unusedHistoryIndex.PopBack();
-            }
-            else
-            {
-                historyCount = nowHistoryTop = maxHistoryTop;
-                maxHistoryTop += historyBatchLength;
-            }
+            var ret = (historyCountStart, historyCount);
+            nowHistoryTop = GetBlock();
+            historyCountStart = historyCount = nowHistoryTop + 1;
             return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int GetBlock()
+        {
+            if (unusedHistoryIndex.Count > 0) return unusedHistoryIndex.PopBack();
+            var ret = maxHistoryTop;
+            maxHistoryTop += historyBatchLength;
+            return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int NextIdx(int idx)
+        {
+            var len = ++idx - nowHistoryTop + 1;
+            if (history[idx].index < 0)
+            {
+                idx = -history[idx].index;
+            }
+            else if (len == historyBatchLength)
+            {
+                nowHistoryTop = GetBlock();
+                history[idx].index = -nowHistoryTop - 1;
+                history[nowHistoryTop].index = -idx + 1;
+                idx = nowHistoryTop + 1;
+            }
+            return idx;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int PrevIdx(int idx)
+        {
+            if (history[--idx].index < 0)
+            {
+                idx = -history[idx].index;
+            }
+            return idx;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public void DeleteHistory((int l, int r) ope)
         {
-            unusedHistoryIndex.PushBack(ope.l);
+            var topIdx = ope.l - 1;
+            while (true)
+            {
+                unusedHistoryIndex.PushBack(topIdx);
+                history[topIdx].index = 0;
+                ref var right = ref history[topIdx + historyBatchLength - 1];
+                if (right.index < 0)
+                {
+                    topIdx = -right.index - 1;
+                    right.index = 0;
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public void Apply((int l, int r) ope)
         {
-            for (var i = ope.l; i != ope.r; ++i)
+            var now = ope.l;
+            while (now != ope.r)
             {
-                ref var hist = ref history[i];
+                ref var hist = ref history[now];
                 memory[hist.index] ^= hist.xorval;
+                now = NextIdx(now);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public void Rollback((int l, int r) ope)
         {
-            var i = ope.r;
-            while (i != ope.l)
+            var now = ope.r;
+            while (now != ope.l)
             {
-                --i;
-                ref var hist = ref history[i];
+                now = PrevIdx(now);
+                ref var hist = ref history[now];
                 memory[hist.index] ^= hist.xorval;
             }
         }
@@ -80,11 +128,12 @@ namespace Library
         static void Set(int index, int val)
         {
             if (memory[index] == val) return;
-            history[historyCount++] = (index, memory[index] ^ val);
+            history[historyCount] = (index, memory[index] ^ val);
             memory[index] = val;
+            historyCount = NextIdx(historyCount);
         }
 
-        protected class IntArray
+        public class IntArray
         {
             int len1 = -1;
             int len2 = -1;
@@ -128,16 +177,16 @@ namespace Library
             public int this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return memory[dataOffset + index]; }
+                get { if (index < 0 || index >= len1) { new Exception(); } return memory[dataOffset + index]; }
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(dataOffset + index, value); }
+                set { if (index < 0 || index >= len1) { new Exception(); } Set(dataOffset + index, value); }
             }
             public int this[int index1, int index2]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return memory[dataOffset + index1 * len2 + index2]; }
+                get { if (index1 < 0 || index1 >= len1 || index2 < 0 || index2 >= len2) { new Exception(); } return memory[dataOffset + index1 * len2 + index2]; }
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set { Set(dataOffset + index1 * len2 + index2, value); }
+                set { if (index1 < 0 || index1 >= len1 || index2 < 0 || index2 >= len2) { new Exception(); } Set(dataOffset + index1 * len2 + index2, value); }
             }
             public int this[int index1, int index2, int index3]
             {

@@ -22,6 +22,92 @@ namespace Library
             public int next;
             public (int l, int r) patch;
             public LIB_OperatorBase ope;
+            public bool deleted;
+            public int depth;
+        }
+
+        class BayesianBeamWidthSuggester
+        {
+            double meanSec;
+            double varianceSec;
+            double varianceStateSec;
+            double varianceObserveSec;
+            double timeLimitSec;
+            int currentTurn;
+            int maxTurn;
+            int warmupTurn;
+            int minBeamWidth;
+            int maxBeamWidth;
+            int currentBeamWidth;
+            DateTime startTime;
+            DateTime lastTime;
+
+            public BayesianBeamWidthSuggester(int maxTurn, int warmupTurn, double timeLimitSec, int standardBeamWidth, int minBeamWidth, int maxBeamWidth)
+            {
+                this.meanSec = timeLimitSec / (maxTurn * standardBeamWidth);
+                var stddevSec = meanSec * 0.1;
+                this.varianceSec = stddevSec * stddevSec;
+                var stddevStateSec = 0.01 * meanSec;
+                this.varianceStateSec = stddevStateSec * stddevStateSec;
+                var stddevObserveSec = 0.05 * meanSec;
+                this.varianceObserveSec = stddevObserveSec * stddevObserveSec;
+                this.timeLimitSec = timeLimitSec;
+                this.currentTurn = 0;
+                this.maxTurn = maxTurn;
+                this.warmupTurn = warmupTurn;
+                this.minBeamWidth = minBeamWidth;
+                this.maxBeamWidth = maxBeamWidth;
+                this.currentBeamWidth = 0;
+                this.startTime = DateTime.Now;
+                this.lastTime = this.startTime;
+            }
+            void UpdateState()
+            {
+                varianceSec += varianceStateSec;
+            }
+            void UpdateDistribution(double durationSec)
+            {
+                var oldMean = meanSec;
+                var oldVariance = varianceSec;
+                var noiseVariance = varianceObserveSec;
+
+                meanSec = (oldMean * noiseVariance + oldVariance * durationSec) / (noiseVariance + oldVariance);
+                varianceSec = oldVariance * noiseVariance / (oldVariance + noiseVariance);
+            }
+            int CalcSafeBeamWidth()
+            {
+                var remainingTurn = maxTurn - currentTurn;
+                var elapsedTime = (DateTime.Now - startTime).TotalSeconds;
+                var remainingTime = timeLimitSec - elapsedTime;
+
+                var varianceTotal = varianceSec * varianceObserveSec;
+
+                var mean = remainingTurn * meanSec;
+                var variance = remainingTurn * varianceTotal;
+                var stddev = Sqrt(variance);
+
+                const double SIGMA_COEF = 3.0;
+                var neededTimePerWidth = mean + SIGMA_COEF * stddev;
+                var beamWidth = Max(minBeamWidth, Min(maxBeamWidth, (int)(remainingTime / neededTimePerWidth)));
+
+                return beamWidth;
+            }
+            public int Suggest()
+            {
+                if (currentTurn >= warmupTurn)
+                {
+                    var elapsed = (DateTime.Now - lastTime).TotalSeconds;
+                    var elapsedPerBeam = elapsed / currentBeamWidth;
+                    UpdateState();
+                    UpdateDistribution(elapsedPerBeam);
+                }
+
+                lastTime = DateTime.Now;
+                var beamWidth = CalcSafeBeamWidth();
+                currentBeamWidth = beamWidth;
+                ++currentTurn;
+                return beamWidth;
+            }
         }
 
         LIB_Deque<int> waitingReUse = new LIB_Deque<int>();
@@ -45,6 +131,7 @@ namespace Library
             waitingReUse.PushBack(nodeIdx);
             ref var node = ref nodeList[nodeIdx];
             node.ope.Unuse();
+            node.deleted = true;
             HeuristicStateInternal.DeleteHistory(node.patch);
             if (node.prev == 0 && node.next == 0)
             {
@@ -70,6 +157,7 @@ namespace Library
         {
             return Run(state, width, -1, maxTurn, true);
         }
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public string[] Run(HeuristicStateInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false, int[] widthList = null)
         {
             // 状態を木構造で持ちます
@@ -96,17 +184,22 @@ namespace Library
 
             // 初期状態を表す Node を作成
             root = NewNode();
+            nodeList[root].deleted = false;
             HeuristicStateInternal.Batch();
 
             var width = initialWidth;
             ref var nodeListRef = ref nodeList[0];
             var startTime = DateTime.Now;
-            var checkpointTime = startTime;
-            var usedHash = new HashSet<long>(100000);
+            var beforeTurnTime = startTime;
+            var weightedAverageWidthTurnTime = 0.0;
+            var tenPercentOfTurn = maxTurn / 10;
+            var usedHash = new Dictionary<long, (int que, long score)>();
+            var deleteNodeList = new HashSet<int>();
+            var trueQueueCount = 0;
             var nextQueue = new LIB_PriorityQueue(); // このキューは最小要素を取り出す＝スコアの最大化になる（途中要らないものを Pop すると最小のものから削除されるので）
-            var maxScore = 0L;
+            var maxScore = long.MinValue;
             var maxAns = new List<string>();
-            Func<int, string[]> calcAnswer = maxNode =>
+            Func<int, bool, string[]> calcAnswer = (maxNode, doOperate) =>
             {
                 var ret = answer.ToList();
                 var backwardNodeList = new List<int>();
@@ -119,34 +212,37 @@ namespace Library
                 backwardNodeList.Reverse();
                 foreach (var item in backwardNodeList)
                 {
+                    if (doOperate) HeuristicStateInternal.Apply(nodeList[item].patch);
+                    //Console.Error.WriteLine($"kakutei depth:{nodeList[item].depth}");
                     ret.Add(nodeList[item].ope.GetOperateString());
                 }
                 return ret.ToArray();
             };
+            var beamWidthSuggester = new BayesianBeamWidthSuggester(maxTurn, (int)(maxTurn * 0.05) + 1, totalMillis / 1000.0, initialWidth, 1, initialWidth * 3);
             for (var i = 0; i < maxTurn; ++i)
             {
                 if (widthList != null) width = widthList[i];
 
-                // ハッシュ履歴が多くなると遅くなるので、3ターンごとにクリアする
-                // 頻度は問題によって変えるかも
-                if (i % 4 == 0) usedHash.Clear();
+                if ((i & 1) != 0) Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key} hashCount:{usedHash.Count}");
 
-                Console.Error.WriteLine($"turn: {i} width:{width} score: {nextQueue.Peek.Key} hashCount:{usedHash.Count}");
+                usedHash.Clear();
+                trueQueueCount = 0;
 
                 var turnStartTime = DateTime.Now;
                 // elapsed - 経過時間
                 // lastTime - 残り時間
                 var elapsed = (turnStartTime - startTime).TotalMilliseconds;
                 var lastTime = totalMillis - elapsed;
-                if (totalMillis >= 0 && lastTime < 0) break;
-                if (!fixHaba && (i & 7) == 0 && i > 0)
+                //if (totalMillis >= 0 && lastTime < 0) break;
+                if (!fixHaba)
                 {
                     // 残り時間に応じて幅を調整します
-                    // 一回の調整幅は 0.9~1.1 倍まで
-                    var keisu = (lastTime * 0.9) * 8 / ((maxTurn - i) * (turnStartTime - checkpointTime).TotalMilliseconds);
-                    width = (int)(width * Max(Min(keisu, 1.1), 0.9));
-                    width = Max(width, 10); // 最小幅は 10（問題によって変えるかも）
-                    checkpointTime = turnStartTime;
+                    //var widthTurnTime = (turnStartTime - beforeTurnTime).TotalMilliseconds / width;
+                    //if (i == 1) weightedAverageWidthTurnTime = widthTurnTime;
+                    //else weightedAverageWidthTurnTime = weightedAverageWidthTurnTime * 0.9 + widthTurnTime * 0.1;
+                    //if (i >= tenPercentOfTurn) width = Min(initialWidth * 2, Max(1, (int)(lastTime / (maxTurn - i) / weightedAverageWidthTurnTime)));
+                    //beforeTurnTime = turnStartTime;
+                    width = beamWidthSuggester.Suggest();
                 }
 
                 // キューを空にします
@@ -174,59 +270,72 @@ namespace Library
                     var beforeNodeIdx = 0;
                     //Debug();
 
-                    // ListupActions で可能な操作を列挙し、操作ごとに子を生やします
-                    // ハッシュが usedHash に含まれている（過去と同一の盤面）なら、その操作はスキップします
-                    foreach (var ope in state.ListupActions(i))
+                    if (nodeList[nodeIdx].depth == i)
                     {
-                        // DoAction で操作（順遷移）を行う
-                        var score = state.DoAction(ope, i);
-                        if (usedHash.Contains(score.hash))
+                        // ListupActions で可能な操作を列挙し、操作ごとに子を生やします
+                        // ハッシュが usedHash に含まれている（過去と同一の盤面）なら、その操作はスキップします
+                        foreach (var ope in state.ListupActions(i))
                         {
-                            var noUseHistory = HeuristicStateInternal.Batch();
-                            HeuristicStateInternal.Rollback(noUseHistory);
-                            HeuristicStateInternal.DeleteHistory(noUseHistory);
-                            continue;
-                        }
-                        usedHash.Add(score.hash);
-                        needRemoveIdx = 0; // 有効な子がいたので、親を削除しないようにする
-                        var newNodeIdx = NewNode();
-                        ref var node = ref Unsafe.Add(ref nodeListRef, newNodeIdx);
-                        node.child = 0;
-                        node.prev = 0;
-                        node.next = 0;
-                        node.parent = nodeIdx;
-                        node.patch = HeuristicStateInternal.Batch();
-                        node.ope = ope;
-                        if (beforeNodeIdx != 0)
-                        {
-                            // 兄ノードがある場合
-                            node.prev = beforeNodeIdx;
-                            Unsafe.Add(ref nodeListRef, beforeNodeIdx).next = newNodeIdx;
-                        }
-                        else
-                        {
-                            // 兄ノードがいない（newNodeIdx が一番左の子）なら、親とつなぐ
-                            Unsafe.Add(ref nodeListRef, nodeIdx).child = newNodeIdx;
-                        }
+                            // DoAction で操作（順遷移）を行う
+                            var score = state.DoAction(ope, i);
+                            (int que, long score) oldValue;
+                            if (usedHash.TryGetValue(score.hash, out oldValue))
+                            {
+                                if (!nodeList[oldValue.que].deleted)
+                                {
+                                    if (oldValue.score >= score.score)
+                                    {
+                                        ope.Unuse();
+                                        var noUseHistory = HeuristicStateInternal.Batch();
+                                        HeuristicStateInternal.Rollback(noUseHistory);
+                                        HeuristicStateInternal.DeleteHistory(noUseHistory);
+                                        continue;
+                                    }
+                                    --trueQueueCount;
+                                    deleteNodeList.Add(oldValue.que);
+                                }
+                            }
+                            var newNodeIdx = NewNode();
+                            nodeList[newNodeIdx].deleted = false;
+                            usedHash[score.hash] = (newNodeIdx, score.score);
+                            needRemoveIdx = 0; // 有効な子がいたので、親を削除しないようにする
+                            ref var node = ref Unsafe.Add(ref nodeListRef, newNodeIdx);
+                            node.child = 0;
+                            node.prev = 0;
+                            node.next = 0;
+                            node.parent = nodeIdx;
+                            node.depth = nodeList[nodeIdx].depth + 1;
+                            node.patch = HeuristicStateInternal.Batch();
+                            node.ope = ope;
+                            if (beforeNodeIdx != 0)
+                            {
+                                // 兄ノードがある場合
+                                node.prev = beforeNodeIdx;
+                                Unsafe.Add(ref nodeListRef, beforeNodeIdx).next = newNodeIdx;
+                            }
+                            else
+                            {
+                                // 兄ノードがいない（newNodeIdx が一番左の子）なら、親とつなぐ
+                                Unsafe.Add(ref nodeListRef, nodeIdx).child = newNodeIdx;
+                            }
 
-                        beforeNodeIdx = newNodeIdx;
-                        nextQueue.Push(score.score, newNodeIdx);
+                            beforeNodeIdx = newNodeIdx;
+                            nextQueue.Push(score.score, newNodeIdx);
+                            ++trueQueueCount;
 
-                        HeuristicStateInternal.Rollback(node.patch);
+                            HeuristicStateInternal.Rollback(node.patch);
 
-                        if (maxScore < score.score)
-                        {
-                            maxScore = score.score;
-                            maxAns = calcAnswer(newNodeIdx).ToList();
+                            if (false)//maxScore < score.score)
+                            {
+                                maxScore = score.score;
+                                maxAns = calcAnswer(newNodeIdx, false).ToList();
+                            }
                         }
                     }
 
                     // なんかのケースで 0 番が汚染されていたことがあったので、ここでリセット
                     Unsafe.Add(ref nodeListRef, 0).prev = 0;
                     Unsafe.Add(ref nodeListRef, 0).child = 0;
-
-                    // 有効な要素数を width に制限する
-                    while (nextQueue.Count > width) Remove(nextQueue.Pop().Value);
 
                     // 木上を移動します
                     HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
@@ -237,12 +346,42 @@ namespace Library
                         HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     }
 
-                    // 親がいない（root に戻った）場合は終了
-                    if (Unsafe.Add(ref nodeListRef, nodeIdx).parent == 0) break;
+                    // 右の兄弟がいない（root に戻った）場合は終了
+                    if (Unsafe.Add(ref nodeListRef, nodeIdx).next == 0)
+                    {
+                        // 有効な要素数を width に制限する
+                        foreach (var item in deleteNodeList) Remove(item);
+                        deleteNodeList.Clear();
+                        while (trueQueueCount > width)
+                        {
+                            var ni = nextQueue.Pop().Value;
+                            if (!nodeList[ni].deleted)
+                            {
+                                Remove(ni);
+                                --trueQueueCount;
+                            }
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        // 右の兄弟に移動します
+                        nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).next;
+                        HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
 
-                    // 右の兄弟に移動します
-                    nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).next;
-                    HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        // 有効な要素数を width に制限する
+                        foreach (var item in deleteNodeList) Remove(item);
+                        deleteNodeList.Clear();
+                        while (trueQueueCount > width)
+                        {
+                            var ni = nextQueue.Pop().Value;
+                            if (!nodeList[ni].deleted)
+                            {
+                                Remove(ni);
+                                --trueQueueCount;
+                            }
+                        }
+                    }
 
                     // needRemoveIdx > 0 なら、それは子が一つもないノードなので、ここで削除
                     if (needRemoveIdx > 0) Remove(needRemoveIdx);
@@ -252,31 +391,35 @@ namespace Library
                 // 旧 root は確定操作として answer に追加
                 while (Unsafe.Add(ref nodeListRef, root).child != 0 && Unsafe.Add(ref nodeListRef, Unsafe.Add(ref nodeListRef, root).child).next == 0)
                 {
-                    waitingReUse.PushBack(root);
                     root = Unsafe.Add(ref nodeListRef, root).child;
+                    //Console.Error.WriteLine($"kakutei depth:{nodeList[root].depth}");
                     answer.Add(Unsafe.Add(ref nodeListRef, root).ope.GetOperateString());
-                    Unsafe.Add(ref nodeListRef, root).ope.Unuse();
                     HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, root).patch);
-                    Unsafe.Add(ref nodeListRef, root).parent = 0;
+                    HeuristicStateInternal.DeleteHistory(Unsafe.Add(ref nodeListRef, root).patch);
                     Unsafe.Add(ref nodeListRef, root).patch = (0, 0);
+                    Unsafe.Add(ref nodeListRef, root).parent = 0;
                 }
             }
 
             // nextQueue から最後に取れる要素＝最大スコアの要素を取り出します
             var maxNode = 0;
             var maxv = 0L;
-            while (nextQueue.Count > 0)
+            while (trueQueueCount > 0)
             {
                 var pop = nextQueue.Pop();
-                maxNode = pop.Value;
-                maxv = pop.Key;
+                if (!nodeList[pop.Value].deleted)
+                {
+                    maxNode = pop.Value;
+                    maxv = pop.Key;
+                    --trueQueueCount;
+                }
             }
             //Console.Error.WriteLine($"lastScore: {maxv}");
 
             // 最大スコアの要素から親を辿っていき、操作の履歴を answer に追加します
             if (maxScore < maxv)
             {
-                maxAns = calcAnswer(maxNode).ToList();
+                maxAns = calcAnswer(maxNode, true).ToList();
             }
             /*
             var backwardNodeList = new List<int>();
