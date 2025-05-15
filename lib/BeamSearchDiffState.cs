@@ -11,8 +11,8 @@ using System.Runtime.CompilerServices;
 namespace Library
 {
     ////start
-    // use LIB_HeuristicStateBase
-    class LIB_BeamSearch
+    // use LIB_HeuristicStateDiffBase
+    class LIB_BeamSearchDiffState
     {
         struct Node
         {
@@ -132,7 +132,7 @@ namespace Library
             ref var node = ref nodeList[nodeIdx];
             node.ope.Unuse();
             node.deleted = true;
-            HeuristicStateInternal.DeleteHistory(node.patch);
+            HeuristicStateDiffInternal.DeleteHistory(node.patch);
             if (node.prev == 0 && node.next == 0)
             {
                 Remove(node.parent);
@@ -153,12 +153,12 @@ namespace Library
             }
         }
 
-        public string[] Run(HeuristicStateInternal state, int width, int maxTurn)
+        public string[] Run(HeuristicStateDiffInternal state, int width, int maxTurn)
         {
             return Run(state, width, -1, maxTurn, true);
         }
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public string[] Run(HeuristicStateInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false, int[] widthList = null)
+        public string[] Run(HeuristicStateDiffInternal state, int initialWidth, int totalMillis, int maxTurn, bool fixHaba = false, int[] widthList = null)
         {
             // 状態を木構造で持ちます
             // Node 構造体で1つの要素を表現
@@ -185,7 +185,7 @@ namespace Library
             // 初期状態を表す Node を作成
             root = NewNode();
             nodeList[root].deleted = false;
-            HeuristicStateInternal.Batch();
+            HeuristicStateDiffInternal.Batch();
 
             var width = initialWidth;
             ref var nodeListRef = ref nodeList[0];
@@ -212,7 +212,7 @@ namespace Library
                 backwardNodeList.Reverse();
                 foreach (var item in backwardNodeList)
                 {
-                    if (doOperate) HeuristicStateInternal.Apply(nodeList[item].patch);
+                    if (doOperate) HeuristicStateDiffInternal.Apply(nodeList[item].patch);
                     //Console.Error.WriteLine($"kakutei depth:{nodeList[item].depth}");
                     ret.Add(nodeList[item].ope.GetOperateString());
                 }
@@ -258,7 +258,7 @@ namespace Library
                     while (Unsafe.Add(ref nodeListRef, nodeIdx).child != 0)
                     {
                         nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).child;
-                        HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        HeuristicStateDiffInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     }
                     // ここで nodeIdx は一番左の葉ノードになっている
 
@@ -286,9 +286,9 @@ namespace Library
                                     if (oldValue.score >= score.score)
                                     {
                                         ope.Unuse();
-                                        var noUseHistory = HeuristicStateInternal.Batch();
-                                        HeuristicStateInternal.Rollback(noUseHistory);
-                                        HeuristicStateInternal.DeleteHistory(noUseHistory);
+                                        var noUseHistory = HeuristicStateDiffInternal.Batch();
+                                        HeuristicStateDiffInternal.Rollback(noUseHistory);
+                                        HeuristicStateDiffInternal.DeleteHistory(noUseHistory);
                                         continue;
                                     }
                                     --trueQueueCount;
@@ -305,7 +305,7 @@ namespace Library
                             node.next = 0;
                             node.parent = nodeIdx;
                             node.depth = nodeList[nodeIdx].depth + 1;
-                            node.patch = HeuristicStateInternal.Batch();
+                            node.patch = HeuristicStateDiffInternal.Batch();
                             node.ope = ope;
                             if (beforeNodeIdx != 0)
                             {
@@ -323,7 +323,7 @@ namespace Library
                             nextQueue.Push(score.score, newNodeIdx);
                             ++trueQueueCount;
 
-                            HeuristicStateInternal.Rollback(node.patch);
+                            HeuristicStateDiffInternal.Rollback(node.patch);
 
                             if (false)//maxScore < score.score)
                             {
@@ -338,12 +338,12 @@ namespace Library
                     Unsafe.Add(ref nodeListRef, 0).child = 0;
 
                     // 木上を移動します
-                    HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                    HeuristicStateDiffInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     // next == 0、つまり右の兄弟がいない場合は親に移動します
                     while (Unsafe.Add(ref nodeListRef, nodeIdx).next == 0 && Unsafe.Add(ref nodeListRef, nodeIdx).parent != 0)
                     {
                         nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).parent;
-                        HeuristicStateInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        HeuristicStateDiffInternal.Rollback(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
                     }
 
                     // 右の兄弟がいない（root に戻った）場合は終了
@@ -367,7 +367,7 @@ namespace Library
                     {
                         // 右の兄弟に移動します
                         nodeIdx = Unsafe.Add(ref nodeListRef, nodeIdx).next;
-                        HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
+                        HeuristicStateDiffInternal.Apply(Unsafe.Add(ref nodeListRef, nodeIdx).patch);
 
                         // 有効な要素数を width に制限する
                         foreach (var item in deleteNodeList) Remove(item);
@@ -394,8 +394,8 @@ namespace Library
                     root = Unsafe.Add(ref nodeListRef, root).child;
                     //Console.Error.WriteLine($"kakutei depth:{nodeList[root].depth}");
                     answer.Add(Unsafe.Add(ref nodeListRef, root).ope.GetOperateString());
-                    HeuristicStateInternal.Apply(Unsafe.Add(ref nodeListRef, root).patch);
-                    HeuristicStateInternal.DeleteHistory(Unsafe.Add(ref nodeListRef, root).patch);
+                    HeuristicStateDiffInternal.Apply(Unsafe.Add(ref nodeListRef, root).patch);
+                    HeuristicStateDiffInternal.DeleteHistory(Unsafe.Add(ref nodeListRef, root).patch);
                     Unsafe.Add(ref nodeListRef, root).patch = (0, 0);
                     Unsafe.Add(ref nodeListRef, root).parent = 0;
                 }
@@ -440,7 +440,7 @@ namespace Library
             return maxAns.ToArray();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_BeamSearch()
+        public LIB_BeamSearchDiffState()
         {
         }
     }

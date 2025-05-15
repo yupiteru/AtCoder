@@ -17,11 +17,11 @@ namespace Library
         public abstract string GetOperateString();
         public void Unuse()
         {
-            HeuristicStateInternal.unusedOperatorPool.PushBack(this);
+            HeuristicStateDiffInternal.unusedOperatorPool.PushBack(this);
         }
     }
 
-    abstract class HeuristicStateInternal
+    abstract class HeuristicStateDiffInternal
     {
         static (int index, int xorval)[] history = new (int, int)[1 << 28];
         static int[] memory = new int[0];
@@ -296,7 +296,7 @@ namespace Library
         public abstract (long score, long hash) DoAction(LIB_OperatorBase ope, int turn);
     }
 
-    abstract class LIB_HeuristicStateBase<TOperator> : HeuristicStateInternal where TOperator : LIB_OperatorBase, new()
+    abstract class LIB_HeuristicStateBase<TOperator> : HeuristicStateDiffInternal where TOperator : LIB_OperatorBase, new()
     {
         public TOperator CreateOperator()
         {

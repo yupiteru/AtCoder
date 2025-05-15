@@ -8,6 +8,7 @@ using System.Threading;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Collections;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Library
 {
@@ -246,6 +247,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
+            if (Count == 0) return false;
             var h = Hash(key);
             ref var entriesref = ref entries[0];
             var i = bck[h & mask] - 1;

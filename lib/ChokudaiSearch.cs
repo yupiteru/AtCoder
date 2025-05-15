@@ -39,7 +39,7 @@ namespace Library
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public string[] Run(HeuristicStateInternal state, int totalMillis, int maxTurn)
+        public string[] Run(HeuristicStateDiffInternal state, int totalMillis, int maxTurn)
         {
             var startTime = DateTime.Now;
             // ###=======古いコメント！=======###
@@ -65,7 +65,7 @@ namespace Library
 
             // 初期状態を表す Node を作成
             root = NewNode();
-            HeuristicStateInternal.Batch();
+            HeuristicStateDiffInternal.Batch();
 
             const int MAX_NODE_COUNT_PER_TURN = 200;
             const int MAX_LOOP_PER_TURN = 1;
@@ -81,7 +81,7 @@ namespace Library
             {
                 while (nodeList[root].depth < nodeList[nodeIdx].depth)
                 {
-                    HeuristicStateInternal.Rollback(nodeList[nodeIdx].patch);
+                    HeuristicStateDiffInternal.Rollback(nodeList[nodeIdx].patch);
                     nodeIdx = nodeList[nodeIdx].parent;
                 }
 
@@ -96,7 +96,7 @@ namespace Library
                 backwardNodeList.Reverse();
                 foreach (var item in backwardNodeList)
                 {
-                    if (doOperate) HeuristicStateInternal.Apply(nodeList[item].patch);
+                    if (doOperate) HeuristicStateDiffInternal.Apply(nodeList[item].patch);
                     ret.Add(nodeList[item].ope.GetOperateString());
                 }
                 return ret.ToArray();
@@ -119,19 +119,19 @@ namespace Library
                     }
                     while (nodeList[targetNodeIdx].depth < nodeList[nodeIdx].depth)
                     {
-                        HeuristicStateInternal.Rollback(nodeList[nodeIdx].patch);
+                        HeuristicStateDiffInternal.Rollback(nodeList[nodeIdx].patch);
                         nodeIdx = nodeList[nodeIdx].parent;
                     }
                     while (targetNodeIdx != nodeIdx)
                     {
                         forwardNodeList.Add(targetNodeIdx);
                         targetNodeIdx = nodeList[targetNodeIdx].parent;
-                        HeuristicStateInternal.Rollback(nodeList[nodeIdx].patch);
+                        HeuristicStateDiffInternal.Rollback(nodeList[nodeIdx].patch);
                         nodeIdx = nodeList[nodeIdx].parent;
                     }
                     for (var i = forwardNodeList.Count - 1; i >= 0; --i)
                     {
-                        HeuristicStateInternal.Apply(nodeList[nodeIdx = forwardNodeList[i]].patch);
+                        HeuristicStateDiffInternal.Apply(nodeList[nodeIdx = forwardNodeList[i]].patch);
                     }
 
                     // ListupActions で可能な操作を列挙し、操作ごとに子を生やします
@@ -148,14 +148,14 @@ namespace Library
                         ref var node = ref Unsafe.Add(ref nodeListRef, newNodeIdx);
                         node.parent = nodeIdx;
                         node.depth = nodeList[nodeIdx].depth + 1;
-                        node.patch = HeuristicStateInternal.Batch();
+                        node.patch = HeuristicStateDiffInternal.Batch();
                         node.ope = ope;
                         node.childCount = 0;
                         ++nodeList[nodeIdx].childCount;
 
                         nextQueue[nextDepth].Push((score.score, newNodeIdx));
 
-                        HeuristicStateInternal.Rollback(node.patch);
+                        HeuristicStateDiffInternal.Rollback(node.patch);
                     }
 
                     while (nextQueue[nextDepth].Count > MAX_NODE_COUNT_PER_TURN)
@@ -166,7 +166,7 @@ namespace Library
                         {
                             if (deleteIdx == nodeIdx)
                             {
-                                HeuristicStateInternal.Rollback(nodeList[nodeIdx].patch);
+                                HeuristicStateDiffInternal.Rollback(nodeList[nodeIdx].patch);
                                 nodeIdx = nodeList[nodeIdx].parent;
                             }
 
@@ -174,7 +174,7 @@ namespace Library
                             ref var node = ref nodeList[deleteIdx];
                             node.ope.Unuse();
                             node.deleted = true;
-                            HeuristicStateInternal.DeleteHistory(node.patch);
+                            HeuristicStateDiffInternal.DeleteHistory(node.patch);
                             if (--nodeList[node.parent].childCount == 0)
                             {
                                 deleteIdx = node.parent;
