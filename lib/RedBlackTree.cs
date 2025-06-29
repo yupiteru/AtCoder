@@ -461,13 +461,26 @@ namespace Library
         public void Update(long l, long r, ValueE val) => Update(root, l, r, val);
         void Update(Node n, long l, long r, ValueE val)
         {
-            if (n == null) return;
-            Eval(n);
-            n.needRecalc = true;
-            var lc = Cnt(n.left);
-            if (lc < l) Update(n.right, l - lc - 1, r - lc - 1, val);
-            else if (r <= lc) Update(n.left, l, r, val);
-            else if (l <= 0 && Cnt(n) <= r) n.lazy = val;
+            var lc = 0;
+            while (true)
+            {
+                if (n == null) return;
+                Eval(n);
+                n.needRecalc = true;
+                lc = Cnt(n.left);
+                if (lc < l)
+                {
+                    n = n.right;
+                    l = l - lc - 1;
+                    r = r - lc - 1;
+                }
+                else if (r <= lc)
+                {
+                    n = n.left;
+                }
+                else break;
+            }
+            if (l <= 0 && Cnt(n) <= r) n.lazy = val;
             else
             {
                 n.val = g(n.val, val, 1);
@@ -479,23 +492,36 @@ namespace Library
         public ValueT Query(long l, long r) => root == null ? ti : Query(root, l, r);
         ValueT Query(Node n, long l, long r)
         {
-            var v1 = ti; var v2 = ti; var v3 = ti;
-            Eval(n);
-            var lc = Cnt(n.left);
-            if (lc < l) v3 = n.right == null ? ti : Query(n.right, l - lc - 1, r - lc - 1);
-            else if (r <= lc) v1 = n.left == null ? ti : Query(n.left, l, r);
-            else if (l <= 0 && Cnt(n) <= r)
+            var lc = 0;
+            while (true)
+            {
+                if (n == null) return ti;
+                Eval(n);
+                lc = Cnt(n.left);
+                if (lc < l)
+                {
+                    n = n.right;
+                    l = l - lc - 1;
+                    r = r - lc - 1;
+                }
+                else if (r <= lc)
+                {
+                    n = n.left;
+                }
+                else break;
+            }
+            if (l <= 0 && Cnt(n) <= r)
             {
                 Recalc(n);
-                v2 = n.dat;
+                return n.dat;
             }
             else
             {
-                if (l < lc) v1 = n.left == null ? ti : Query(n.left, l, lc);
-                if (lc + 1 < r) v3 = n.right == null ? ti : Query(n.right, 0, r - lc - 1);
-                v2 = n.val;
+                var ret = n.val;
+                if (l < lc && n.left != null) ret = f(Query(n.left, l, lc), ret);
+                if (lc + 1 < r && n.right != null) ret = f(ret, Query(n.right, 0, r - lc - 1));
+                return ret;
             }
-            return f(f(v1, v2), v3);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Any() => root != null;
