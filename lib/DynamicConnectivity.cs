@@ -19,6 +19,25 @@ namespace Library
         int n;
         List<EulerTourTree> ett;
         List<HashMap[]> edges;
+        LIB_Dictionary<(long, long), int> ptr = new LIB_Dictionary<(long, long), int>();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void AddEdge(long s, long t, int idx)
+        {
+            if (s > t) { var temp = s; s = t; t = temp; }
+            ptr.Add((s, t), idx);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool GetEdge(long s, long t, out int idx)
+        {
+            if (s > t) { var temp = s; s = t; t = temp; }
+            return ptr.TryGetValue((s, t), out idx);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void RemoveEdge(long s, long t)
+        {
+            if (s > t) { var temp = s; s = t; t = temp; }
+            ptr.Remove((s, t));
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_DynamicConnectivity(long n, T ei, Func<T, T, T> f)
         {
@@ -41,6 +60,7 @@ namespace Library
             if (tEdges == null) edges[0][t] = tEdges = new HashMap();
             sEdges.Add((ulong)t, 0);
             tEdges.Add((ulong)s, 0);
+            AddEdge(s, t, 0);
             if (sEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)s, true);
             if (tEdges.Count == 1) ett[0].EdgeConnectedUpdate((int)t, true);
         }
@@ -54,16 +74,19 @@ namespace Library
         public bool Cut(long s, long t)
         {
             if (s == t) return false;
-            for (var i = 0; i < edges.Count; i++)
             {
-                var sEdges = edges[i][s];
-                var tEdges = edges[i][t];
-                if (sEdges == null) edges[i][s] = sEdges = new HashMap();
-                if (tEdges == null) edges[i][t] = tEdges = new HashMap();
-                sEdges.Remove((ulong)t);
-                tEdges.Remove((ulong)s);
-                if (sEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)s, false);
-                if (tEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)t, false);
+                if (GetEdge(s, t, out int i))
+                {
+                    var sEdges = edges[i][s];
+                    var tEdges = edges[i][t];
+                    if (sEdges == null) edges[i][s] = sEdges = new HashMap();
+                    if (tEdges == null) edges[i][t] = tEdges = new HashMap();
+                    sEdges.Remove((ulong)t);
+                    tEdges.Remove((ulong)s);
+                    RemoveEdge(s, t);
+                    if (sEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)s, false);
+                    if (tEdges.Count == 0) ett[i].EdgeConnectedUpdate((int)t, false);
+                }
             }
             for (var i = ett.Count - 1; i >= 0; i--)
             {
@@ -101,6 +124,7 @@ namespace Library
                         if (xEdges.Count == 1) etti.EdgeConnectedUpdate(xidx, false);
                         if (yEdges.Count == 1) etti.EdgeConnectedUpdate((int)y, false);
                         yEdges.Remove((ulong)xidx);
+                        RemoveEdge(xidx, (long)y);
                         if (etti.IsSame(xidx, (int)y))
                         {
                             var nextYEdges = edgesi1[y];
@@ -108,6 +132,7 @@ namespace Library
                             if (nextYEdges == null) edgesi1[y] = nextYEdges = new HashMap();
                             nextXEdges.Add(y, 0);
                             nextYEdges.Add((ulong)xidx, 0);
+                            AddEdge(xidx, (long)y, i + 1);
                             if (nextXEdges.Count == 1) etti1.EdgeConnectedUpdate(xidx, true);
                             if (nextYEdges.Count == 1) etti1.EdgeConnectedUpdate((int)y, true);
                         }
@@ -136,14 +161,14 @@ namespace Library
             HashMap ptr;
             static int Tsz = Unsafe.SizeOf<T>();
             int startNodeIndex;
-            static int[] nodeChild = new int[6000000];
-            static int[] nodeParent = new int[3000000];
-            static int[] nodeL = new int[3000000];
-            static int[] nodeR = new int[3000000];
-            static int[] nodeSz = new int[3000000];
-            static T[] nodeVal = new T[3000000];
-            static T[] nodeSum = new T[3000000];
-            static byte[] nodeFlags = new byte[3000000];
+            static int[] nodeChild = new int[12000000];
+            static int[] nodeParent = new int[6000000];
+            static int[] nodeL = new int[6000000];
+            static int[] nodeR = new int[6000000];
+            static int[] nodeSz = new int[6000000];
+            static T[] nodeVal = new T[6000000];
+            static T[] nodeSum = new T[6000000];
+            static byte[] nodeFlags = new byte[6000000];
             static int nodeCount = 1;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static int NewNode(int l, int r)
