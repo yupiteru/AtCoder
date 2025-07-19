@@ -152,59 +152,63 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Pow_inplace(long M)
         {
+            var arySpan = ary.AsSpan();
             if (M == 0)
             {
-                for (var i = 1; i < ary.Length; ++i) ary[i] = 0;
-                ary[0] = 1;
+                arySpan[1..].Clear();
+                arySpan[0] = 1;
                 return;
             }
             if (M == 1) return;
             var l = 0;
-            while (l < ary.Length && ary[l] == 0) ++l;
-            if (l == ary.Length || l > (ary.Length - 1) / M)
+            while (l < arySpan.Length && arySpan[l] == 0) ++l;
+            if (l == arySpan.Length || l > (arySpan.Length - 1) / M)
             {
-                for (var i = 0; i < ary.Length; ++i) ary[i] = 0;
+                arySpan.Clear();
                 return;
             }
-            var powc = LIB_Mod998244353.Pow(ary[l], M);
-            var invc = LIB_Mod998244353.Inverse(ary[l]);
+            var powc = LIB_Mod998244353.Pow(arySpan[l], M);
+            var invc = LIB_Mod998244353.Inverse(arySpan[l]);
             var g = new LIB_FPS(K - l);
-            for (var i = l; i < ary.Length; ++i) g.ary[i - l] = (uint)(ary[i] * invc % MOD);
+            var garySpan = g.ary.AsSpan();
+            for (var i = l; i < arySpan.Length; ++i) garySpan[i - l] = (uint)(arySpan[i] * invc % MOD);
 
             var dat = new List<(int idx, long val)>();
-            for (var i = 1; i < g.ary.Length; ++i) if (g.ary[i] != 0) dat.Add((i, g.ary[i]));
+            for (var i = 1; i < garySpan.Length; ++i) if (garySpan[i] != 0) dat.Add((i, garySpan[i]));
 
-            var ten = l * M;
+            var ten = l * (int)M;
             M %= MOD;
             if (dat.Count > 100)
             {
                 g.Log_inplace_dense();
-                for (var i = 0; i < g.ary.Length; ++i) g.ary[i] = (uint)(M * g.ary[i] % MOD);
+                for (var i = 0; i < garySpan.Length; ++i) garySpan[i] = (uint)(M * garySpan[i] % MOD);
                 g.Exp_inplace_dense();
             }
             else
             {
-                var inv = new long[g.ary.Length];
+                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(garySpan.Length);
+                var inv = invBuf.AsSpan();
                 inv[1] = 1;
-                for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+                for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
 
-                for (var n = 0; n < g.ary.Length - 1; ++n)
+                for (var n = 0; n < garySpan.Length - 1; ++n)
                 {
-                    g.ary[n + 1] = 0;
+                    garySpan[n + 1] = 0;
                     foreach (var item in dat)
                     {
                         if (item.idx > n + 1) break;
-                        var t = item.val * g.ary[n - item.idx + 1] % MOD;
+                        var t = item.val * garySpan[n - item.idx + 1] % MOD;
                         t = t * ((M * item.idx % MOD) - n + item.idx - 1) % MOD;
                         if (t < 0) t += MOD;
-                        g.ary[n + 1] += (uint)t;
-                        if (g.ary[n + 1] >= MOD) g.ary[n + 1] -= MOD;
+                        garySpan[n + 1] += (uint)t;
+                        if (garySpan[n + 1] >= MOD) garySpan[n + 1] -= MOD;
                     }
-                    g.ary[n + 1] = (uint)(g.ary[n + 1] * inv[n + 1] % MOD);
+                    garySpan[n + 1] = (uint)(garySpan[n + 1] * inv[n + 1] % MOD);
                 }
+                System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
             }
-            for (var i = ary.Length - 1; i >= ten; --i) ary[i] = (uint)(powc * g.ary[i - ten] % MOD);
-            for (var i = 0; i < ten; ++i) ary[i] = 0;
+            for (var i = arySpan.Length - 1; i >= ten; --i) arySpan[i] = (uint)(powc * garySpan[i - ten] % MOD);
+            arySpan.Slice(0, ten).Clear();
         }
         /// <summary>
         /// 指数 (a0 == 0)
@@ -223,7 +227,8 @@ namespace Library
         public void Exp_inplace()
         {
             var dat = new List<(int idx, long val)>();
-            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i - 1, (long)i * ary[i] % MOD));
+            var arySpan = ary.AsSpan();
+            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i - 1, (long)i * arySpan[i] % MOD));
             if (dat.Count > 320)
             {
                 Exp_inplace_dense();
@@ -231,20 +236,21 @@ namespace Library
             }
 
             // sparse
-            var inv = new long[ary.Length + 1];
+            var inv = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length + 1);
             inv[1] = 1;
             for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
-            ary[0] = 1;
-            for (var n = 1; n < ary.Length; ++n)
+            arySpan[0] = 1;
+            for (var n = 1; n < arySpan.Length; ++n)
             {
                 var rhs = 0L;
                 foreach (var item in dat)
                 {
                     if (item.idx > n - 1) break;
-                    rhs += item.val * ary[n - 1 - item.idx] % MOD;
+                    rhs += item.val * arySpan[n - 1 - item.idx] % MOD;
                 }
-                ary[n] = (uint)((rhs % MOD) * inv[n] % MOD);
+                arySpan[n] = (uint)((rhs % MOD) * inv[n] % MOD);
             }
+            System.Buffers.ArrayPool<long>.Shared.Return(inv);
         }
         /// <summary>
         /// 指数 (a0 == 0)
@@ -254,95 +260,117 @@ namespace Library
         {
             var maxlen = 2;
             while ((maxlen << 1) <= K) maxlen <<= 1;
-            var g = new uint[maxlen];
-            var inv = new long[maxlen * 2];
+            var bufferLength = maxlen * 2;
+            var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen);
+            var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(bufferLength * 6);
+            var buf3 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 3);
+            var inv = System.Buffers.ArrayPool<long>.Shared.Rent(maxlen * 2);
+            var buf = buf2.AsSpan();
+            var halfBuf = buf3.AsSpan();
+            var g = buf1.AsSpan();
+            var arySpan = ary.AsSpan();
+            g.Clear();
+            g[0] = 1;
             inv[1] = 1;
             for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
-            Span<uint> nttg = new uint[2];
-            g[0] = 1;
+            var nttg = buf.Slice(bufferLength * 3, 2);
             nttg[0] = 1;
             nttg[1] = 1;
-            ary[0] = 1;
+            arySpan[0] = 1;
             var h_drv = Differential();
 
             var len = 2;
             while (len <= K)
             {
                 var nextlen = len * 2;
-                Span<uint> nttf = new uint[nextlen];
-                for (var i = 0; i < len; ++i) nttf[i] = ary[i];
-                LIB_NTT.ntt4(ref nttf);
+                var nttf = buf.Slice(0, nextlen);
+                nttf.Clear();
+                var ntttmp = buf.Slice(bufferLength, nextlen);
+                var ntttmphalf1 = halfBuf.Slice(0, len);
+                var ntttmphalf2 = halfBuf.Slice(maxlen, len);
+                var ntttmphalf3 = halfBuf.Slice(maxlen * 2, len);
+                arySpan.Slice(0, len).CopyTo(nttf);
+                LIB_NTT.ntt4(ref nttf, ref ntttmp);
 
                 {
-                    Span<uint> ntth = new uint[len];
+                    ref var ntth = ref ntttmphalf1;
                     for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)nttf[i * 2] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmphalf2, true);
                     for (var i = 0; i < len / 2; ++i) ntth[i] = ntth[i + len / 2];
                     for (var i = len / 2; i < len; ++i) ntth[i] = 0;
-                    LIB_NTT.ntt4(ref ntth);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmphalf2);
                     for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmphalf2, true);
                     for (var i = len / 2; i < len; ++i) g[i] = (ntth[i - len / 2] == 0 ? 0 : MOD - ntth[i - len / 2]);
                 }
 
-                Span<uint> t = new uint[len];
+                var t = buf.Slice(bufferLength * 2, nextlen);
+                t.Clear();
                 {
-                    Span<uint> ntth = new uint[len];
+                    ref var ntth = ref ntttmphalf1;
                     for (var i = 0; i < len - 1; ++i) ntth[i] = h_drv.ary[i];
-                    LIB_NTT.ntt4(ref ntth);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmphalf2);
                     for (var i = 0; i < len; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttf[i * 2] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmphalf2, true);
                     for (var i = 1; i < len; ++i) t[i] = (uint)(((ulong)i * ary[i] + MOD - ntth[i - 1]) % MOD);
                     t[0] = ntth[len - 1] == 0 ? 0 : MOD - ntth[len - 1];
                 }
                 if (2 * len <= K)
                 {
-                    Span<uint> newt = new uint[nextlen];
-                    for (var i = 0; i < len; ++i) newt[i] = t[i];
-                    LIB_NTT.ntt4(ref newt);
-                    nttg = new uint[nextlen];
-                    for (var i = 0; i < len; ++i) nttg[i] = g[i];
-                    LIB_NTT.ntt4(ref nttg);
-                    for (var i = 0; i < nextlen; ++i) newt[i] = (uint)((ulong)newt[i] * nttg[i] % MOD);
-                    LIB_NTT.ntt4(ref newt, true);
-                    for (var i = 0; i < len; ++i) t[i] = newt[i];
+                    var newt = buf.Slice(bufferLength * 5, nextlen);
+                    t.CopyTo(newt);
+                    LIB_NTT.ntt4(ref newt, ref ntttmp);
+                    nttg = buf.Slice(bufferLength * 3, nextlen);
+                    nttg.Clear();
+                    g.Slice(0, len).CopyTo(nttg);
+                    LIB_NTT.ntt4(ref nttg, ref ntttmp);
+                    for (var i = 0; i < nextlen; ++i) t[i] = (uint)((ulong)newt[i] * nttg[i] % MOD);
+                    LIB_NTT.ntt4(ref t, ref ntttmp, true);
                 }
                 else
                 {
-                    Span<uint> g1 = new uint[len];
-                    Span<uint> s1 = new uint[len];
-                    for (var i = 0; i < len / 2; ++i) g1[i] = g[i + len / 2];
-                    for (var i = 0; i < len / 2; ++i) s1[i] = t[i + len / 2];
-                    for (var i = len / 2; i < len; ++i) t[i] = 0;
-                    LIB_NTT.ntt4(ref g1);
-                    LIB_NTT.ntt4(ref s1);
-                    LIB_NTT.ntt4(ref t);
+                    ref var g1 = ref ntttmphalf1;
+                    ref var s1 = ref ntttmphalf2;
+                    var t1 = t.Slice(0, len);
+                    var t2 = t.Slice(len, len);
+                    g1.Clear();
+                    s1.Clear();
+                    g.Slice(len / 2, len / 2).CopyTo(g1);
+                    t.Slice(len / 2, len / 2).CopyTo(s1);
+                    t1.Slice(len / 2).Clear();
+                    LIB_NTT.ntt4(ref g1, ref ntttmphalf3);
+                    LIB_NTT.ntt4(ref s1, ref ntttmphalf3);
+                    LIB_NTT.ntt4(ref t1, ref t2);
                     for (var i = 0; i < len; ++i)
                     {
-                        s1[i] = (uint)(((ulong)nttg[i] * s1[i] + (ulong)g1[i] * t[i]) % MOD);
-                        t[i] = (uint)((ulong)nttg[i] * t[i] % MOD);
+                        s1[i] = (uint)(((ulong)nttg[i] * s1[i] + (ulong)g1[i] * t1[i]) % MOD);
+                        t1[i] = (uint)((ulong)nttg[i] * t1[i] % MOD);
                     }
-                    LIB_NTT.ntt4(ref t, true);
-                    LIB_NTT.ntt4(ref s1, true);
-                    for (var i = len / 2; i < len; ++i) t[i] = (t[i] + s1[i - len / 2]) % MOD;
+                    LIB_NTT.ntt4(ref t1, ref t2, true);
+                    LIB_NTT.ntt4(ref s1, ref ntttmphalf3, true);
+                    for (var i = len / 2; i < len; ++i) t1[i] = (t1[i] + s1[i - len / 2]) % MOD;
+                    t1.CopyTo(t);
                 }
 
                 {
-                    Span<uint> ntth = new uint[nextlen];
+                    var ntth = buf.Slice(bufferLength * 4, nextlen);
+                    ntth.Clear();
                     var ten = Min(ary.Length, 2 * len);
-                    for (var i = len; i < ten; ++i) ntth[i - len] = ary[i];
+                    arySpan.Slice(len, ten - len).CopyTo(ntth);
                     for (var i = 0; i < len; ++i) ntth[i] = (ntth[i] + MOD - (uint)(inv[i + len] * t[i] % MOD)) % MOD;
 
-                    LIB_NTT.ntt4(ref ntth);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmp);
                     for (var i = 0; i < nextlen; ++i) ntth[i] = (uint)((ulong)ntth[i] * nttf[i] % MOD);
-                    LIB_NTT.ntt4(ref ntth, true);
+                    LIB_NTT.ntt4(ref ntth, ref ntttmp, true);
 
-                    ten = Min(ary.Length - len, len);
-                    for (var i = 0; i < ten; ++i) ary[i + len] = ntth[i];
+                    ntth.Slice(0, Min(ary.Length - len, len)).CopyTo(arySpan.Slice(len));
                 }
 
                 len = nextlen;
             }
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
+            System.Buffers.ArrayPool<long>.Shared.Return(inv);
         }
         /// <summary>
         /// 対数 (a0 == 1)
@@ -366,7 +394,8 @@ namespace Library
                 return;
             }
             var dat = new List<(int idx, uint val)>();
-            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
+            var arySpan = ary.AsSpan();
+            for (var i = 1; i < ary.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
             if (dat.Count > 200)
             {
                 Log_inplace_dense();
@@ -374,14 +403,16 @@ namespace Library
             }
 
             // sparse
-            var g = new long[ary.Length - 1];
-            var inv = new long[ary.Length];
+            var gBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length - 1);
+            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
+            var g = gBuf.AsSpan();
+            var inv = invBuf.AsSpan();
             inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
-            ary[0] = 0;
-            for (var n = 0; n < ary.Length - 1; ++n)
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
+            arySpan[0] = 0;
+            for (var n = 0; n < arySpan.Length - 1; ++n)
             {
-                var rhs = (long)(n + 1) * ary[n + 1] % MOD;
+                var rhs = (long)(n + 1) * arySpan[n + 1] % MOD;
                 foreach (var item in dat)
                 {
                     if (item.idx > n) break;
@@ -389,29 +420,37 @@ namespace Library
                     if (rhs < 0) rhs += MOD;
                 }
                 g[n] = rhs;
-                ary[n + 1] = (uint)(rhs * inv[n + 1] % MOD);
+                arySpan[n + 1] = (uint)(rhs * inv[n + 1] % MOD);
             }
+            System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
+            System.Buffers.ArrayPool<long>.Shared.Return(gBuf);
         }
         /// <summary>
         /// 対数 (a0 == 1)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Log_inplace_dense()
+        public void Log_inplace_dense()
         {
             var f2 = Differential();
             Inverse_inplace();
             var len = 1;
             while (len < ary.Length + f2.ary.Length - 1) len <<= 1;
-            Span<uint> nttdiff = new uint[len];
-            Span<uint> nttinv = new uint[len];
-            for (var i = 0; i < f2.ary.Length; ++i) nttdiff[i] = f2.ary[i];
-            for (var i = 0; i < ary.Length; ++i) nttinv[i] = ary[i];
-            LIB_NTT.ntt4(ref nttdiff);
-            LIB_NTT.ntt4(ref nttinv);
+            var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(len * 3);
+            var buf = buf1.AsSpan();
+            buf.Clear();
+            var arySpan = ary.AsSpan();
+            var nttdiff = buf.Slice(0, len);
+            var nttinv = buf.Slice(len, len);
+            var ntttmp = buf.Slice(len * 2, len);
+            f2.ary.CopyTo(nttdiff);
+            ary.CopyTo(nttinv);
+            LIB_NTT.ntt4(ref nttdiff, ref ntttmp);
+            LIB_NTT.ntt4(ref nttinv, ref ntttmp);
             for (var i = 0; i < nttinv.Length; ++i) nttinv[i] = (uint)((long)nttinv[i] * nttdiff[i] % MOD);
-            LIB_NTT.ntt4(ref nttinv, true);
-            for (var i = 0; i < ary.Length; ++i) ary[i] = nttinv[i];
+            LIB_NTT.ntt4(ref nttinv, ref ntttmp, true);
+            nttinv.Slice(0, ary.Length).CopyTo(arySpan);
             Integral_inplace();
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
         }
         /// <summary>
         /// 微分
@@ -453,11 +492,13 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Integral_inplace()
         {
-            var inv = new long[ary.Length];
+            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(ary.Length);
+            var inv = invBuf.AsSpan();
             inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
             for (var i = ary.Length - 1; i > 0; --i) ary[i] = (uint)(inv[i] * ary[i - 1] % MOD);
             ary[0] = 0;
+            System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
         }
         /// <summary>
         /// 逆元 (a0 != 0)
@@ -475,8 +516,9 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Inverse_inplace()
         {
-            var dat = new List<(int idx, long val)>();
-            for (var i = 1; i < ary.Length; ++i) if (ary[i] != 0) dat.Add((i, ary[i]));
+            var arySpan = ary.AsSpan();
+            var dat = new List<(int idx, long val)>(arySpan.Length);
+            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
             if (dat.Count > 160)
             {
                 Inverse_inplace_dense();
@@ -484,18 +526,18 @@ namespace Library
             }
 
             // sparse
-            ary[0] = (uint)LIB_Mod998244353.Inverse(ary[0]);
-            for (var n = 1; n < ary.Length; ++n)
+            arySpan[0] = (uint)LIB_Mod998244353.Inverse(arySpan[0]);
+            for (var n = 1; n < arySpan.Length; ++n)
             {
                 var rhs = 0L;
                 foreach (var item in dat)
                 {
                     if (item.idx > n) break;
-                    rhs -= item.val * ary[n - item.idx] % MOD;
+                    rhs -= item.val * arySpan[n - item.idx] % MOD;
                 }
-                rhs = (rhs % MOD) * ary[0] % MOD;
+                rhs = (rhs % MOD) * arySpan[0] % MOD;
                 if (rhs < 0) rhs += MOD;
-                ary[n] = (uint)rhs;
+                arySpan[n] = (uint)rhs;
             }
         }
         /// <summary>
@@ -506,29 +548,39 @@ namespace Library
         {
             var maxlen = 1;
             while (maxlen <= K) maxlen <<= 1;
-            var g = new uint[maxlen];
-            g[0] = (uint)LIB_Mod998244353.Inverse((long)ary[0]);
+            var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen);
+            var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 3);
+            var buf = buf2.AsSpan();
+            var arySpan = ary.AsSpan();
+            var g = buf1.AsSpan();
+            g.Clear();
+            g[0] = (uint)LIB_Mod998244353.Inverse(arySpan[0]);
             var len = 1;
             while (len <= K)
             {
                 var nextlen = len << 1;
-                Span<uint> nttf = new uint[nextlen];
-                Span<uint> nttg = new uint[nextlen];
+                var nttf = buf.Slice(0, nextlen);
+                var nttg = buf.Slice(maxlen, nextlen);
+                var ntth = buf.Slice(maxlen * 2, nextlen);
+                nttf.Clear();
+                nttg.Clear();
                 var ten = Min(nextlen, ary.Length);
-                for (var i = 0; i < ten; ++i) nttf[i] = ary[i];
-                for (var i = 0; i < len; ++i) nttg[i] = g[i];
-                LIB_NTT.ntt4(ref nttf);
-                LIB_NTT.ntt4(ref nttg);
+                arySpan.Slice(0, ten).CopyTo(nttf);
+                g.Slice(0, ten).CopyTo(nttg);
+                LIB_NTT.ntt4(ref nttf, ref ntth);
+                LIB_NTT.ntt4(ref nttg, ref ntth);
                 for (var i = 0; i < nextlen; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                LIB_NTT.ntt4(ref nttf, true);
+                LIB_NTT.ntt4(ref nttf, ref ntth, true);
                 for (var i = 0; i < len; ++i) nttf[i] = 0;
-                LIB_NTT.ntt4(ref nttf);
+                LIB_NTT.ntt4(ref nttf, ref ntth);
                 for (var i = 0; i < nextlen; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                LIB_NTT.ntt4(ref nttf, true);
+                LIB_NTT.ntt4(ref nttf, ref ntth, true);
                 for (var i = len; i < nextlen; ++i) g[i] = (nttf[i] == 0 ? 0 : MOD - nttf[i]);
                 len = nextlen;
             }
-            for (var i = 0; i < ary.Length; ++i) ary[i] = g[i];
+            g.Slice(0, ary.Length).CopyTo(arySpan);
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
         }
         public long this[long index]
         {

@@ -52,19 +52,18 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void ntt3(ref Span<uint> a, bool rev = false) { var alen = a.Length; if (alen == 1) return; var halfn = alen >> 1; Span<uint> b = new uint[alen]; var s = pow3(root3, rev ? (mod3 - 1 - (mod3 - 1) / (uint)alen) : (mod3 - 1) / (uint)alen); int i, j, k, l, r; var regLength = System.Numerics.Vector<uint>.Count; Span<uint> mods = stackalloc uint[regLength]; mods.Fill(mod3); var modV = new System.Numerics.Vector<uint>(mods); var kp = new uint[halfn + 1]; ref uint kpref = ref kp[0]; kpref = 1; for (l = 0; l < halfn; ++l) Unsafe.Add(ref kpref, l + 1) = mul3(Unsafe.Add(ref kpref, l), s); for (i = 1; i < alen; i <<= 1, l >>= 1) { for (j = 0, r = 0; j < l; ++j, r += i) { s = Unsafe.Add(ref kpref, i * j); var ten = i - regLength; var rshift = (r << 1); var rshifti = rshift + i; for (k = 0; k < ten; k += regLength) { var u = new System.Numerics.Vector<uint>(a.Slice(k + r)); var v = new System.Numerics.Vector<uint>(a.Slice(k + r + halfn)); var add = u + v; var sub = modV + u - v; var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV); add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add); add.CopyTo(b.Slice(k + rshift)); sub.CopyTo(b.Slice(k + rshifti)); } ref uint aref = ref a[0]; ref uint bref = ref b[0]; for (k = 0; k < ten; ++k) { ref uint brefi = ref Unsafe.Add(ref bref, k + rshifti); brefi = mul3(brefi, s); } for (; k < i; ++k) { var kr = k + r; ref uint akr = ref Unsafe.Add(ref aref, kr); ref uint krhalfn = ref Unsafe.Add(ref aref, kr + halfn); Unsafe.Add(ref bref, kr + r) = (akr + krhalfn) % mod3; Unsafe.Add(ref bref, kr + r + i) = mul3(akr + mod3 - krhalfn, s); } } var t = a; a = b; b = t; } if (rev) { s = inverse3((uint)alen); ref uint aref = ref a[0]; for (i = 0; i < alen; ++i) { ref uint arefi = ref Unsafe.Add(ref aref, i); arefi = mul3(arefi, s); } } }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public void ntt4(ref Span<uint> a, bool rev = false)
+        static public void ntt4(ref Span<uint> a, ref Span<uint> buffer, bool rev = false)
         {
             var alen = a.Length;
             if (alen == 1) return;
             var halfn = alen >> 1;
-            Span<uint> b = new uint[alen];
             var s = pow4(root4, rev ? (mod4 - 1 - (mod4 - 1) / (uint)alen) : (mod4 - 1) / (uint)alen);
             int i, j, k, l, r;
             var regLength = System.Numerics.Vector<uint>.Count;
             Span<uint> mods = stackalloc uint[regLength];
             mods.Fill(mod4);
             var modV = new System.Numerics.Vector<uint>(mods);
-            var kp = new uint[halfn + 1];
+            var kp = System.Buffers.ArrayPool<uint>.Shared.Rent(halfn + 1);
             ref uint kpref = ref kp[0];
             kpref = 1;
             for (l = 0; l < halfn; ++l) Unsafe.Add(ref kpref, l + 1) = mul4(Unsafe.Add(ref kpref, l), s);
@@ -84,11 +83,11 @@ namespace Library
                         var sub = modV + u - v;
                         var ge = System.Numerics.Vector.GreaterThanOrEqual(add, modV);
                         add = System.Numerics.Vector.ConditionalSelect(ge, add - modV, add);
-                        add.CopyTo(b.Slice(k + rshift));
-                        sub.CopyTo(b.Slice(k + rshifti));
+                        add.CopyTo(buffer.Slice(k + rshift));
+                        sub.CopyTo(buffer.Slice(k + rshifti));
                     }
                     ref uint aref = ref a[0];
-                    ref uint bref = ref b[0];
+                    ref uint bref = ref buffer[0];
                     for (k = 0; k < ten; ++k)
                     {
                         ref uint brefi = ref Unsafe.Add(ref bref, k + rshifti);
@@ -103,7 +102,7 @@ namespace Library
                         Unsafe.Add(ref bref, kr + r + i) = mul4(akr + mod4 - krhalfn, s);
                     }
                 }
-                var t = a; a = b; b = t;
+                var t = a; a = buffer; buffer = t;
             }
             if (rev)
             {
@@ -115,22 +114,12 @@ namespace Library
                     arefi = mul4(arefi, s);
                 }
             }
+            System.Buffers.ArrayPool<uint>.Shared.Return(kp);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long[] NTT998244353(long[] ary, int len, bool isInverse = false)
+        static public void NTT998244353(ref Span<uint> ary, ref Span<uint> buf, bool isInverse = false)
         {
-            var t = 1;
-            while (t < len) t <<= 1;
-            Span<uint> na = new uint[t];
-            ref long aref = ref ary[0];
-            ref uint naref = ref na[0];
-            for (var i = 0; i < ary.Length; ++i) Unsafe.Add(ref naref, i) = (uint)Unsafe.Add(ref aref, i);
-            ntt4(ref na, isInverse);
-            naref = ref na[0];
-            var ret = new long[t];
-            ref var retref = ref ret[0];
-            for (var i = 0; i < ret.Length; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i);
-            return ret;
+            ntt4(ref ary, ref buf, isInverse);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint[] Multiply1(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; ref uint naref = ref na[0]; ref uint nbref = ref nb[0]; Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref naref), ref Unsafe.As<uint, byte>(ref a[0]), (uint)(a.Length << 2)); Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref nbref), ref Unsafe.As<uint, byte>(ref b[0]), (uint)(b.Length << 2)); ntt1(ref na); ntt1(ref nb); naref = ref na[0]; nbref = ref nb[0]; for (var i = 0; i < t; ++i) { ref uint narefi = ref Unsafe.Add(ref naref, i); narefi = mul1(narefi, Unsafe.Add(ref nbref, i)); } ntt1(ref na, true); var ret = new uint[n]; naref = ref na[0]; ref uint retref = ref ret[0]; for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i); return ret; }
@@ -203,14 +192,15 @@ namespace Library
             while (t < n) t <<= 1;
             Span<uint> na = new uint[t];
             Span<uint> nb = new uint[t];
+            Span<uint> nc = new uint[t];
             ref long aref = ref a[0];
             ref long bref = ref b[0];
             ref uint naref = ref na[0];
             ref uint nbref = ref nb[0];
             for (var i = 0; i < a.Length; ++i) Unsafe.Add(ref naref, i) = (uint)(Unsafe.Add(ref aref, i) % mod4);
             for (var i = 0; i < b.Length; ++i) Unsafe.Add(ref nbref, i) = (uint)(Unsafe.Add(ref bref, i) % mod4);
-            ntt4(ref na);
-            ntt4(ref nb);
+            ntt4(ref na, ref nc);
+            ntt4(ref nb, ref nc);
             naref = ref na[0];
             nbref = ref nb[0];
             for (var i = 0; i < t; ++i)
@@ -218,7 +208,7 @@ namespace Library
                 ref uint narefi = ref Unsafe.Add(ref naref, i);
                 narefi = mul4(narefi, Unsafe.Add(ref nbref, i));
             }
-            ntt4(ref na, true);
+            ntt4(ref na, ref nc, true);
             var ret = new long[n];
             naref = ref na[0];
             ref long retref = ref ret[0];
@@ -327,6 +317,7 @@ namespace Library
                     if (q % (2 * d) != d) continue;
                     Span<uint> f = new uint[d * 2];
                     Span<uint> g = new uint[d * 2];
+                    Span<uint> h = new uint[d * 2];
                     if (q == d)
                     {
                         for (var i = 0; i < d; ++i)
@@ -334,8 +325,8 @@ namespace Library
                             f[i] = (uint)a[i];
                             g[i] = (uint)b[i];
                         }
-                        ntt4(ref f);
-                        ntt4(ref g);
+                        ntt4(ref f, ref h);
+                        ntt4(ref g, ref h);
                         for (var i = 0; i < d * 2; ++i) f[i] = mul4(f[i], g[i]);
                     }
                     else
@@ -349,8 +340,8 @@ namespace Library
                                 s2[i] = (uint)a[i];
                                 t2[i] = (uint)b[i];
                             }
-                            ntt4(ref s2);
-                            ntt4(ref t2);
+                            ntt4(ref s2, ref h);
+                            ntt4(ref t2, ref h);
                             aList.Add(s2.ToArray());
                             bList.Add(t2.ToArray());
                         }
@@ -362,11 +353,11 @@ namespace Library
                         }
                         Span<uint> s = aList[lg];
                         Span<uint> t = bList[lg];
-                        ntt4(ref f);
-                        ntt4(ref g);
+                        ntt4(ref f, ref h);
+                        ntt4(ref g, ref h);
                         for (var i = 0; i < d * 2; ++i) f[i] = (mul4(f[i], t[i]) + mul4(g[i], s[i])) % mod4;
                     }
-                    ntt4(ref f, true);
+                    ntt4(ref f, ref h, true);
                     for (var i = q; i < Min(q + d, N + 1); ++i) c[i] = (c[i] + f[d + i - q]) % mod4;
                 }
                 return c[q - 1];
