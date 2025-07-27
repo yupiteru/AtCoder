@@ -160,6 +160,11 @@ namespace Library
                 return;
             }
             if (M == 1) return;
+            if (ary[0] == 1)
+            {
+                Pow_1_inplace(M);
+                return;
+            }
             var l = 0;
             while (l < arySpan.Length && arySpan[l] == 0) ++l;
             if (l == arySpan.Length || l > (arySpan.Length - 1) / M)
@@ -209,6 +214,44 @@ namespace Library
             }
             for (var i = arySpan.Length - 1; i >= ten; --i) arySpan[i] = (uint)(powc * garySpan[i - ten] % MOD);
             arySpan.Slice(0, ten).Clear();
+        }
+        /// <summary>
+        /// べき乗（a0 == 1）
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Pow_1_inplace(long M)
+        {
+            var arySpan = ary.AsSpan();
+
+            var dat = new List<(int idx, long val)>();
+            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
+
+            if (dat.Count > 100)
+            {
+                Log_inplace_dense();
+                for (var i = 0; i < arySpan.Length; ++i) arySpan[i] = (uint)(M * arySpan[i] % MOD);
+                Exp_inplace_dense();
+            }
+            else
+            {
+                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
+                var inv = invBuf.AsSpan();
+                inv[1] = 1;
+                for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
+                arySpan.Clear();
+                arySpan[0] = 1;
+                for (var n = 1; n < arySpan.Length; ++n)
+                {
+                    foreach (var item in dat)
+                    {
+                        if (item.idx > n) break;
+                        var t = item.val * arySpan[n - item.idx] % MOD;
+                        arySpan[n] = (uint)((arySpan[n] + t * ((M * item.idx % MOD) + MOD - n + item.idx)) % MOD);
+                    }
+                    arySpan[n] = (uint)(arySpan[n] * inv[n] % MOD);
+                }
+                System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
+            }
         }
         /// <summary>
         /// 指数 (a0 == 0)
@@ -581,6 +624,147 @@ namespace Library
             g.Slice(0, ary.Length).CopyTo(arySpan);
             System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
             System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
+        }
+        /// <summary>
+        /// 平方根 (a0 != 0 または [x^(2n)] != 0)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_FPS Sqrt()
+        {
+            var ret = Clone();
+            if (!ret.Sqrt_inplace()) return null;
+            return ret;
+        }
+        /// <summary>
+        /// 平方根 (a0 != 0 または [x^(2n)] != 0)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Sqrt_inplace()
+        {
+            var arySpan = ary.AsSpan();
+            var d = arySpan.Length;
+            var nonZeroCnt = 0;
+            for (var i = arySpan.Length - 1; i >= 0; --i)
+            {
+                if (arySpan[i] != 0)
+                {
+                    d = i;
+                    ++nonZeroCnt;
+                }
+            }
+            if (d == arySpan.Length) return true;
+            if ((d & 1) != 0) return false;
+            var y = arySpan[d];
+            var x = y;
+            {
+                var k = (MOD - 1) / 2;
+                if (LIB_Mod998244353.Pow(x, k) != 1) return false;
+                var rnd = new Random(0);
+                var b = 0L;
+                var D = 0L;
+                while (true)
+                {
+                    b = rnd.Next(2, (int)MOD);
+                    D = (b * b - x + MOD) % MOD;
+                    if (D == 0) break;
+                    if (LIB_Mod998244353.Pow(D, k) != 1) break;
+                }
+                if (D == 0)
+                {
+                    x = (uint)b;
+                }
+                else
+                {
+                    ++k;
+                    var f0 = b;
+                    var f1 = 1L;
+                    var g0 = 1L;
+                    var g1 = 0L;
+                    while (k > 0)
+                    {
+                        if ((k & 1) != 0)
+                        {
+                            var t = (f1 * g0 + f0 * g1) % MOD;
+                            g0 = (f0 * g0 + (D * f1 % MOD) * g1) % MOD;
+                            g1 = t;
+                        }
+                        {
+                            var t = (2 * f0 * f1) % MOD;
+                            f0 = (f0 * f0 + (D * f1 % MOD) * f1) % MOD;
+                            f1 = t;
+                        }
+                        k >>= 1;
+                    }
+                    if (g0 * g0 % MOD != x) return false;
+                    x = (uint)g0;
+                }
+            }
+            var c = LIB_Mod998244353.Inverse(y);
+            var gLength = arySpan.Length - d;
+            for (var i = d; i < arySpan.Length; ++i)
+            {
+                arySpan[i - d] = (uint)(arySpan[i] * c % MOD);
+            }
+
+            var maxlen = 1;
+            while (maxlen < gLength) maxlen <<= 1;
+            var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen);
+            var rSpan = buf1.AsSpan();
+            rSpan.Clear();
+            rSpan[0] = 1;
+
+            if (nonZeroCnt <= 200)
+            {
+                Pow_1_inplace(499122177);
+                arySpan.Slice(0, gLength).CopyTo(rSpan);
+            }
+            else
+            {
+                for (var i = 0; i < gLength; ++i) arySpan[i] = (uint)(arySpan[i] * 499122177L % MOD);
+                var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 4);
+                var buf = buf2.AsSpan();
+                var len = 1;
+                while (len < gLength)
+                {
+                    var nextlen = len << 1;
+                    var convTmpSpan = buf.Slice(0, nextlen);
+                    var frontHalf = buf.Slice(maxlen, nextlen);
+                    var lastHalf = buf.Slice(maxlen * 2, nextlen);
+                    frontHalf.Clear();
+                    lastHalf.Clear();
+                    arySpan.Slice(0, len).CopyTo(frontHalf);
+                    arySpan.Slice(len, Min(len, arySpan.Length - len)).CopyTo(lastHalf.Slice(len));
+                    LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan);
+                    LIB_NTT.ntt4(ref lastHalf, ref convTmpSpan);
+
+                    var invR = new LIB_FPS(nextlen - 1);
+                    rSpan.Slice(0, nextlen).CopyTo(invR.ary.AsSpan());
+                    invR.Inverse_inplace_dense();
+                    var invRSpan = invR.ary.AsSpan();
+                    var halfInv = buf.Slice(maxlen * 3, nextlen);
+                    halfInv.Clear();
+                    invRSpan.Slice(0, len).CopyTo(halfInv);
+                    LIB_NTT.ntt4(ref invRSpan, ref convTmpSpan);
+                    LIB_NTT.ntt4(ref halfInv, ref convTmpSpan);
+
+                    for (var i = 0; i < nextlen; ++i)
+                    {
+                        frontHalf[i] = (uint)(((long)frontHalf[i] * invRSpan[i] + (long)lastHalf[i] * halfInv[i]) % MOD);
+                    }
+                    LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan, true);
+                    frontHalf.Slice(len, len).CopyTo(rSpan.Slice(len));
+                    len = nextlen;
+                }
+                System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
+            }
+
+            arySpan.Clear();
+            for (var i = 0; i < gLength; ++i)
+            {
+                arySpan[i + d / 2] = (uint)((long)rSpan[i] * x % MOD);
+            }
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
+            return true;
         }
         public long this[long index]
         {
