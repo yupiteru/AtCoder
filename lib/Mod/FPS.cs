@@ -727,31 +727,28 @@ namespace Library
                 invRSpan.Clear();
                 invRSpan[0] = 1;
                 var len = 1;
+                Span<uint> halfInv1 = null;
+                Span<uint> halfInv2 = null;
+                Span<uint> convTmpSpan = null;
                 while (len < gLength)
                 {
                     var nextlen = len << 1;
                     if (len >= 2)
                     {
                         var halflen = len >> 1;
-                        var nttf = buf.Slice(0, len);
-                        var nttg = buf.Slice(maxlen, len);
-                        var ntth = buf.Slice(maxlen * 2, len);
-                        nttg.Clear();
-                        rSpan.Slice(0, len).CopyTo(nttf);
-                        invRSpan.Slice(0, halflen).CopyTo(nttg);
-                        LIB_NTT.ntt4(ref nttf, ref ntth);
-                        LIB_NTT.ntt4(ref nttg, ref ntth);
-                        for (var i = 0; i < len; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                        LIB_NTT.ntt4(ref nttf, ref ntth, true);
-                        for (var i = 0; i < halflen; ++i) nttf[i] = 0;
-                        LIB_NTT.ntt4(ref nttf, ref ntth);
-                        for (var i = 0; i < len; ++i) nttf[i] = (uint)((ulong)nttf[i] * nttg[i] % MOD);
-                        LIB_NTT.ntt4(ref nttf, ref ntth, true);
-                        for (var i = halflen; i < len; ++i) invRSpan[i] = nttf[i] == 0 ? 0 : MOD - nttf[i];
+                        rSpan.Slice(0, len).CopyTo(halfInv1);
+                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                        for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                        for (var i = 0; i < halflen; ++i) halfInv1[i] = 0;
+                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                        for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                        for (var i = halflen; i < len; ++i) invRSpan[i] = halfInv1[i] == 0 ? 0 : MOD - halfInv1[i];
                     }
-                    var convTmpSpan = buf.Slice(0, nextlen);
-                    var halfInv1 = buf.Slice(maxlen, nextlen);
-                    var halfInv2 = buf.Slice(maxlen * 2, nextlen);
+                    convTmpSpan = buf.Slice(0, nextlen);
+                    halfInv1 = buf.Slice(maxlen, nextlen);
+                    halfInv2 = buf.Slice(maxlen * 2, nextlen);
                     halfInv2.Clear();
                     invRSpan.Slice(0, len).CopyTo(halfInv2);
                     LIB_NTT.ntt4(ref halfInv2, ref convTmpSpan);
