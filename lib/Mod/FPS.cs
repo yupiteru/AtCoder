@@ -794,6 +794,71 @@ namespace Library
             System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
             return true;
         }
+        /// <summary>
+        /// 平行移動
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_FPS TaylorShift(long c)
+        {
+            var ret = Clone();
+            ret.TaylorShift_inplace(c);
+            return ret;
+        }
+        /// <summary>
+        /// 平行移動
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TaylorShift_inplace(long c)
+        {
+            var arySpan = ary.AsSpan();
+
+            var len = 1;
+            while (len < arySpan.Length) len <<= 1;
+            len <<= 1;
+            var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(len * 3);
+            var buf = buf1.AsSpan();
+            var ntta = buf.Slice(0, len);
+            var nttb = buf.Slice(len, len);
+            var ntth = buf.Slice(len * 3, len);
+            ntta.Clear();
+            nttb.Clear();
+
+            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
+            var inv = invBuf.AsSpan();
+            inv[0] = inv[1] = 1;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
+            var fact = 1L;
+            ntta[arySpan.Length - 1] = arySpan[0];
+            for (var i = 1; i < arySpan.Length; ++i)
+            {
+                fact = fact * i % MOD;
+                ntta[arySpan.Length - i - 1] = (uint)(fact * arySpan[i] % MOD);
+            }
+
+            var power = 1L;
+            fact = 1L;
+            nttb[0] = 1;
+            for (var i = 1; i < arySpan.Length; ++i)
+            {
+                power = power * c % MOD;
+                fact = fact * inv[i] % MOD;
+                nttb[i] = (uint)(power * fact % MOD);
+            }
+
+            LIB_NTT.ntt4(ref ntta, ref ntth);
+            LIB_NTT.ntt4(ref nttb, ref ntth);
+            for (var i = 0; i < ntta.Length; ++i) ntta[i] = (uint)((ulong)ntta[i] * nttb[i] % MOD);
+            LIB_NTT.ntt4(ref ntta, ref ntth, true);
+
+            fact = 1L;
+            for (var i = 0; i < arySpan.Length; ++i)
+            {
+                fact = fact * inv[i] % MOD;
+                arySpan[i] = (uint)(ntta[arySpan.Length - 1 - i] * fact % MOD);
+            }
+
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
+        }
         public long this[long index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
