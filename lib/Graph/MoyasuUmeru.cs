@@ -114,7 +114,7 @@ namespace Library
         public long Calc()
         {
             var totalVtxCount = path.Keys.Concat(path.SelectMany(e => e.Value.Keys)).Distinct().Count();
-            var flow = new LIB_MaxFlow(totalVtxCount);
+            var flow = new LIB_Flow<long>(totalVtxCount);
             var additionalBase = totalVtxCount - additionalVertexCount - 1;
             var flowStart = additionalBase + -start;
             var flowGoal = additionalBase + -goal;
@@ -126,10 +126,10 @@ namespace Library
                 {
                     var to = item2.Key;
                     if (to < 0) to = additionalBase + -to;
-                    flow.AddEdge(from, to, item2.Value);
+                    flow.AddEdge(from, to, 0, item2.Value);
                 }
             }
-            return shift - flow.Flow(flowStart, flowGoal);
+            return shift - (long)flow.Solve(flowStart, flowGoal).flow;
         }
     }
     ////end
