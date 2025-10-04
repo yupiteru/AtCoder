@@ -52,9 +52,9 @@ namespace Library
         {
             LIB_Flow<FlowCost> f;
             public int Length => f.edges.Count >> 1;
-            public FlowCost this[int i]
+            public FlowCost this[long i]
             {
-                get => f.edges[i << 1].isFlip ? f.edges[i << 1].cap : f.edges[i << 1].flow;
+                get => f.edges[(int)i << 1].isFlip ? f.edges[(int)i << 1].cap : f.edges[(int)i << 1].flow;
                 private set { }
             }
             public FlowsTmp(LIB_Flow<FlowCost> flow)
