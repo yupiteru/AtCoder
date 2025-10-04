@@ -20,6 +20,7 @@ namespace Library
             public FlowCost cap;
             public FlowCost flow;
             public FlowCost cost;
+            public bool isFlip;
         }
         struct Parent
         {
@@ -47,47 +48,65 @@ namespace Library
         FlowCost totalCost;
         public FlowCost[] pots;
 
-        public class EdgesTmp
+        public class FlowsTmp
         {
             LIB_Flow<FlowCost> f;
             public int Length => f.edges.Count >> 1;
-            public Edge this[int i]
+            public FlowCost this[int i]
             {
-                get => f.edges[i << 1];
+                get => f.edges[i << 1].isFlip ? f.edges[i << 1].cap : f.edges[i << 1].flow;
                 private set { }
             }
-            public EdgesTmp(LIB_Flow<FlowCost> flow)
+            public FlowsTmp(LIB_Flow<FlowCost> flow)
             {
                 f = flow;
             }
         }
-        EdgesTmp _edgesTmp;
+        FlowsTmp _flowsTmp;
 
-        public EdgesTmp Edges
+        public FlowsTmp Flows
         {
-            get => _edgesTmp;
+            get => _flowsTmp;
             private set { }
         }
 
         public LIB_Flow(long N)
         {
-            _edgesTmp = new EdgesTmp(this);
+            _flowsTmp = new FlowsTmp(this);
             this.N = (int)N;
             dss = new FlowCost[N];
             edges = new List<Edge>();
             lowers = new List<FlowCost>();
             candidates = new List<int>();
+            totalCost = FlowCost.Zero;
         }
 
         public long AddEdge(long from, long to, FlowCost lower, FlowCost upper, FlowCost? cost = null)
         {
             if (cost == null) cost = FlowCost.Zero;
-            edges.Add(new Edge() { from = (int)from, to = (int)to, cap = upper - lower, cost = cost.Value });
-            edges.Add(new Edge() { from = (int)to, to = (int)from, cap = FlowCost.Zero, cost = -cost.Value });
-            lowers.Add(lower);
-            dss[from] -= lower;
-            dss[to] += lower;
-            M = edges.Count;
+            if (cost < FlowCost.Zero)
+            {
+                cost = -cost;
+                totalCost -= upper * cost.Value;
+                (from, to) = (to, from);
+                edges.Add(new Edge() { from = (int)from, to = (int)to, cap = upper - lower, cost = cost.Value, isFlip = true });
+                edges.Add(new Edge() { from = (int)to, to = (int)from, cap = FlowCost.Zero, cost = -cost.Value, isFlip = true });
+                lowers.Add(lower);
+                dss[from] -= lower;
+                dss[to] += lower;
+                AddDS(from, upper);
+                AddDS(to, -upper);
+                M = edges.Count;
+            }
+            else
+            {
+                edges.Add(new Edge() { from = (int)from, to = (int)to, cap = upper - lower, cost = cost.Value, isFlip = false });
+                edges.Add(new Edge() { from = (int)to, to = (int)from, cap = FlowCost.Zero, cost = -cost.Value, isFlip = false });
+                lowers.Add(lower);
+                dss[from] -= lower;
+                dss[to] += lower;
+                M = edges.Count;
+            }
             return lowers.Count - 1;
         }
 
@@ -225,7 +244,6 @@ namespace Library
                 }
                 if (!feasible) return false;
             }
-            totalCost = FlowCost.Zero;
             for (var i = 0; i < M; i += 2)
             {
                 var f = lowers[i >> 1] + edges[i ^ 1].cap;
