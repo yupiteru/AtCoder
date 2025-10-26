@@ -859,6 +859,268 @@ namespace Library
 
             System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
         }
+        /// <summary>
+        /// 合成
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_FPS Composition(LIB_FPS g)
+        {
+            var ret = Clone();
+            ret.Composition_inplace(g);
+            return ret;
+        }
+        // 合成のためのヘルパ関数（後で整理する）
+        static uint[] root = new uint[] { 1, 998244352, 911660635, 372528824, 929031873, 452798380, 922799308, 781712469, 476477967, 166035806, 258648936, 584193783, 63912897, 350007156, 666702199, 968855178, 629671588, 24514907, 996173970, 363395222, 565042129, 733596141, 267099868, 15311432 };
+        static uint[] iroot = new uint[] { 1, 998244352, 86583718, 509520358, 337190230, 87557064, 609441965, 135236158, 304459705, 685443576, 381598368, 335559352, 129292727, 358024708, 814576206, 708402881, 283043518, 3707709, 121392023, 704923114, 950391366, 428961804, 382752275, 469870224 };
+        static uint[] rate2 = new uint[] { 911660635, 509520358, 369330050, 332049552, 983190778, 123842337, 238493703, 975955924, 603855026, 856644456, 131300601, 842657263, 730768835, 942482514, 806263778, 151565301, 510815449, 503497456, 743006876, 741047443, 56250497, 867605899 };
+        static uint[] irate2 = new uint[] { 86583718, 372528824, 373294451, 645684063, 112220581, 692852209, 155456985, 797128860, 90816748, 860285882, 927414960, 354738543, 109331171, 293255632, 535113200, 308540755, 121186627, 608385704, 438932459, 359477183, 824071951, 103369235 };
+        static uint[] rate3 = new uint[] { 372528824, 337190230, 454590761, 816400692, 578227951, 180142363, 83780245, 6597683, 70046822, 623238099, 183021267, 402682409, 631680428, 344509872, 689220186, 365017329, 774342554, 729444058, 102986190, 128751033, 395565204 };
+        static uint[] irate3 = new uint[] { 509520358, 929031873, 170256584, 839780419, 282974284, 395914482, 444904435, 72135471, 638914820, 66769500, 771127074, 985925487, 262319669, 262341272, 625870173, 768022760, 859816005, 914661783, 430819711, 272774365, 530924681 };
+        static int ceil_pow2(int n)
+        {
+            int i = 0;
+            while ((1U << i) < (uint)(n)) i++;
+            return i;
+        }
+        static void ntt_trans(ref Span<uint> v)
+        {
+            var n = v.Length;
+            var h = ceil_pow2(n);
+
+            var len = 0;
+            while (len < h)
+            {
+                if (h - len == 1)
+                {
+                    var p = 1 << (h - len - 1);
+                    var rot = 1U;
+                    for (var s = 0; s < (1 << len); s++)
+                    {
+                        var offset = s << (h - len);
+                        for (var i = 0; i < p; i++)
+                        {
+                            var l = v[i + offset];
+                            var r = (uint)(v[i + offset + p] * (ulong)rot % MOD);
+                            v[i + offset] = (l + r) % MOD;
+                            v[i + offset + p] = (l + MOD - r) % MOD;
+                        }
+                        if (s + 1 != (1 << len))
+                        {
+                            rot = (uint)(rot * (ulong)rate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
+                        }
+                    }
+                    len++;
+                }
+                else
+                {
+                    var p = 1 << (h - len - 2);
+                    var rot = 1U;
+                    var imag = root[2];
+                    for (var s = 0; s < (1 << len); s++)
+                    {
+                        var rot2 = (uint)(rot * (ulong)rot % MOD);
+                        var rot3 = (uint)(rot2 * (ulong)rot % MOD);
+                        var offset = s << (h - len);
+                        for (var i = 0; i < p; i++)
+                        {
+                            var mod2 = (ulong)MOD * MOD;
+                            var a0 = (ulong)v[i + offset];
+                            var a1 = (ulong)v[i + offset + p] * rot;
+                            var a2 = (ulong)v[i + offset + p * 2] * rot2;
+                            var a3 = (ulong)v[i + offset + p * 3] * rot3;
+                            var tmp = ((a1 + mod2 - a3) % MOD) * imag;
+                            var na2 = mod2 - a2;
+                            v[i + offset] = (uint)((a0 + a2 + a1 + a3) % MOD);
+                            v[i + offset + p] = (uint)((a0 + a2 + (mod2 * 2 - (a1 + a3))) % MOD);
+                            v[i + offset + p * 2] = (uint)((a0 + na2 + tmp) % MOD);
+                            v[i + offset + p * 3] = (uint)((a0 + na2 + (mod2 - tmp)) % MOD);
+                        }
+                        if (s + 1 != (1 << len))
+                        {
+                            rot = (uint)(rot * (ulong)rate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
+                        }
+                    }
+                    len += 2;
+                }
+            }
+        }
+        static void ntt_trans_rev(ref Span<uint> v)
+        {
+            var n = v.Length;
+            var h = ceil_pow2(n);
+
+            var len = h;
+            while (len > 0)
+            {
+                if (len == 1)
+                {
+                    var p = 1 << (h - len);
+                    var irot = 1U;
+                    for (var s = 0; s < (1 << (len - 1)); s++)
+                    {
+                        var offset = s << (h - len + 1);
+                        for (var i = 0; i < p; i++)
+                        {
+                            var l = v[i + offset];
+                            var r = v[i + offset + p];
+                            v[i + offset] = (l + r) % MOD;
+                            v[i + offset + p] = (l + MOD - r) * irot % MOD;
+                        }
+                        if (s + 1 != (1 << len - 1))
+                        {
+                            irot = (uint)(irot * (ulong)irate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
+                        }
+                    }
+                    len--;
+                }
+                else
+                {
+                    var p = 1 << (h - len);
+                    var irot = 1U;
+                    var iimag = iroot[2];
+                    for (var s = 0; s < (1 << (len - 2)); s++)
+                    {
+                        var irot2 = (uint)(irot * (ulong)irot % MOD);
+                        var irot3 = (uint)(irot2 * (ulong)irot % MOD);
+                        var offset = s << (h - len + 2);
+                        for (var i = 0; i < p; i++)
+                        {
+                            var a0 = (ulong)v[i + offset];
+                            var a1 = (ulong)v[i + offset + p];
+                            var a2 = (ulong)v[i + offset + p * 2];
+                            var a3 = (ulong)v[i + offset + p * 3];
+                            var tmp = (a2 + MOD - a3) * iimag % MOD;
+                            v[i + offset] = (uint)((a0 + a2 + a1 + a3) % MOD);
+                            v[i + offset + p] = (uint)((a0 + MOD - a1 + tmp) * irot % MOD);
+                            v[i + offset + p * 2] = (uint)((a0 + a1 + MOD * 2 - a2 - a3) * irot2 % MOD);
+                            v[i + offset + p * 3] = (uint)((a0 + MOD * 2 - a1 - tmp) * irot3 % MOD);
+                        }
+                        if (s + 1 != (1 << (len - 2)))
+                        {
+                            irot = (uint)(irot * (ulong)irate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
+                        }
+                    }
+                    len -= 2;
+                }
+            }
+            var inv = LIB_Mod998244353.Inverse(n);
+            for (var i = 0; i < n; ++i)
+            {
+                v[i] = (uint)((v[i] * (ulong)inv) % MOD);
+            }
+        }
+        /// <summary>
+        /// 合成
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Composition_inplace(LIB_FPS g)
+        {
+            Func<uint[], int, int, int, uint[]> rec = null;
+            rec = (Q, n, h, k) =>
+            {
+                if (n == 0)
+                {
+                    var t = new LIB_FPS(k);
+                    for (var i = 0; i < k; ++i)
+                    {
+                        t[k - i] = Q[i];
+                    }
+                    t[0] = 1;
+                    t.Inverse_inplace();
+                    var u = LIB_NTT.Multiply(ary.Select(e => (long)e).ToArray(), t.ary.Reverse().Select(e => (long)e).ToArray());
+                    var P2 = new uint[h * k];
+                    for (var i = 0; i < ary.Length; ++i)
+                    {
+                        P2[k - i - 1] = (uint)u[i + k];
+                    }
+                    return P2;
+                }
+                var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(h * k * 8);
+                var nQ = buf.AsSpan().Slice(0, h * k * 4);
+                var nR = buf.AsSpan().Slice(h * k * 4, h * k * 2);
+                for (var i = 0; i < k; ++i)
+                {
+                    for (var j = 0; j <= n; ++j)
+                    {
+                        nQ[i * h * 2 + j] = Q[i * h + j];
+                    }
+                }
+                nQ[h * k * 2] += 1;
+                ntt_trans(ref nQ);
+                for (var i = 0; i < h * k * 4; i += 2)
+                {
+                    (nQ[i], nQ[i + 1]) = (nQ[i + 1], nQ[i]);
+                }
+                for (var i = 0; i < h * k * 2; ++i)
+                {
+                    nR[i] = (uint)(nQ[i * 2] * (ulong)nQ[i * 2 + 1] % MOD);
+                }
+                ntt_trans_rev(ref nR);
+                nR[0] -= 1;
+                for (var i = 0; i < h * k; ++i)
+                {
+                    Q[i] = 0;
+                }
+                for (var i = 0; i < k * 2; ++i)
+                {
+                    for (var j = 0; j <= n / 2; ++j)
+                    {
+                        Q[i * h / 2 + j] = nR[i * h + j];
+                    }
+                }
+                var P = rec(Q, n / 2, h / 2, k * 2);
+                nR.Clear();
+                var nP = buf.AsSpan().Slice(h * k * 4, h * k * 4);
+                for (var i = 0; i < k * 2; ++i)
+                {
+                    for (var j = 0; j <= n / 2; ++j)
+                    {
+                        nP[i * h * 2 + j * 2 + n % 2] = P[i * h / 2 + j];
+                    }
+                }
+                ntt_trans(ref nP);
+                for (var i = 1; i < h * k * 4; i <<= 1)
+                {
+                    for (var j = 0; j < i / 2; ++j)
+                    {
+                        (nQ[i + j], nQ[i * 2 - j - 1]) = (nQ[i * 2 - j - 1], nQ[i + j]);
+                    }
+                }
+                for (var i = 0; i < h * k * 4; ++i)
+                {
+                    nP[i] = (uint)(nP[i] * (ulong)nQ[i] % MOD);
+                }
+                ntt_trans_rev(ref nP);
+                for (var i = 0; i < h * k; ++i)
+                {
+                    P[i] = 0;
+                }
+                for (var i = 0; i < k; ++i)
+                {
+                    for (var j = 0; j <= n; ++j)
+                    {
+                        P[i * h + j] = nP[i * h * 2 + j];
+                    }
+                }
+
+                System.Buffers.ArrayPool<uint>.Shared.Return(buf);
+                return P;
+            };
+            var deg = Max(ary.Length, g.ary.Length);
+            Array.Resize(ref ary, deg);
+            Array.Resize(ref g.ary, deg);
+            var n = deg - 1;
+            var h = 1;
+            var k = 1;
+            while (h < n + 1) h <<= 1;
+            var Q = new uint[h * k];
+            for (var i = 0; i <= n; ++i)
+            {
+                Q[i] = (uint)(MOD - g[i]) % MOD;
+            }
+            var P = rec(Q, n, h, k);
+            ary = P.Take(deg).Reverse().ToArray();
+        }
         public long this[long index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
