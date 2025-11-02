@@ -1111,18 +1111,14 @@ namespace Library
             var n = ary.Length - 1;
             var k = 1;
             var h = 1;
-            var g = new uint[n + 1];
-            g[0] = 1;
-            var m = n;
             while (h < n + 1) h <<= 1;
             var P = new uint[h << 2];
             var Q = new uint[h << 2];
-            for (int i = 0; i <= n; i++) P[i * k] = g[i];
-            for (int i = 0; i <= n; i++) Q[i * k] = (MOD - ary[i]) % MOD;
-            Q[0]++;
-            if (Q[0] == MOD) Q[0] = 0;
-            var inv2 = LIB_Mod998244353.Inverse(2);
-            var pr = 3U;
+            P[0] = 1;
+            for (int i = 0; i <= n; i++) Q[i] = (MOD - ary[i]) % MOD;
+            if (++Q[0] == MOD) Q[0] = 0;
+            const uint inv2 = 499122177U;
+            const uint pr = 3U;
             var buf = new uint[h];
             var buf2 = new uint[h >> 1];
             var nP = new uint[h << 2];
@@ -1134,7 +1130,6 @@ namespace Library
             while (n > 0)
             {
                 var w = (uint)LIB_Mod998244353.Pow(pr, (MOD - 1) / (2 * k));
-                var iw = LIB_Mod998244353.Inverse(w);
                 Action ntt_doubling = () =>
                 {
                     Array.Copy(buf, buf2, k);
@@ -1200,7 +1195,7 @@ namespace Library
                 nP.AsSpan().Slice(nPi).Clear();
                 nQ.AsSpan().Slice(nQi).Clear();
                 w = (uint)LIB_Mod998244353.Pow(pr, (MOD - 1) / (h * 2));
-                iw = LIB_Mod998244353.Inverse(w);
+                var iw = LIB_Mod998244353.Inverse(w);
                 if (n % 2 == 1)
                 {
                     var i = 0;
@@ -1239,13 +1234,13 @@ namespace Library
                     if ((n & 1) != 0)
                     {
                         p.Slice(0, h).CopyTo(buf);
-                        var c = inv2;
+                        var c = (long)inv2;
                         var newp = pAry.AsSpan().Slice(bufferBlock * 2, h);
                         for (var btrI = 0; btrI < h; ++btrI)
                         {
                             var i = btr[btrI];
-                            newp[i] = (uint)(((long)p[i * 2] + MOD - p[i * 2 + 1]) * c % MOD);
-                            c = (uint)(c * iw % MOD);
+                            newp[i] = (uint)((p[i * 2] + MOD - p[i * 2 + 1]) * c % MOD);
+                            c = c * iw % MOD;
                         }
                         p = newp;
                     }
@@ -1253,7 +1248,7 @@ namespace Library
                     {
                         for (var i = 0; i < h; ++i)
                         {
-                            p[i] = (uint)((p[i * 2] + p[i * 2 + 1]) * inv2 % MOD);
+                            p[i] = (uint)((p[i * 2] + p[i * 2 + 1]) * (ulong)inv2 % MOD);
                         }
                     }
                     p = p.Slice(0, h);
