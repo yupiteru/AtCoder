@@ -1020,6 +1020,7 @@ namespace Library
                     return P2;
                 }
                 var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(h * k * 8);
+                buf.AsSpan().Clear();
                 var nQ = buf.AsSpan().Slice(0, h * k * 4);
                 var nR = buf.AsSpan().Slice(h * k * 4, h * k * 2);
                 for (var i = 0; i < k; ++i)
