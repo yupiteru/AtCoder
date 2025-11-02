@@ -870,44 +870,38 @@ namespace Library
             return ret;
         }
         // 合成のためのヘルパ関数（後で整理する）
-        static uint[] root = new uint[] { 1, 998244352, 911660635, 372528824, 929031873, 452798380, 922799308, 781712469, 476477967, 166035806, 258648936, 584193783, 63912897, 350007156, 666702199, 968855178, 629671588, 24514907, 996173970, 363395222, 565042129, 733596141, 267099868, 15311432 };
-        static uint[] iroot = new uint[] { 1, 998244352, 86583718, 509520358, 337190230, 87557064, 609441965, 135236158, 304459705, 685443576, 381598368, 335559352, 129292727, 358024708, 814576206, 708402881, 283043518, 3707709, 121392023, 704923114, 950391366, 428961804, 382752275, 469870224 };
-        static uint[] rate2 = new uint[] { 911660635, 509520358, 369330050, 332049552, 983190778, 123842337, 238493703, 975955924, 603855026, 856644456, 131300601, 842657263, 730768835, 942482514, 806263778, 151565301, 510815449, 503497456, 743006876, 741047443, 56250497, 867605899 };
-        static uint[] irate2 = new uint[] { 86583718, 372528824, 373294451, 645684063, 112220581, 692852209, 155456985, 797128860, 90816748, 860285882, 927414960, 354738543, 109331171, 293255632, 535113200, 308540755, 121186627, 608385704, 438932459, 359477183, 824071951, 103369235 };
-        static uint[] rate3 = new uint[] { 372528824, 337190230, 454590761, 816400692, 578227951, 180142363, 83780245, 6597683, 70046822, 623238099, 183021267, 402682409, 631680428, 344509872, 689220186, 365017329, 774342554, 729444058, 102986190, 128751033, 395565204 };
-        static uint[] irate3 = new uint[] { 509520358, 929031873, 170256584, 839780419, 282974284, 395914482, 444904435, 72135471, 638914820, 66769500, 771127074, 985925487, 262319669, 262341272, 625870173, 768022760, 859816005, 914661783, 430819711, 272774365, 530924681 };
+        static uint[] root = new uint[] { 1, 998244352, 911660635, 372528824, 929031873, 452798380, 922799308, 781712469, 476477967, 166035806, 258648936, 584193783, 63912897, 350007156, 666702199, 968855178, 629671588, 24514907, 996173970, 363395222, 565042129, 733596141, 267099868, 15311432, 0 };
+        static uint[] iroot = new uint[] { 1, 998244352, 86583718, 509520358, 337190230, 87557064, 609441965, 135236158, 304459705, 685443576, 381598368, 335559352, 129292727, 358024708, 814576206, 708402881, 283043518, 3707709, 121392023, 704923114, 950391366, 428961804, 382752275, 469870224, 0 };
+        static uint[] rate2 = new uint[] { 911660635, 509520358, 369330050, 332049552, 983190778, 123842337, 238493703, 975955924, 603855026, 856644456, 131300601, 842657263, 730768835, 942482514, 806263778, 151565301, 510815449, 503497456, 743006876, 741047443, 56250497, 867605899, 0 };
+        static uint[] irate2 = new uint[] { 86583718, 372528824, 373294451, 645684063, 112220581, 692852209, 155456985, 797128860, 90816748, 860285882, 927414960, 354738543, 109331171, 293255632, 535113200, 308540755, 121186627, 608385704, 438932459, 359477183, 824071951, 103369235, 0 };
+        static uint[] rate3 = new uint[] { 372528824, 337190230, 454590761, 816400692, 578227951, 180142363, 83780245, 6597683, 70046822, 623238099, 183021267, 402682409, 631680428, 344509872, 689220186, 365017329, 774342554, 729444058, 102986190, 128751033, 395565204, 0 };
+        static uint[] irate3 = new uint[] { 509520358, 929031873, 170256584, 839780419, 282974284, 395914482, 444904435, 72135471, 638914820, 66769500, 771127074, 985925487, 262319669, 262341272, 625870173, 768022760, 859816005, 914661783, 430819711, 272774365, 530924681, 0 };
         static int ceil_pow2(int n)
         {
             int i = 0;
             while ((1U << i) < (uint)(n)) i++;
             return i;
         }
-        static void ntt_trans(ref Span<uint> v)
+        static void ntt_trans(Span<uint> v)
         {
             var n = v.Length;
             var h = ceil_pow2(n);
+            const ulong mod2 = (ulong)MOD * MOD;
 
             var len = 0;
             while (len < h)
             {
                 if (h - len == 1)
                 {
-                    var p = 1 << (h - len - 1);
                     var rot = 1U;
                     for (var s = 0; s < (1 << len); s++)
                     {
                         var offset = s << (h - len);
-                        for (var i = 0; i < p; i++)
-                        {
-                            var l = v[i + offset];
-                            var r = (uint)(v[i + offset + p] * (ulong)rot % MOD);
-                            v[i + offset] = (l + r) % MOD;
-                            v[i + offset + p] = (l + MOD - r) % MOD;
-                        }
-                        if (s + 1 != (1 << len))
-                        {
-                            rot = (uint)(rot * (ulong)rate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
-                        }
+                        var l = v[offset];
+                        var r = (uint)(v[offset + 1] * (ulong)rot % MOD);
+                        v[offset] = (l + r) % MOD;
+                        v[offset + 1] = (l + MOD - r) % MOD;
+                        rot = (uint)(rot * (ulong)rate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
                     }
                     len++;
                 }
@@ -923,7 +917,6 @@ namespace Library
                         var offset = s << (h - len);
                         for (var i = 0; i < p; i++)
                         {
-                            var mod2 = (ulong)MOD * MOD;
                             var a0 = (ulong)v[i + offset];
                             var a1 = (ulong)v[i + offset + p] * rot;
                             var a2 = (ulong)v[i + offset + p * 2] * rot2;
@@ -935,16 +928,13 @@ namespace Library
                             v[i + offset + p * 2] = (uint)((a0 + na2 + tmp) % MOD);
                             v[i + offset + p * 3] = (uint)((a0 + na2 + (mod2 - tmp)) % MOD);
                         }
-                        if (s + 1 != (1 << len))
-                        {
-                            rot = (uint)(rot * (ulong)rate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
-                        }
+                        rot = (uint)(rot * (ulong)rate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
                     }
                     len += 2;
                 }
             }
         }
-        static void ntt_trans_rev(ref Span<uint> v)
+        static void ntt_trans_rev(Span<uint> v)
         {
             var n = v.Length;
             var h = ceil_pow2(n);
@@ -966,10 +956,7 @@ namespace Library
                             v[i + offset] = (l + r) % MOD;
                             v[i + offset + p] = (l + MOD - r) * irot % MOD;
                         }
-                        if (s + 1 != (1 << len - 1))
-                        {
-                            irot = (uint)(irot * (ulong)irate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
-                        }
+                        irot = (uint)(irot * (ulong)irate2[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
                     }
                     len--;
                 }
@@ -995,10 +982,7 @@ namespace Library
                             v[i + offset + p * 2] = (uint)((a0 + a1 + MOD * 2 - a2 - a3) * irot2 % MOD);
                             v[i + offset + p * 3] = (uint)((a0 + MOD * 2 - a1 - tmp) * irot3 % MOD);
                         }
-                        if (s + 1 != (1 << (len - 2)))
-                        {
-                            irot = (uint)(irot * (ulong)irate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
-                        }
+                        irot = (uint)(irot * (ulong)irate3[LIB_BitUtil.LSB(~(uint)(s)) - 1] % MOD);
                     }
                     len -= 2;
                 }
@@ -1046,7 +1030,7 @@ namespace Library
                     }
                 }
                 nQ[h * k * 2] += 1;
-                ntt_trans(ref nQ);
+                ntt_trans(nQ);
                 for (var i = 0; i < h * k * 4; i += 2)
                 {
                     (nQ[i], nQ[i + 1]) = (nQ[i + 1], nQ[i]);
@@ -1055,7 +1039,7 @@ namespace Library
                 {
                     nR[i] = (uint)(nQ[i * 2] * (ulong)nQ[i * 2 + 1] % MOD);
                 }
-                ntt_trans_rev(ref nR);
+                ntt_trans_rev(nR);
                 nR[0] -= 1;
                 for (var i = 0; i < h * k; ++i)
                 {
@@ -1078,7 +1062,7 @@ namespace Library
                         nP[i * h * 2 + j * 2 + n % 2] = P[i * h / 2 + j];
                     }
                 }
-                ntt_trans(ref nP);
+                ntt_trans(nP);
                 for (var i = 1; i < h * k * 4; i <<= 1)
                 {
                     for (var j = 0; j < i / 2; ++j)
@@ -1090,7 +1074,7 @@ namespace Library
                 {
                     nP[i] = (uint)(nP[i] * (ulong)nQ[i] % MOD);
                 }
-                ntt_trans_rev(ref nP);
+                ntt_trans_rev(nP);
                 for (var i = 0; i < h * k; ++i)
                 {
                     P[i] = 0;
@@ -1120,6 +1104,248 @@ namespace Library
             }
             var P = rec(Q, n, h, k);
             ary = P.Take(deg).Reverse().ToArray();
+        }
+        void power_projection()
+        {
+            var n = ary.Length - 1;
+            var k = 1;
+            var h = 1;
+            var g = new uint[n + 1];
+            g[0] = 1;
+            var m = n;
+            while (h < n + 1) h <<= 1;
+            var P = new uint[h << 2];
+            var Q = new uint[h << 2];
+            for (int i = 0; i <= n; i++) P[i * k] = g[i];
+            for (int i = 0; i <= n; i++) Q[i * k] = (MOD - ary[i]) % MOD;
+            Q[0]++;
+            if (Q[0] == MOD) Q[0] = 0;
+            var inv2 = LIB_Mod998244353.Inverse(2);
+            var pr = 3U;
+            var buf = new uint[h];
+            var buf2 = new uint[h >> 1];
+            var nP = new uint[h << 2];
+            var nQ = new uint[h << 2];
+            var pAry = new uint[h * 3];
+            var qAry = new uint[h * 2];
+            var btr = new int[h];
+            var bufferBlock = h;
+            while (n > 0)
+            {
+                var w = (uint)LIB_Mod998244353.Pow(pr, (MOD - 1) / (2 * k));
+                var iw = LIB_Mod998244353.Inverse(w);
+                Action ntt_doubling = () =>
+                {
+                    Array.Copy(buf, buf2, k);
+                    var tmp = buf2.AsSpan().Slice(0, k);
+                    ntt_trans_rev(tmp);
+                    var c = 1U;
+                    for (var i = 0; i < k; ++i)
+                    {
+                        tmp[i] = (uint)((tmp[i] * (ulong)c) % MOD);
+                        c = (uint)((ulong)c * w % MOD);
+                    }
+                    ntt_trans(tmp);
+                    for (var i = 0; i < tmp.Length; ++i)
+                    {
+                        buf[tmp.Length + i] = tmp[i];
+                    }
+                };
+                var nPi = 0;
+                var nQi = 0;
+                for (var i = 0; i <= n; ++i)
+                {
+                    for (var j = 0; j < k; ++j)
+                    {
+                        buf[j] = P[i * k + j];
+                    }
+                    ntt_doubling();
+                    for (var j = 0; j < k * 2; ++j)
+                    {
+                        nP[nPi++] = buf[j];
+                    }
+                    for (var j = 0; j < k; ++j)
+                    {
+                        buf[j] = Q[i * k + j];
+                    }
+                    if (i == 0)
+                    {
+                        for (var j = 0; j < k; ++j)
+                        {
+                            if (buf[j] == 0) buf[j] = MOD - 1;
+                            else --buf[j];
+                        }
+                        ntt_doubling();
+                        for (var j = 0; j < k; ++j)
+                        {
+                            ++buf[j];
+                            if (buf[j] == MOD) buf[j] = 0;
+                        }
+                        for (var j = 0; j < k; ++j)
+                        {
+                            if (buf[k + j] == 0) buf[k + j] = MOD - 1;
+                            else --buf[k + j];
+                        }
+                    }
+                    else
+                    {
+                        ntt_doubling();
+                    }
+                    for (var j = 0; j < k * 2; ++j)
+                    {
+                        nQ[nQi++] = buf[j];
+                    }
+                }
+                nP.AsSpan().Slice(nPi).Clear();
+                nQ.AsSpan().Slice(nQi).Clear();
+                w = (uint)LIB_Mod998244353.Pow(pr, (MOD - 1) / (h * 2));
+                iw = LIB_Mod998244353.Inverse(w);
+                if (n % 2 == 1)
+                {
+                    var i = 0;
+                    var lg = LIB_BitUtil.LSB(h) - 1;
+                    while (i < h)
+                    {
+                        btr[i] = (btr[i >> 1] >> 1) + ((i & 1) << (lg - 1));
+                        ++i;
+                    }
+                }
+                for (var j = 0; j < k * 2; ++j)
+                {
+                    var p = pAry.AsSpan().Slice(0, h * 2);
+                    var q = qAry.AsSpan().Slice(0, h * 2);
+                    p.Clear();
+                    q.Clear();
+                    for (var i = 0; i < h; ++i)
+                    {
+                        p[i] = nP[i * k * 2 + j];
+                        q[i] = nQ[i * k * 2 + j];
+                    }
+                    ntt_trans(p);
+                    ntt_trans(q);
+                    for (var i = 0; i < h * 2; i += 2)
+                    {
+                        (q[i], q[i + 1]) = (q[i + 1], q[i]);
+                    }
+                    for (var i = 0; i < h * 2; ++i)
+                    {
+                        p[i] = (uint)((ulong)p[i] * q[i] % MOD);
+                    }
+                    for (var i = 0; i < h; ++i)
+                    {
+                        q[i] = (uint)((ulong)q[i * 2] * q[i * 2 + 1] % MOD);
+                    }
+                    if ((n & 1) != 0)
+                    {
+                        p.Slice(0, h).CopyTo(buf);
+                        var c = inv2;
+                        var newp = pAry.AsSpan().Slice(bufferBlock * 2, h);
+                        for (var btrI = 0; btrI < h; ++btrI)
+                        {
+                            var i = btr[btrI];
+                            newp[i] = (uint)(((long)p[i * 2] + MOD - p[i * 2 + 1]) * c % MOD);
+                            c = (uint)(c * iw % MOD);
+                        }
+                        p = newp;
+                    }
+                    else
+                    {
+                        for (var i = 0; i < h; ++i)
+                        {
+                            p[i] = (uint)((p[i * 2] + p[i * 2 + 1]) * inv2 % MOD);
+                        }
+                    }
+                    p = p.Slice(0, h);
+                    q = q.Slice(0, h);
+                    ntt_trans_rev(p);
+                    ntt_trans_rev(q);
+                    for (int i = 0; i < h; i++) nP[i * k * 2 + j] = p[i];
+                    for (int i = 0; i < h; i++) nQ[i * k * 2 + j] = q[i];
+                }
+                (P, nP) = (nP, P);
+                (Q, nQ) = (nQ, Q);
+                n /= 2;
+                h /= 2;
+                k *= 2;
+            }
+            Array.Resize(ref P, (n / 2 + 1) * k);
+            Array.Resize(ref Q, (n / 2 + 1) * k);
+            ntt_trans_rev(P);
+            ntt_trans_rev(Q);
+            var S = new LIB_FPS(k - 1);
+            var T = new LIB_FPS(k);
+            for (var i = 0; i < S.ary.Length; ++i)
+            {
+                S.ary[i] = P[i];
+            }
+            for (var i = 0; i < Q.Length; ++i)
+            {
+                T.ary[i] = Q[i];
+            }
+            if (--T[0] < 0) T[0] = MOD + T[0];
+            if (T[0] == 0)
+            {
+                for (var i = 0; i < ary.Length; ++i)
+                {
+                    ary[i] = S.ary[S.ary.Length - i - 1];
+                }
+            }
+            else
+            {
+                for (var i = 0; i < S.ary.Length / 2; ++i)
+                {
+                    (S.ary[i], S.ary[S.ary.Length - i - 1]) = (S.ary[S.ary.Length - i - 1], S.ary[i]);
+                }
+                if (++T[k] == MOD) T[k] = 0;
+                for (var i = 0; i < T.ary.Length / 2; ++i)
+                {
+                    (T.ary[i], T.ary[T.ary.Length - i - 1]) = (T.ary[T.ary.Length - i - 1], T.ary[i]);
+                }
+                T.Inverse_inplace();
+                S *= T;
+                for (var i = 0; i < ary.Length; ++i)
+                {
+                    ary[i] = S.ary[i];
+                }
+            }
+        }
+        /// <summary>
+        /// 逆関数
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_FPS CompositionalInverse()
+        {
+            var ret = Clone();
+            ret.CompositionalInverse_inplace();
+            return ret;
+        }
+        /// <summary>
+        /// 逆関数
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CompositionalInverse_inplace()
+        {
+            var n = ary.Length - 1;
+            var inv2 = LIB_Mod998244353.Inverse((MOD - n) % MOD);
+            var inv3 = LIB_Mod998244353.Inverse(ary[1]);
+            power_projection();
+            ary[0] = (uint)(ary[0] * n % MOD);
+            for (var k = 1; k <= n; ++k)
+            {
+                ary[k] = (uint)(ary[k] * LIB_Mod998244353.Inverse(k) % MOD * n % MOD);
+            }
+            for (var i = 0; i < ary.Length / 2; ++i)
+            {
+                (ary[i], ary[ary.Length - i - 1]) = (ary[ary.Length - i - 1], ary[i]);
+            }
+            var inv1 = LIB_Mod998244353.Inverse(ary[0]);
+            for (var i = 0; i < ary.Length; ++i) ary[i] = (uint)(ary[i] * inv1 % MOD);
+            Log_inplace();
+            for (var i = 0; i < ary.Length; ++i) ary[i] = (uint)(ary[i] * inv2 % MOD);
+            Exp_inplace();
+            for (var i = 0; i < ary.Length; ++i) ary[i] = (uint)(ary[i] * inv3 % MOD);
+            for (var i = ary.Length - 1; i > 0; --i) ary[i] = ary[i - 1];
+            ary[0] = 0;
         }
         public long this[long index]
         {
