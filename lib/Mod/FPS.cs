@@ -34,7 +34,11 @@ namespace Library
         {
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LIB_FPS(long K, long[] a) : this(K)
+        public LIB_FPS(long K, LIB_FPS a) : this(K, a.ary.Select(e => (long)e).ToArray())
+        {
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LIB_FPS(long K, Span<long> a) : this(K)
         {
             var ten = Min(ary.Length, a.Length);
             for (var i = 0; i < ten; ++i)
@@ -118,23 +122,47 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator /(long x, LIB_FPS y) => y.Inverse() * x;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno)
+        static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno) => BostanMori(N, nume.ary, deno.ary);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long BostanMori(long N, long[] nume, long[] deno) => BostanMori(N, nume.Select(e => (uint)(e % MOD)).ToArray(), deno.Select(e => (uint)(e % MOD)).ToArray());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public long BostanMori(long N, Span<uint> nume, Span<uint> deno)
         {
-            var p = nume.ary.Select(e => (long)e).ToArray();
-            var q = deno.ary.Select(e => (long)e).ToArray();
+            var maxLen = Max(nume.Length + deno.Length - 1, (deno.Length << 1) - 1);
+            var t = 1;
+            while (t < maxLen) t <<= 1;
+            var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(t << 2);
+            var bufSpan = buf.AsSpan();
+            bufSpan.Clear();
+            var pBuf = bufSpan.Slice(0, t);
+            var qBuf = bufSpan.Slice(t, t);
+            var flipQ = bufSpan.Slice(t * 2, t);
+            var tmpBuf = bufSpan.Slice(t * 3);
+            nume.CopyTo(pBuf);
+            deno.CopyTo(qBuf);
+            var plen = (long)nume.Length;
+            var qlen = (long)deno.Length;
             while (N > 0)
             {
-                var flipQ = q.ToArray();
-                for (var i = 1; i < flipQ.Length; i += 2) flipQ[i] = flipQ[i] == 0 ? 0 : MOD - flipQ[i];
-                var tmp = LIB_NTT.Multiply(p, flipQ);
-                p = new long[(tmp.Length + (~N & 1)) / 2];
-                for (var i = 0; i < p.Length; ++i) p[i] = tmp[i * 2 + (N & 1)];
-                tmp = LIB_NTT.Multiply(q, flipQ);
-                q = new long[(tmp.Length + 1) / 2];
-                for (var i = 0; i < q.Length; ++i) q[i] = tmp[i * 2];
-                N /= 2;
+                qBuf.CopyTo(flipQ);
+                for (var i = 1; i < qlen; i += 2) flipQ[i] = flipQ[i] == 0 ? 0 : MOD - flipQ[i];
+                LIB_NTT.ntt4(ref pBuf, ref tmpBuf);
+                LIB_NTT.ntt4(ref flipQ, ref tmpBuf);
+                for (var i = 0; i < pBuf.Length; ++i) pBuf[i] = (uint)((ulong)pBuf[i] * flipQ[i] % MOD);
+                LIB_NTT.ntt4(ref pBuf, ref tmpBuf, true);
+                { var ttt = pBuf; pBuf = tmpBuf; tmpBuf = ttt; }
+                plen = (plen + qlen - 1 + (~N & 1)) >> 1;
+                pBuf.Clear();
+                for (var i = 0; i < plen; ++i) pBuf[i] = tmpBuf[(int)(i * 2 + (N & 1))];
+                LIB_NTT.ntt4(ref qBuf, ref tmpBuf);
+                for (var i = 0; i < flipQ.Length; ++i) flipQ[i] = (uint)((ulong)qBuf[i] * flipQ[i] % MOD);
+                LIB_NTT.ntt4(ref flipQ, ref tmpBuf, true);
+                qBuf.Clear();
+                for (var i = 0; i < qlen; ++i) qBuf[i] = flipQ[i << 1];
+                N >>= 1;
             }
-            return p[0] * LIB_Mod998244353.Inverse(q[0]) % MOD;
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf);
+            return pBuf[0] * LIB_Mod998244353.Inverse(qBuf[0]) % MOD;
         }
         /// <summary>
         /// べき乗
