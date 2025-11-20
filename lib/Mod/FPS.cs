@@ -15,19 +15,23 @@ namespace Library
     {
         const uint MOD = 998244353;
         uint[] ary;
+        LIB_Dictionary<int, uint> dict;
+        bool isSparse;
         public int K
         {
             get;
             private set;
         }
+        public long Count => isSparse ? dict.Count : K + 1;
         public delegate LIB_FPS FPSBuilder(params long[] a);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public FPSBuilder MakeBuilder(long K) => new FPSBuilder(a => new LIB_FPS(K, a));
+        static public FPSBuilder MakeBuilder(long K) => new(a => new LIB_FPS(K, a));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPS(long K)
         {
             this.K = (int)K;
-            ary = new uint[K + 1];
+            dict = new LIB_Dictionary<int, uint>();
+            isSparse = true;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPS(long K, int[] a) : this(K, a.Select(e => (long)e).ToArray())
@@ -40,30 +44,54 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPS(long K, Span<long> a) : this(K)
         {
-            var ten = Min(ary.Length, a.Length);
-            for (var i = 0; i < ten; ++i)
-            {
-                var val = a[i] % MOD;
-                if (val < 0) val += MOD;
-                ary[i] = (uint)val;
-            }
+            var ten = Min(K + 1, a.Length);
+            for (var i = 0; i < ten; ++i) this[i] = a[i];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPS Clone()
         {
             var ret = new LIB_FPS(K);
-            ret.ary = (uint[])ary.Clone();
+            ret.isSparse = isSparse;
+            if (isSparse)
+            {
+                foreach (var item in dict) ret.dict[item.Key] = item.Value;
+            }
+            else
+            {
+                ret.ary = (uint[])ary.Clone();
+            }
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator +(LIB_FPS x, LIB_FPS y)
         {
             var ret = new LIB_FPS(Max(x.K, y.K));
-            for (var i = 0; i < x.ary.Length; ++i) ret.ary[i] += x.ary[i];
-            for (var i = 0; i < y.ary.Length; ++i)
+            if (x.isSparse)
             {
-                var sum = ret.ary[i] + y.ary[i];
-                ret.ary[i] = sum >= MOD ? sum - MOD : sum;
+                foreach (var item in x.dict)
+                {
+                    ret[item.Key] = item.Value;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < x.ary.Length; ++i) ret[i] = x.ary[i];
+            }
+            if (y.isSparse)
+            {
+                foreach (var item in y.dict)
+                {
+                    var sum = ret[item.Key] + item.Value;
+                    ret[item.Key] = sum >= MOD ? sum - MOD : sum;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < y.ary.Length; ++i)
+                {
+                    var sum = ret[i] + y.ary[i];
+                    ret[i] = sum >= MOD ? sum - MOD : sum;
+                }
             }
             return ret;
         }
@@ -71,9 +99,7 @@ namespace Library
         static public LIB_FPS operator +(LIB_FPS x, long y)
         {
             var ret = x.Clone();
-            var sum = ret[0] + y;
-            sum %= MOD;
-            ret[0] = sum < 0 ? sum + MOD : sum;
+            ret[0] += y;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,11 +108,32 @@ namespace Library
         static public LIB_FPS operator -(LIB_FPS x, LIB_FPS y)
         {
             var ret = new LIB_FPS(Max(x.K, y.K));
-            for (var i = 0; i < x.ary.Length; ++i) ret.ary[i] += x.ary[i];
-            for (var i = 0; i < y.ary.Length; ++i)
+            if (x.isSparse)
             {
-                var sum = ret.ary[i] + MOD - y.ary[i];
-                ret.ary[i] = sum >= MOD ? sum - MOD : sum;
+                foreach (var item in x.dict)
+                {
+                    ret[item.Key] = item.Value;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < x.ary.Length; ++i) ret[i] = x.ary[i];
+            }
+            if (y.isSparse)
+            {
+                foreach (var item in y.dict)
+                {
+                    var sum = ret[item.Key] - item.Value;
+                    ret[item.Key] = sum < 0 ? sum + MOD : sum;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < y.ary.Length; ++i)
+                {
+                    var sum = ret[i] - y.ary[i];
+                    ret[i] = sum < 0 ? sum + MOD : sum;
+                }
             }
             return ret;
         }
@@ -94,9 +141,7 @@ namespace Library
         static public LIB_FPS operator -(LIB_FPS x, long y)
         {
             var ret = x.Clone();
-            var sum = ret[0] - y;
-            sum %= MOD;
-            ret[0] = sum < 0 ? sum + MOD : sum;
+            ret[0] -= y;
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -104,25 +149,174 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator *(LIB_FPS x, LIB_FPS y)
         {
-            return new LIB_FPS(Max(x.K, y.K), LIB_NTT.Multiply(x.ary.Select(e => (long)e).ToArray(), y.ary.Select(e => (long)e).ToArray()));
+            var maxK = Max(x.K, y.K);
+            var ret = new LIB_FPS(maxK);
+            if (x.Count * y.Count < maxK * 10)
+            {
+                if (x.isSparse && y.isSparse)
+                {
+                    foreach (var item in x.dict)
+                    {
+                        foreach (var item2 in y.dict)
+                        {
+                            if (item.Key + item2.Key > maxK) continue;
+                            ret[item.Key + item2.Key] += (long)item.Value * item2.Value;
+                        }
+                    }
+                }
+                else if (!x.isSparse && !y.isSparse)
+                {
+                    for (var i = 0; i < x.ary.Length; ++i)
+                    {
+                        for (var j = 0; j < y.ary.Length; ++j)
+                        {
+                            if (i + j > maxK) continue;
+                            ret[i + j] += (long)x.ary[i] * y.ary[j];
+                        }
+                    }
+                }
+                else
+                {
+                    if (!x.isSparse) (x, y) = (y, x);
+                    foreach (var item in x.dict)
+                    {
+                        for (var j = 0; j < y.ary.Length; ++j)
+                        {
+                            if (item.Key + j > maxK) continue;
+                            ret[item.Key + j] += (long)item.Value * y.ary[j];
+                        }
+                    }
+                }
+            }
+            else
+            {
+                var maxLen = x.K + y.K + 1;
+                var t = 1;
+                while (t < maxLen) t <<= 1;
+                var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(t * 3);
+                var bufSpan = buf.AsSpan();
+                bufSpan.Clear();
+                var xBuf = bufSpan.Slice(0, t);
+                var yBuf = bufSpan.Slice(t, t);
+                var tmp = bufSpan.Slice(t * 2, t);
+                if (x.isSparse)
+                {
+                    foreach (var item in x.dict)
+                    {
+                        xBuf[item.Key] = item.Value;
+                    }
+                }
+                else
+                {
+                    x.ary.CopyTo(xBuf);
+                }
+                if (y.isSparse)
+                {
+                    foreach (var item in y.dict)
+                    {
+                        yBuf[item.Key] = item.Value;
+                    }
+                }
+                else
+                {
+                    y.ary.CopyTo(yBuf);
+                }
+                LIB_NTT.ntt4(ref xBuf, ref tmp);
+                LIB_NTT.ntt4(ref yBuf, ref tmp);
+                for (var i = 0; i < xBuf.Length; ++i) xBuf[i] = (uint)((ulong)xBuf[i] * yBuf[i] % MOD);
+                LIB_NTT.ntt4(ref xBuf, ref tmp, true);
+                for (var i = 0; i <= ret.K; ++i) ret[i] = xBuf[i];
+                System.Buffers.ArrayPool<uint>.Shared.Return(buf);
+            }
+            return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator *(LIB_FPS x, long y)
         {
             var ret = x.Clone();
-            for (var i = 0; i < ret.ary.Length; ++i) ret.ary[i] = (uint)((MOD + y % MOD) * ret.ary[i] % MOD);
+            var yd = MOD + y % MOD;
+            for (var i = 0; i <= ret.K; ++i) ret[i] = (uint)(yd * ret[i] % MOD);
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator *(long x, LIB_FPS y) => y * x;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator /(LIB_FPS x, LIB_FPS y) => x * y.Inverse();
+        static public LIB_FPS operator /(LIB_FPS x, LIB_FPS y)
+        {
+            if (y.isSparse)
+            {
+                var maxK = Max(x.K, y.K);
+                var ret = new LIB_FPS(maxK);
+                var xary = new uint[maxK + 1];
+                if (x.isSparse)
+                {
+                    foreach (var item in x.dict)
+                    {
+                        xary[item.Key] = item.Value;
+                    }
+                }
+                else
+                {
+                    x.ary.CopyTo(xary.AsSpan());
+                }
+                var ydict = y.dict.OrderBy(e => e.Key).ToArray();
+                var inv0 = LIB_Mod998244353.Inverse(y[0]);
+                for (var i = 0; i < xary.Length; ++i)
+                {
+                    var c = (MOD - xary[i] * inv0 % MOD) % MOD;
+                    ret[i] = c == 0 ? 0 : MOD - c;
+                    foreach (var item in ydict)
+                    {
+                        if (item.Key + i >= xary.Length) break;
+                        xary[item.Key + i] = (uint)(xary[item.Key + i] + c * item.Value % MOD) % MOD;
+                    }
+                }
+                return ret;
+            }
+            else
+            {
+                return x * y.Inverse();
+            }
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator /(LIB_FPS x, long y) => x * LIB_Mod998244353.Inverse(y);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public LIB_FPS operator /(long x, LIB_FPS y) => y.Inverse() * x;
+        static public LIB_FPS operator /(long x, LIB_FPS y)
+        {
+            if (y.isSparse)
+            {
+                var maxK = y.K;
+                var ret = new LIB_FPS(maxK);
+                var xary = new uint[maxK + 1];
+                xary[0] = (uint)(MOD + x % MOD) % MOD;
+                var ydict = y.dict.OrderBy(e => e.Key).ToArray();
+                var inv0 = LIB_Mod998244353.Inverse(y[0]);
+                for (var i = 0; i < xary.Length; ++i)
+                {
+                    var c = (MOD - xary[i] * inv0 % MOD) % MOD;
+                    ret[i] = c == 0 ? 0 : MOD - c;
+                    foreach (var item in ydict)
+                    {
+                        if (item.Key + i >= xary.Length) break;
+                        xary[item.Key + i] = (uint)(xary[item.Key + i] + c * item.Value % MOD) % MOD;
+                    }
+                }
+                return ret;
+            }
+            else
+            {
+                return y.Inverse() * x;
+            }
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno) => BostanMori(N, nume.ary, deno.ary);
+        static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno)
+        {
+            var p = new long[nume.K + 1];
+            for (var i = 0; i < p.Length; ++i) p[i] = nume[i];
+            var q = new long[deno.K + 1];
+            for (var i = 0; i < q.Length; ++i) q[i] = deno[i];
+            return BostanMori(N, p, q);
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long BostanMori(long N, long[] nume, long[] deno) => BostanMori(N, nume.Select(e => (uint)(e % MOD)).ToArray(), deno.Select(e => (uint)(e % MOD)).ToArray());
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -180,45 +374,62 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Pow_inplace(long M)
         {
-            var arySpan = ary.AsSpan();
             if (M == 0)
             {
-                arySpan[1..].Clear();
-                arySpan[0] = 1;
+                ary = null;
+                isSparse = true;
+                dict.Clear();
+                dict[0] = 1;
                 return;
             }
             if (M == 1) return;
-            if (ary[0] == 1)
+            if (this[0] == 1)
             {
                 Pow_1_inplace(M);
                 return;
             }
             var l = 0;
-            while (l < arySpan.Length && arySpan[l] == 0) ++l;
-            if (l == arySpan.Length || l > (arySpan.Length - 1) / M)
+            while (l <= K && this[l] == 0) ++l;
+            if (l == K + 1 || l > K / M)
             {
-                arySpan.Clear();
+                ary = null;
+                isSparse = true;
+                dict.Clear();
                 return;
             }
-            var powc = LIB_Mod998244353.Pow(arySpan[l], M);
-            var invc = LIB_Mod998244353.Inverse(arySpan[l]);
+            var powc = LIB_Mod998244353.Pow(this[l], M);
+            var invc = LIB_Mod998244353.Inverse(this[l]);
             var g = new LIB_FPS(K - l);
-            var garySpan = g.ary.AsSpan();
-            for (var i = l; i < arySpan.Length; ++i) garySpan[i - l] = (uint)(arySpan[i] * invc % MOD);
-
-            var dat = new List<(int idx, long val)>();
-            for (var i = 1; i < garySpan.Length; ++i) if (garySpan[i] != 0) dat.Add((i, garySpan[i]));
+            if (isSparse)
+            {
+                foreach (var item in dict)
+                {
+                    if (item.Key < l) continue;
+                    g[item.Key - l] = (uint)(item.Value * invc % MOD);
+                }
+            }
+            else
+            {
+                for (var i = l; i <= K; ++i) g[i - l] = (uint)(ary[i] * invc % MOD);
+            }
 
             var ten = l * (int)M;
             M %= MOD;
-            if (dat.Count > 100)
+            if (g.Count > 100)
             {
+                g.PromoteToDense();
+                var garySpan = g.ary.AsSpan();
                 g.Log_inplace_dense();
                 for (var i = 0; i < garySpan.Length; ++i) garySpan[i] = (uint)(M * garySpan[i] % MOD);
                 g.Exp_inplace_dense();
             }
             else
             {
+                g.PromoteToDense();
+                var dat = new List<(int idx, long val)>();
+                var garySpan = g.ary.AsSpan();
+                for (var i = 1; i < garySpan.Length; ++i) if (garySpan[i] != 0) dat.Add((i, garySpan[i]));
+
                 var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(garySpan.Length);
                 var inv = invBuf.AsSpan();
                 inv[1] = 1;
@@ -240,8 +451,11 @@ namespace Library
                 }
                 System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
             }
-            for (var i = arySpan.Length - 1; i >= ten; --i) arySpan[i] = (uint)(powc * garySpan[i - ten] % MOD);
-            arySpan.Slice(0, ten).Clear();
+
+            ary = null;
+            isSparse = true;
+            dict.Clear();
+            for (var i = K; i >= ten; --i) this[i] = (uint)(powc * g.ary[i - ten] % MOD);
         }
         /// <summary>
         /// べき乗（a0 == 1）
@@ -249,36 +463,53 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Pow_1_inplace(long M)
         {
-            var arySpan = ary.AsSpan();
-
-            var dat = new List<(int idx, long val)>();
-            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
-
-            if (dat.Count > 100)
+            if (Count > 100)
             {
+                PromoteToDense();
+                var arySpan = ary.AsSpan();
                 Log_inplace_dense();
                 for (var i = 0; i < arySpan.Length; ++i) arySpan[i] = (uint)(M * arySpan[i] % MOD);
                 Exp_inplace_dense();
             }
             else
             {
-                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
+                var dat = new List<(int idx, long val)>();
+                if (isSparse)
+                {
+                    foreach (var item in dict)
+                    {
+                        dat.Add((item.Key, item.Value));
+                    }
+                }
+                else
+                {
+                    var arySpan = ary.AsSpan();
+                    for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
+                }
+
+                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(K + 1);
                 var inv = invBuf.AsSpan();
                 inv[1] = 1;
                 for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
-                arySpan.Clear();
-                arySpan[0] = 1;
-                for (var n = 1; n < arySpan.Length; ++n)
+                var tmpArray = System.Buffers.ArrayPool<long>.Shared.Rent(K + 1);
+                tmpArray[0] = 1;
+                for (var n = 1; n <= K; ++n)
                 {
+                    tmpArray[n] = 0;
                     foreach (var item in dat)
                     {
                         if (item.idx > n) break;
-                        var t = item.val * arySpan[n - item.idx] % MOD;
-                        arySpan[n] = (uint)((arySpan[n] + t * ((M * item.idx % MOD) + MOD - n + item.idx)) % MOD);
+                        var t = item.val * tmpArray[n - item.idx] % MOD;
+                        tmpArray[n] = (uint)((tmpArray[n] + t * ((M * item.idx % MOD) + MOD - n + item.idx)) % MOD);
                     }
-                    arySpan[n] = (uint)(arySpan[n] * inv[n] % MOD);
+                    tmpArray[n] = (uint)(tmpArray[n] * inv[n] % MOD);
                 }
+                isSparse = true;
+                ary = null;
+                dict.Clear();
+                for (var i = 0; i <= K; ++i) this[i] = tmpArray[i];
                 System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
+                System.Buffers.ArrayPool<long>.Shared.Return(tmpArray);
             }
         }
         /// <summary>
@@ -297,14 +528,16 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exp_inplace()
         {
-            var dat = new List<(int idx, long val)>();
-            var arySpan = ary.AsSpan();
-            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i - 1, (long)i * arySpan[i] % MOD));
-            if (dat.Count > 320)
+            if (Count > 320)
             {
+                PromoteToDense();
                 Exp_inplace_dense();
                 return;
             }
+            PromoteToDense();
+            var dat = new List<(int idx, long val)>();
+            var arySpan = ary.AsSpan();
+            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i - 1, (long)i * arySpan[i] % MOD));
 
             // sparse
             var inv = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length + 1);
@@ -461,17 +694,20 @@ namespace Library
         {
             if (K == 0)
             {
-                ary[0] = 0;
+                this[0] = 0;
                 return;
             }
-            var dat = new List<(int idx, uint val)>();
-            var arySpan = ary.AsSpan();
-            for (var i = 1; i < ary.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
-            if (dat.Count > 200)
+            if (Count > 200)
             {
+                PromoteToDense();
                 Log_inplace_dense();
                 return;
             }
+            PromoteToDense();
+
+            var dat = new List<(int idx, uint val)>();
+            var arySpan = ary.AsSpan();
+            for (var i = 1; i < ary.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
 
             // sparse
             var gBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length - 1);
@@ -541,11 +777,18 @@ namespace Library
         {
             if (K == 0)
             {
-                ary[0] = 0;
+                this[0] = 0;
                 return;
             }
-            for (var i = 1L; i < ary.Length; ++i) ary[i - 1] = (uint)(i * ary[i] % MOD);
-            ary[ary.Length - 1] = 0;
+            if (isSparse)
+            {
+
+            }
+            else
+            {
+                for (var i = 1L; i < ary.Length; ++i) ary[i - 1] = (uint)(i * ary[i] % MOD);
+                ary[ary.Length - 1] = 0;
+            }
         }
         /// <summary>
         /// 積分
@@ -563,13 +806,20 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Integral_inplace()
         {
-            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(ary.Length);
-            var inv = invBuf.AsSpan();
-            inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
-            for (var i = ary.Length - 1; i > 0; --i) ary[i] = (uint)(inv[i] * ary[i - 1] % MOD);
-            ary[0] = 0;
-            System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
+            if (isSparse)
+            {
+
+            }
+            else
+            {
+                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(ary.Length);
+                var inv = invBuf.AsSpan();
+                inv[1] = 1;
+                for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
+                for (var i = ary.Length - 1; i > 0; --i) ary[i] = (uint)(inv[i] * ary[i - 1] % MOD);
+                ary[0] = 0;
+                System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
+            }
         }
         /// <summary>
         /// 逆元 (a0 != 0)
@@ -587,14 +837,17 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Inverse_inplace()
         {
-            var arySpan = ary.AsSpan();
-            var dat = new List<(int idx, long val)>(arySpan.Length);
-            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
-            if (dat.Count > 160)
+            if (Count > 160)
             {
+                PromoteToDense();
                 Inverse_inplace_dense();
                 return;
             }
+            PromoteToDense();
+
+            var arySpan = ary.AsSpan();
+            var dat = new List<(int idx, long val)>(arySpan.Length);
+            for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
 
             // sparse
             arySpan[0] = (uint)LIB_Mod998244353.Inverse(arySpan[0]);
@@ -669,20 +922,28 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Sqrt_inplace()
         {
-            var arySpan = ary.AsSpan();
-            var d = arySpan.Length;
-            var nonZeroCnt = 0;
-            for (var i = arySpan.Length - 1; i >= 0; --i)
+            var d = K + 1;
+            var nonZeroCnt = 0L;
+            if (isSparse)
             {
-                if (arySpan[i] != 0)
+                nonZeroCnt = Count;
+                if (nonZeroCnt > 0) d = dict.Keys.Min();
+            }
+            else
+            {
+                var arySpan = ary.AsSpan();
+                for (var i = arySpan.Length - 1; i >= 0; --i)
                 {
-                    d = i;
-                    ++nonZeroCnt;
+                    if (arySpan[i] != 0)
+                    {
+                        d = i;
+                        ++nonZeroCnt;
+                    }
                 }
             }
-            if (d == arySpan.Length) return true;
+            if (d == K + 1) return true;
             if ((d & 1) != 0) return false;
-            var y = arySpan[d];
+            var y = this[d];
             var x = y;
             {
                 var k = (MOD - 1) / 2;
@@ -728,10 +989,23 @@ namespace Library
                 }
             }
             var c = LIB_Mod998244353.Inverse(y);
-            var gLength = arySpan.Length - d;
-            for (var i = d; i < arySpan.Length; ++i)
+            var gLength = K - d + 1;
+            if (isSparse)
             {
-                arySpan[i - d] = (uint)(arySpan[i] * c % MOD);
+                var loop = dict.ToArray();
+                dict.Clear();
+                foreach (var item in loop)
+                {
+                    dict[item.Key - d] = (uint)(item.Value * c % MOD);
+                }
+            }
+            else
+            {
+                var arySpan = ary.AsSpan();
+                for (var i = d; i < arySpan.Length; ++i)
+                {
+                    arySpan[i - d] = (uint)(arySpan[i] * c % MOD);
+                }
             }
 
             var maxlen = 1;
@@ -740,87 +1014,93 @@ namespace Library
             var rSpan = buf1.AsSpan().Slice(0, maxlen);
             rSpan.Clear();
             rSpan[0] = 1;
-
-            if (nonZeroCnt <= 200)
             {
-                Pow_1_inplace(499122177);
-                arySpan.Slice(0, gLength).CopyTo(rSpan);
-            }
-            else
-            {
-                for (var i = 0; i < gLength; ++i) arySpan[i] = (uint)(arySpan[i] * 499122177L % MOD);
-                var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 5);
-                var buf = buf2.AsSpan();
-                var invRSpan = buf1.AsSpan().Slice(maxlen, maxlen);
-                invRSpan.Clear();
-                invRSpan[0] = 1;
-                var len = 1;
-                Span<uint> halfInv1 = null;
-                Span<uint> halfInv2 = null;
-                Span<uint> convTmpSpan = null;
-                while (len < gLength)
+                Span<uint> arySpan;
+                if (nonZeroCnt <= 200)
                 {
-                    var nextlen = len << 1;
-                    if (len >= 2)
-                    {
-                        var halflen = len >> 1;
-                        rSpan.Slice(0, len).CopyTo(halfInv1);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
-                        for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
-                        for (var i = 0; i < halflen; ++i) halfInv1[i] = 0;
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
-                        for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
-                        for (var i = halflen; i < len; ++i) invRSpan[i] = halfInv1[i] == 0 ? 0 : MOD - halfInv1[i];
-                    }
-                    convTmpSpan = buf.Slice(0, nextlen);
-                    halfInv1 = buf.Slice(maxlen, nextlen);
-                    halfInv2 = buf.Slice(maxlen * 2, nextlen);
-                    halfInv2.Clear();
-                    invRSpan.Slice(0, len).CopyTo(halfInv2);
-                    LIB_NTT.ntt4(ref halfInv2, ref convTmpSpan);
-                    {
-                        rSpan.Slice(0, nextlen).CopyTo(halfInv1);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
-                        for (var i = 0; i < nextlen; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
-                        for (var i = 0; i < len; ++i) halfInv1[i] = 0;
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
-                        for (var i = 0; i < nextlen; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
-                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
-                        for (var i = len; i < nextlen; ++i) invRSpan[i] = halfInv1[i] == 0 ? 0 : MOD - halfInv1[i];
-                    }
-                    invRSpan.Slice(0, nextlen).CopyTo(halfInv1);
-                    LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
-
-                    var frontHalf = buf.Slice(maxlen * 3, nextlen);
-                    var lastHalf = buf.Slice(maxlen * 4, nextlen);
-                    frontHalf.Clear();
-                    lastHalf.Clear();
-                    arySpan.Slice(0, len).CopyTo(frontHalf);
-                    arySpan.Slice(len, Min(len, arySpan.Length - len)).CopyTo(lastHalf.Slice(len));
-                    LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan);
-                    LIB_NTT.ntt4(ref lastHalf, ref convTmpSpan);
-
-                    for (var i = 0; i < nextlen; ++i)
-                    {
-                        frontHalf[i] = (uint)(((long)frontHalf[i] * halfInv1[i] + (long)lastHalf[i] * halfInv2[i]) % MOD);
-                    }
-                    LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan, true);
-                    frontHalf.Slice(len, len).CopyTo(rSpan.Slice(len));
-                    len = nextlen;
+                    Pow_1_inplace(499122177);
+                    PromoteToDense();
+                    arySpan = ary.AsSpan();
+                    arySpan.Slice(0, gLength).CopyTo(rSpan);
                 }
-                System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
-            }
+                else
+                {
+                    PromoteToDense();
+                    arySpan = ary.AsSpan();
+                    for (var i = 0; i < gLength; ++i) arySpan[i] = (uint)(arySpan[i] * 499122177L % MOD);
+                    var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 5);
+                    var buf = buf2.AsSpan();
+                    var invRSpan = buf1.AsSpan().Slice(maxlen, maxlen);
+                    invRSpan.Clear();
+                    invRSpan[0] = 1;
+                    var len = 1;
+                    Span<uint> halfInv1 = null;
+                    Span<uint> halfInv2 = null;
+                    Span<uint> convTmpSpan = null;
+                    while (len < gLength)
+                    {
+                        var nextlen = len << 1;
+                        if (len >= 2)
+                        {
+                            var halflen = len >> 1;
+                            rSpan.Slice(0, len).CopyTo(halfInv1);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                            for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                            for (var i = 0; i < halflen; ++i) halfInv1[i] = 0;
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                            for (var i = 0; i < len; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                            for (var i = halflen; i < len; ++i) invRSpan[i] = halfInv1[i] == 0 ? 0 : MOD - halfInv1[i];
+                        }
+                        convTmpSpan = buf.Slice(0, nextlen);
+                        halfInv1 = buf.Slice(maxlen, nextlen);
+                        halfInv2 = buf.Slice(maxlen * 2, nextlen);
+                        halfInv2.Clear();
+                        invRSpan.Slice(0, len).CopyTo(halfInv2);
+                        LIB_NTT.ntt4(ref halfInv2, ref convTmpSpan);
+                        {
+                            rSpan.Slice(0, nextlen).CopyTo(halfInv1);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                            for (var i = 0; i < nextlen; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                            for (var i = 0; i < len; ++i) halfInv1[i] = 0;
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
+                            for (var i = 0; i < nextlen; ++i) halfInv1[i] = (uint)((ulong)halfInv1[i] * halfInv2[i] % MOD);
+                            LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan, true);
+                            for (var i = len; i < nextlen; ++i) invRSpan[i] = halfInv1[i] == 0 ? 0 : MOD - halfInv1[i];
+                        }
+                        invRSpan.Slice(0, nextlen).CopyTo(halfInv1);
+                        LIB_NTT.ntt4(ref halfInv1, ref convTmpSpan);
 
-            arySpan.Clear();
-            for (var i = 0; i < gLength; ++i)
-            {
-                arySpan[i + d / 2] = (uint)((long)rSpan[i] * x % MOD);
+                        var frontHalf = buf.Slice(maxlen * 3, nextlen);
+                        var lastHalf = buf.Slice(maxlen * 4, nextlen);
+                        frontHalf.Clear();
+                        lastHalf.Clear();
+                        arySpan.Slice(0, len).CopyTo(frontHalf);
+                        arySpan.Slice(len, Min(len, arySpan.Length - len)).CopyTo(lastHalf.Slice(len));
+                        LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan);
+                        LIB_NTT.ntt4(ref lastHalf, ref convTmpSpan);
+
+                        for (var i = 0; i < nextlen; ++i)
+                        {
+                            frontHalf[i] = (uint)(((long)frontHalf[i] * halfInv1[i] + (long)lastHalf[i] * halfInv2[i]) % MOD);
+                        }
+                        LIB_NTT.ntt4(ref frontHalf, ref convTmpSpan, true);
+                        frontHalf.Slice(len, len).CopyTo(rSpan.Slice(len));
+                        len = nextlen;
+                    }
+                    System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
+                }
+
+                arySpan.Clear();
+                for (var i = 0; i < gLength; ++i)
+                {
+                    arySpan[i + d / 2] = (uint)((long)rSpan[i] * x % MOD);
+                }
+                System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
+                return true;
             }
-            System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
-            return true;
         }
         /// <summary>
         /// 平行移動
@@ -838,6 +1118,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TaylorShift_inplace(long c)
         {
+            PromoteToDense();
             var arySpan = ary.AsSpan();
 
             var len = 1;
@@ -1027,17 +1308,19 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Composition_inplace(LIB_FPS g)
         {
+            PromoteToDense();
             Func<uint[], int, int, int, uint[]> rec = null;
             rec = (Q, n, h, k) =>
             {
                 if (n == 0)
                 {
                     var t = new LIB_FPS(k);
+                    t.PromoteToDense();
                     for (var i = 0; i < k; ++i)
                     {
-                        t[k - i] = Q[i];
+                        t.ary[k - i] = Q[i];
                     }
-                    t[0] = 1;
+                    t.ary[0] = 1;
                     t.Inverse_inplace();
                     var u = LIB_NTT.Multiply(ary.Select(e => (long)e).ToArray(), t.ary.Reverse().Select(e => (long)e).ToArray());
                     var P2 = new uint[h * k];
@@ -1119,17 +1402,26 @@ namespace Library
                 System.Buffers.ArrayPool<uint>.Shared.Return(buf);
                 return P;
             };
-            var deg = Max(ary.Length, g.ary.Length);
+            var deg = Max(K, g.K) + 1;
             Array.Resize(ref ary, deg);
-            Array.Resize(ref g.ary, deg);
             var n = deg - 1;
             var h = 1;
             var k = 1;
             while (h < n + 1) h <<= 1;
             var Q = new uint[h * k];
-            for (var i = 0; i <= n; ++i)
+            if (g.isSparse)
             {
-                Q[i] = (uint)(MOD - g[i]) % MOD;
+                foreach (var item in g.dict)
+                {
+                    Q[item.Key] = (MOD - item.Value) % MOD;
+                }
+            }
+            else
+            {
+                for (var i = 0; i <= n; ++i)
+                {
+                    Q[i] = (MOD - g.ary[i]) % MOD;
+                }
             }
             var P = rec(Q, n, h, k);
             ary = P.Take(deg).Reverse().ToArray();
@@ -1298,38 +1590,38 @@ namespace Library
             ntt_trans_rev(Q);
             var S = new LIB_FPS(k - 1);
             var T = new LIB_FPS(k);
-            for (var i = 0; i < S.ary.Length; ++i)
+            for (var i = 0; i <= S.K; ++i)
             {
-                S.ary[i] = P[i];
+                S[i] = P[i];
             }
             for (var i = 0; i < Q.Length; ++i)
             {
-                T.ary[i] = Q[i];
+                T[i] = Q[i];
             }
             if (--T[0] < 0) T[0] = MOD + T[0];
             if (T[0] == 0)
             {
                 for (var i = 0; i < ary.Length; ++i)
                 {
-                    ary[i] = S.ary[S.ary.Length - i - 1];
+                    ary[i] = (uint)S[S.K - i];
                 }
             }
             else
             {
-                for (var i = 0; i < S.ary.Length / 2; ++i)
+                for (var i = 0; i < (S.K + 1) / 2; ++i)
                 {
-                    (S.ary[i], S.ary[S.ary.Length - i - 1]) = (S.ary[S.ary.Length - i - 1], S.ary[i]);
+                    (S[i], S[S.K - i]) = (S[S.K - i], S[i]);
                 }
                 if (++T[k] == MOD) T[k] = 0;
-                for (var i = 0; i < T.ary.Length / 2; ++i)
+                for (var i = 0; i < (T.K + 1) / 2; ++i)
                 {
-                    (T.ary[i], T.ary[T.ary.Length - i - 1]) = (T.ary[T.ary.Length - i - 1], T.ary[i]);
+                    (T[i], T[T.K - i]) = (T[T.K - i], T[i]);
                 }
                 T.Inverse_inplace();
                 S *= T;
                 for (var i = 0; i < ary.Length; ++i)
                 {
-                    ary[i] = S.ary[i];
+                    ary[i] = (uint)S[i];
                 }
             }
         }
@@ -1349,6 +1641,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CompositionalInverse_inplace()
         {
+            PromoteToDense();
             var n = ary.Length - 1;
             var inv2 = LIB_Mod998244353.Inverse((MOD - n) % MOD);
             var inv3 = LIB_Mod998244353.Inverse(ary[1]);
@@ -1374,16 +1667,53 @@ namespace Library
         public long this[long index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (long)ary[index]; }
+            get { return isSparse ? (dict.ContainsKey((int)index) ? dict[(int)index] : 0) : ary[index]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 var v = value % MOD;
-                ary[index] = (uint)(v < 0 ? v + MOD : v);
+                if (isSparse)
+                {
+                    if (value == 0)
+                    {
+                        if (dict.ContainsKey((int)index)) dict.Remove((int)index);
+                    }
+                    else
+                    {
+                        dict[(int)index] = (uint)(v < 0 ? v + MOD : v);
+                    }
+                    if (dict.Count > K / 10) PromoteToDense();
+                }
+                else
+                {
+                    ary[index] = (uint)(v < 0 ? v + MOD : v);
+                }
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string Join(string separator = "") => string.Join(separator, ary);
+        void PromoteToDense()
+        {
+            if (!isSparse) return;
+            isSparse = false;
+            ary = new uint[K + 1];
+            foreach (var item in dict)
+            {
+                ary[item.Key] = item.Value;
+            }
+            dict.Clear();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string Join(string separator = "")
+        {
+            if (isSparse)
+            {
+                return string.Join(separator, Enumerable.Range(0, K + 1).Select(e => dict.ContainsKey(e) ? dict[e] : 0));
+            }
+            else
+            {
+                return string.Join(separator, ary);
+            }
+        }
     }
     ////end
 }

@@ -128,7 +128,7 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static uint[] Multiply3(uint[] a, uint[] b) { var n = a.Length + b.Length - 1; var t = 1; while (t < n) t <<= 1; Span<uint> na = new uint[t]; Span<uint> nb = new uint[t]; ref uint naref = ref na[0]; ref uint nbref = ref nb[0]; Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref naref), ref Unsafe.As<uint, byte>(ref a[0]), (uint)(a.Length << 2)); Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref nbref), ref Unsafe.As<uint, byte>(ref b[0]), (uint)(b.Length << 2)); ntt3(ref na); ntt3(ref nb); naref = ref na[0]; nbref = ref nb[0]; for (var i = 0; i < t; ++i) { ref uint narefi = ref Unsafe.Add(ref naref, i); narefi = mul3(narefi, Unsafe.Add(ref nbref, i)); } ntt3(ref na, true); var ret = new uint[n]; naref = ref na[0]; ref uint retref = ref ret[0]; for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i); return ret; }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static long[] MultiplySparse(long[] a, long[] b, long mod = -1)
+        static long[] MultiplySparse(Span<long> a, Span<long> b, long mod = -1)
         {
             if (mod == -1)
             {
@@ -145,10 +145,10 @@ namespace Library
                 {
                     foreach (var item2 in datb)
                     {
-                        ret[item.idx + item2.idx] += item.val * item2.val;
+                        ret[item.idx + item2.idx] += item.val * item2.val % mod4;
                     }
                 }
-                return ret;
+                return ret.Select(e => e % mod4).ToArray();
             }
             else
             {
@@ -183,16 +183,19 @@ namespace Library
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public long[] Multiply(long[] a, long[] b)
+        static public long[] Multiply(Span<long> a, Span<long> b)
         {
             var sparse = MultiplySparse(a, b, mod4);
             if (sparse != null) return sparse;
             var n = a.Length + b.Length - 1;
             var t = 1;
             while (t < n) t <<= 1;
-            Span<uint> na = new uint[t];
-            Span<uint> nb = new uint[t];
-            Span<uint> nc = new uint[t];
+            var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(t * 3);
+            var bufSpan = buf.AsSpan();
+            bufSpan.Clear();
+            Span<uint> na = bufSpan.Slice(0, t);
+            Span<uint> nb = bufSpan.Slice(t, t);
+            Span<uint> nc = bufSpan.Slice(t * 2, t);
             ref long aref = ref a[0];
             ref long bref = ref b[0];
             ref uint naref = ref na[0];
@@ -213,6 +216,7 @@ namespace Library
             naref = ref na[0];
             ref long retref = ref ret[0];
             for (var i = 0; i < n; ++i) Unsafe.Add(ref retref, i) = Unsafe.Add(ref naref, i);
+            System.Buffers.ArrayPool<uint>.Shared.Return(buf);
             return ret;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
