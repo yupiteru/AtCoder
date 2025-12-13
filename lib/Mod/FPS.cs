@@ -15,9 +15,9 @@ namespace Library
     {
         const uint MOD = 998244353;
         uint[] ary;
-        LIB_Dictionary<int, uint> dict;
+        LIB_Dictionary<long, uint> dict;
         bool isSparse;
-        public int K
+        public long K
         {
             get;
             private set;
@@ -29,8 +29,8 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LIB_FPS(long K)
         {
-            this.K = (int)K;
-            dict = new LIB_Dictionary<int, uint>();
+            this.K = K;
+            dict = new LIB_Dictionary<long, uint>();
             isSparse = true;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -149,9 +149,11 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public LIB_FPS operator *(LIB_FPS x, LIB_FPS y)
         {
+            var xK = x.isSparse ? x.dict.Max(e => e.Key) : x.K;
+            var yK = y.isSparse ? y.dict.Max(e => e.Key) : y.K;
             var maxK = Max(x.K, y.K);
             var ret = new LIB_FPS(maxK);
-            if (x.Count * y.Count < maxK * 10)
+            if (x.Count * y.Count < Max(xK, yK) * 10L)
             {
                 if (x.isSparse && y.isSparse)
                 {
@@ -190,7 +192,7 @@ namespace Library
             }
             else
             {
-                var maxLen = x.K + y.K + 1;
+                var maxLen = xK + yK + 1;
                 var t = 1;
                 while (t < maxLen) t <<= 1;
                 var buf = System.Buffers.ArrayPool<uint>.Shared.Rent(t * 3);
@@ -203,7 +205,7 @@ namespace Library
                 {
                     foreach (var item in x.dict)
                     {
-                        xBuf[item.Key] = item.Value;
+                        xBuf[(int)item.Key] = item.Value;
                     }
                 }
                 else
@@ -214,7 +216,7 @@ namespace Library
                 {
                     foreach (var item in y.dict)
                     {
-                        yBuf[item.Key] = item.Value;
+                        yBuf[(int)item.Key] = item.Value;
                     }
                 }
                 else
@@ -225,7 +227,7 @@ namespace Library
                 LIB_NTT.ntt4(ref yBuf, ref tmp);
                 for (var i = 0; i < xBuf.Length; ++i) xBuf[i] = (uint)((ulong)xBuf[i] * yBuf[i] % MOD);
                 LIB_NTT.ntt4(ref xBuf, ref tmp, true);
-                for (var i = 0; i <= ret.K; ++i) ret[i] = xBuf[i];
+                for (var i = 0; i <= Min(ret.K, maxLen - 1); ++i) ret[i] = xBuf[i];
                 System.Buffers.ArrayPool<uint>.Shared.Return(buf);
             }
             return ret;
@@ -311,10 +313,33 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static public long BostanMori(long N, LIB_FPS nume, LIB_FPS deno)
         {
-            var p = new long[nume.K + 1];
-            for (var i = 0; i < p.Length; ++i) p[i] = nume[i];
-            var q = new long[deno.K + 1];
-            for (var i = 0; i < q.Length; ++i) q[i] = deno[i];
+            long[] p, q;
+            if (nume.isSparse)
+            {
+                p = new long[nume.dict.Max(e => e.Key) + 1];
+                foreach (var item in nume.dict)
+                {
+                    p[item.Key] = item.Value;
+                }
+            }
+            else
+            {
+                p = new long[nume.K + 1];
+                for (var i = 0; i < p.Length; ++i) p[i] = nume[i];
+            }
+            if (deno.isSparse)
+            {
+                q = new long[deno.dict.Max(e => e.Key) + 1];
+                foreach (var item in deno.dict)
+                {
+                    q[item.Key] = item.Value;
+                }
+            }
+            else
+            {
+                q = new long[deno.K + 1];
+                for (var i = 0; i < q.Length; ++i) q[i] = deno[i];
+            }
             return BostanMori(N, p, q);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -473,7 +498,7 @@ namespace Library
             }
             else
             {
-                var dat = new List<(int idx, long val)>();
+                var dat = new List<(long idx, long val)>();
                 if (isSparse)
                 {
                     foreach (var item in dict)
@@ -487,11 +512,11 @@ namespace Library
                     for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i, arySpan[i]));
                 }
 
-                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(K + 1);
+                var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent((int)K + 1);
                 var inv = invBuf.AsSpan();
                 inv[1] = 1;
                 for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
-                var tmpArray = System.Buffers.ArrayPool<long>.Shared.Rent(K + 1);
+                var tmpArray = System.Buffers.ArrayPool<long>.Shared.Rent((int)K + 1);
                 tmpArray[0] = 1;
                 for (var n = 1; n <= K; ++n)
                 {
@@ -922,12 +947,12 @@ namespace Library
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Sqrt_inplace()
         {
-            var d = K + 1;
+            var d = (int)K + 1;
             var nonZeroCnt = 0L;
             if (isSparse)
             {
                 nonZeroCnt = Count;
-                if (nonZeroCnt > 0) d = dict.Keys.Min();
+                if (nonZeroCnt > 0) d = (int)dict.Keys.Min();
             }
             else
             {
@@ -989,7 +1014,7 @@ namespace Library
                 }
             }
             var c = LIB_Mod998244353.Inverse(y);
-            var gLength = K - d + 1;
+            var gLength = (int)K - d + 1;
             if (isSparse)
             {
                 var loop = dict.ToArray();
@@ -1402,7 +1427,7 @@ namespace Library
                 System.Buffers.ArrayPool<uint>.Shared.Return(buf);
                 return P;
             };
-            var deg = Max(K, g.K) + 1;
+            var deg = (int)Max(K, g.K) + 1;
             Array.Resize(ref ary, deg);
             var n = deg - 1;
             var h = 1;
@@ -1707,7 +1732,7 @@ namespace Library
         {
             if (isSparse)
             {
-                return string.Join(separator, Enumerable.Range(0, K + 1).Select(e => dict.ContainsKey(e) ? dict[e] : 0));
+                return string.Join(separator, Enumerable.Range(0, (int)K + 1).Select(e => dict.ContainsKey(e) ? dict[e] : 0));
             }
             else
             {
