@@ -34,7 +34,7 @@ namespace Library
                 foreach (var pathItem in listupPaths(u.Value))
                 {
                     var v = pathItem.v;
-                    var alt = u.Key - h(u.Key) + pathItem.c + h(v);
+                    var alt = u.Key - h(u.Value) + pathItem.c + h(v);
                     if (alt < dist[v])
                     {
                         dist[v] = alt;

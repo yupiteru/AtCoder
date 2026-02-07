@@ -456,7 +456,7 @@ namespace Library
                 for (var i = 1; i < garySpan.Length; ++i) if (garySpan[i] != 0) dat.Add((i, garySpan[i]));
 
                 var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(garySpan.Length);
-                var inv = invBuf.AsSpan();
+                var inv = invBuf.AsSpan(0, garySpan.Length);
                 inv[1] = 1;
                 for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
 
@@ -513,7 +513,7 @@ namespace Library
                 }
 
                 var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent((int)K + 1);
-                var inv = invBuf.AsSpan();
+                var inv = invBuf.AsSpan(0, (int)K + 1);
                 inv[1] = 1;
                 for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
                 var tmpArray = System.Buffers.ArrayPool<long>.Shared.Rent((int)K + 1);
@@ -565,9 +565,10 @@ namespace Library
             for (var i = 1; i < arySpan.Length; ++i) if (arySpan[i] != 0) dat.Add((i - 1, (long)i * arySpan[i] % MOD));
 
             // sparse
-            var inv = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length + 1);
+            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length + 1);
+            var inv = invBuf.AsSpan(0, arySpan.Length + 1);
             inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
             arySpan[0] = 1;
             for (var n = 1; n < arySpan.Length; ++n)
             {
@@ -579,7 +580,7 @@ namespace Library
                 }
                 arySpan[n] = (uint)((rhs % MOD) * inv[n] % MOD);
             }
-            System.Buffers.ArrayPool<long>.Shared.Return(inv);
+            System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
         }
         /// <summary>
         /// 指数 (a0 == 0)
@@ -593,7 +594,8 @@ namespace Library
             var buf1 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen);
             var buf2 = System.Buffers.ArrayPool<uint>.Shared.Rent(bufferLength * 6);
             var buf3 = System.Buffers.ArrayPool<uint>.Shared.Rent(maxlen * 3);
-            var inv = System.Buffers.ArrayPool<long>.Shared.Rent(maxlen * 2);
+            var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(maxlen * 2);
+            var inv = invBuf.AsSpan(0, maxlen * 2);
             var buf = buf2.AsSpan();
             var halfBuf = buf3.AsSpan();
             var g = buf1.AsSpan();
@@ -601,7 +603,7 @@ namespace Library
             g.Clear();
             g[0] = 1;
             inv[1] = 1;
-            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[MOD % i] * (MOD / i) % MOD;
+            for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
             var nttg = buf.Slice(bufferLength * 3, 2);
             nttg[0] = 1;
             nttg[1] = 1;
@@ -699,7 +701,7 @@ namespace Library
             }
             System.Buffers.ArrayPool<uint>.Shared.Return(buf1);
             System.Buffers.ArrayPool<uint>.Shared.Return(buf2);
-            System.Buffers.ArrayPool<long>.Shared.Return(inv);
+            System.Buffers.ArrayPool<long>.Shared.Return(invBuf);
         }
         /// <summary>
         /// 対数 (a0 == 1)
@@ -738,7 +740,7 @@ namespace Library
             var gBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length - 1);
             var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
             var g = gBuf.AsSpan();
-            var inv = invBuf.AsSpan();
+            var inv = invBuf.AsSpan(0, arySpan.Length);
             inv[1] = 1;
             for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
             arySpan[0] = 0;
@@ -838,7 +840,7 @@ namespace Library
             else
             {
                 var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(ary.Length);
-                var inv = invBuf.AsSpan();
+                var inv = invBuf.AsSpan(0, ary.Length);
                 inv[1] = 1;
                 for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
                 for (var i = ary.Length - 1; i > 0; --i) ary[i] = (uint)(inv[i] * ary[i - 1] % MOD);
@@ -1158,7 +1160,7 @@ namespace Library
             nttb.Clear();
 
             var invBuf = System.Buffers.ArrayPool<long>.Shared.Rent(arySpan.Length);
-            var inv = invBuf.AsSpan();
+            var inv = invBuf.AsSpan(0, arySpan.Length);
             inv[0] = inv[1] = 1;
             for (var i = 2; i < inv.Length; ++i) inv[i] = MOD - inv[(int)(MOD % i)] * (MOD / i) % MOD;
             var fact = 1L;

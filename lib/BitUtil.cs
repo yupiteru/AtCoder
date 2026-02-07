@@ -64,7 +64,8 @@ namespace Library
         static public int[] InternalLoop(int i)
         {
             var ret = new List<int>();
-            for (var j = (i - 1) & i; j > (i - j); j = (j - 1) & i)
+            ret.Add(i);
+            for (var j = (i - 1) & i; j > 0; j = (j - 1) & i)
             {
                 ret.Add(j);
             }
