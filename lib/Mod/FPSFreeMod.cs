@@ -13,7 +13,9 @@ namespace Library
     ////start
     class LIB_FPSFreeMod
     {
+        #pragma warning disable CS0649
         public static uint MOD;
+        #pragma warning restore CS0649
         uint[] ary;
         public int K
         {

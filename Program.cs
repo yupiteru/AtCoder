@@ -40,6 +40,7 @@ namespace AtCoder
                 var nowOutput = false;
                 foreach (var line in File.ReadAllLines(testCaseFile[0]))
                 {
+                    if (line == "") continue;
                     if (line.StartsWith("[input]"))
                     {
                         nowInput = true;
@@ -73,6 +74,7 @@ namespace AtCoder
                 var isValidProgram = false;
                 foreach (var kv in testCases)
                 {
+                    if (kv.Value.Item1.ToString() == "") continue;
                     var result = new StringWriter();
                     var oldIn = Console.In;
                     var oldOut = Console.Out;
@@ -84,6 +86,7 @@ namespace AtCoder
 
                     var actual = result.GetStringBuilder().ToString().Split("\r\n".ToCharArray());
                     var expect = kv.Value.Item2.ToString().Split("\r\n".ToCharArray());
+                    File.WriteAllLines(".\\test.txt", actual);
                     var ok = true;
                     for (var i = 0; i < Math.Max(actual.Length, expect.Length); ++i)
                     {

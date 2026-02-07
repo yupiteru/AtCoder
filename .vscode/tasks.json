@@ -19,8 +19,9 @@
             "type": "process",
             "args": [
                 "publish",
+                "--self-contained",
                 "-r",
-                "win10-x64",
+                "win-x64",
                 "/p:PublishSingleFile=true",
                 "${workspaceFolder}/AtCoder.csproj",
                 "--configuration",
@@ -54,7 +55,9 @@
             "command": "echo",
             "type": "shell",
             "args": [
-                "${file}>>submit.txt"
+                "${file}",
+                ">>",
+                "submit.txt"
             ],
             "problemMatcher": []
         },

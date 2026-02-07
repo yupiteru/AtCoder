@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Win32::Clipboard;
 use WWW::Mechanize;
+use IO::Socket::SSL;
 use Time::HiRes 'sleep';
 use utf8;
 use Time::HiRes qw( usleep gettimeofday );
@@ -11,18 +12,12 @@ use Encode qw/decode/;
 binmode STDOUT, ':encoding(cp932)';
 
 open my $propertyFh, "setupContestProperty.txt";
-my $loginId = (split '=', <$propertyFh>, 2)[1];
-my $password = (split '=', <$propertyFh>, 2)[1];
+my $cookieValue = (split '=', <$propertyFh>, 2)[1];
 close $propertyFh;
 
-$loginId =~ s/[\r\n]+//g;
-$password =~ s/[\r\n]+//g;
-if(!defined $loginId or $loginId eq "") {
-  print "setupContestProperty.txtにAtCoderのログインIDを入力してください";
-  exit;
-}
-if(!defined $password or $password eq "") {
-  print "setupContestProperty.txtにAtCoderのパスワードを入力してください";
+$cookieValue =~ s/[\r\n]+//g;
+if(!defined $cookieValue or $cookieValue eq "") {
+  print "setupContestProperty.txtにセッション情報を入力してください";
   exit;
 }
 
@@ -44,17 +39,17 @@ if(@ARGV == 2 and $ARGV[1] eq "--server") {
 $contestId =~ s/[\r\n]+//;
 $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
 
-my $mech = WWW::Mechanize->new( agent => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0 Waterfox/56.3') ;
+my $mech = WWW::Mechanize->new(
+    agent => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0 Waterfox/56.3',
+    ssl_opts => {
+        verify_hostname => 0,
+        SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE,
+    },
+);
 $mech->timeout(120);
 
-$mech->get("https://atcoder.jp/login");
-$mech->submit_form(
-  form_number => 2,
-  fields      => {
-    username    => $loginId,
-    password    => $password,
-  }
-);
+$mech->cookie_jar->set_cookie(1, 'REVEL_SESSION', $cookieValue, '/', 'atcoder.jp', 443);
+$mech->cookie_jar->set_cookie(1, 'REVEL_FLASH', "", '/', 'atcoder.jp', 443);
 
 $mech->get("https://atcoder.jp/contests/$contestId");
 my $contestStartDatetime = "";
@@ -135,6 +130,26 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
     }
     close $fh;
     
+    open $fh, ">:encoding(UTF-8)", "$baseFolder/Problem${problemNumberStr}_statement.txt";
+    # Extract Japanese problem statement inside <span class="lang-ja">...</span>
+    if ($problemContent =~ /<span\s+class="lang-ja">/g) {
+      my $depth = 1;
+      my $start_pos = pos($problemContent);
+      while ($problemContent =~ /(<span\b[^>]*>|<\/span>)/g) {
+        if ($1 eq '</span>') {
+          $depth--;
+        } else {
+          $depth++;
+        }
+        if ($depth == 0) {
+          my $end_pos = pos($problemContent) - length($1);
+          print $fh substr($problemContent, $start_pos, $end_pos - $start_pos);
+          last;
+        }
+      }
+    }
+    close $fh;
+    
     if($isServerMode == 1) {
       while(1) {
         my $line = <$hFromServer>;
@@ -145,7 +160,7 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
         $mech->submit_form(
           form_number => 2,
           fields      => {
-            'data.LanguageId' => '5042',
+            'data.LanguageId' => '6016',
             'sourceCode'      => decode('Shift_JIS', Win32::Clipboard()->Get()),
           }
         );
@@ -154,7 +169,7 @@ for(my $j = 0;$j < @problemURLs; ++$j) {
     }
     exit;
   }
-  usleep 100000;
+  usleep 200000;
 }
 
 if($isServerMode == 1) {
