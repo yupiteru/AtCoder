@@ -196,7 +196,7 @@ namespace Library
             }
             return ret.ToArray();
         }
-        
+
         static public int[] MergeSort<T>(IList<T> list, int l, int r, Func<T, T, bool> leftIsSmall)
         {
             int Fill(int x)
@@ -293,6 +293,84 @@ namespace Library
                 }
             }
             return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static public KeyValuePair<Key, Value>[] KetaDP<Key, Value>(string N, Func<long, (Key, Value)> init, Func<long, Key, Value, (Key, Value)> forward, Func<Value, Value, Value> merge)
+        {
+            var dic1 = new Dictionary<Key, Value>();
+            var dic0 = new Dictionary<Key, Value>();
+            for (var i = N.Length - 1; i >= 0; --i)
+            {
+                var dic1List = dic1.ToArray();
+                var dic0List = dic0.ToArray();
+                dic1.Clear();
+                dic0.Clear();
+                var num = N[N.Length - i - 1] - '0';
+                foreach (var item in dic1List)
+                {
+                    for (var j = 0; j < num; ++j)
+                    {
+                        Value val;
+                        var nv = forward(j, item.Key, item.Value);
+                        if (dic0.TryGetValue(nv.Item1, out val)) val = merge(val, nv.Item2);
+                        else val = nv.Item2;
+                        dic0[nv.Item1] = val;
+                    }
+                    {
+                        Value val;
+                        var nv = forward(num, item.Key, item.Value);
+                        if (dic1.TryGetValue(nv.Item1, out val)) val = merge(val, nv.Item2);
+                        else val = nv.Item2;
+                        dic1[nv.Item1] = val;
+                    }
+                }
+                foreach (var item in dic0List)
+                {
+                    for (var j = 0; j < 10; ++j)
+                    {
+                        Value val;
+                        var nv = forward(j, item.Key, item.Value);
+                        if (dic0.TryGetValue(nv.Item1, out val)) val = merge(val, nv.Item2);
+                        else val = nv.Item2;
+                        dic0[nv.Item1] = val;
+                    }
+                }
+                for (var j = 0; j < 10; ++j)
+                {
+                    if (i == N.Length - 1)
+                    {
+                        if (0 < j && j < num)
+                        {
+                            Value val;
+                            var iv = init(j);
+                            if (dic0.TryGetValue(iv.Item1, out val)) val = merge(val, iv.Item2);
+                            else val = iv.Item2;
+                            dic0[iv.Item1] = val;
+                        }
+                        else if (j == num)
+                        {
+                            Value val;
+                            var iv = init(j);
+                            if (dic1.TryGetValue(iv.Item1, out val)) val = merge(val, iv.Item2);
+                            else val = iv.Item2;
+                            dic1[iv.Item1] = val;
+                        }
+                    }
+                    else
+                    {
+                        if (0 < j)
+                        {
+                            Value val;
+                            var iv = init(j);
+                            if (dic0.TryGetValue(iv.Item1, out val)) val = merge(val, iv.Item2);
+                            else val = iv.Item2;
+                            dic0[iv.Item1] = val;
+                        }
+                    }
+                }
+            }
+            return dic0.Concat(dic1).ToArray();
         }
     }
     ////end
