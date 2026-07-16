@@ -296,7 +296,7 @@ namespace Library
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static public KeyValuePair<Key, Value>[] KetaDP<Key, Value>(string N, Func<long, (Key, Value)> init, Func<long, Key, Value, (Key, Value)> forward, Func<Value, Value, Value> merge)
+        static public (Key k, Value v)[] KetaDP<Key, Value>(string N, Func<long, (Key, Value)> init, Func<long, Key, Value, (Key, Value)> forward, Func<Value, Value, Value> merge)
         {
             var dic1 = new Dictionary<Key, Value>();
             var dic0 = new Dictionary<Key, Value>();
@@ -370,7 +370,10 @@ namespace Library
                     }
                 }
             }
-            return dic0.Concat(dic1).ToArray();
+            return dic0.Concat(dic1)
+                .GroupBy(kv => kv.Key)
+                .Select(g => (g.Key, g.Select(kv => kv.Value).Aggregate(merge)))
+                .ToArray();
         }
     }
     ////end
