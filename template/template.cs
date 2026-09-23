@@ -21,6 +21,7 @@ namespace Program
         static public void MakeTestCase(List<string> _input, List<string> _output, ref Func<string[], bool> _outputChecker)
         {
         }
+        // Library: https://github.com/yupiteru/AtCoder
         static public void Solve()
         {
         }
